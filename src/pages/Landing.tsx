@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Select,
   SelectContent,
@@ -22,33 +23,85 @@ import {
 import { Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Project {
   id: string;
-  projectName: string;
-  clientName: string;
-  deadline: Date;
-  status: string;
+  project_name: string;
+  client_name: string | null;
+  deadline: string | null;
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'Suspended';
 }
 
 const Landing = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const queryClient = useQueryClient();
   const [deleteProject, setDeleteProject] = useState<Project | null>(null);
 
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from('projects')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+
+  const softDeleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('projects')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Project moved to recycle bin');
+    },
+  });
+
+  const createProjectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({ project_name: 'Untitled Project' })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      navigate(`/project/${data.id}`);
+    },
+  });
+
   const handleCreateProject = () => {
-    const newProject = {
-      id: Math.random().toString(36).substr(2, 9),
-      projectName: '',
-      clientName: '',
-      deadline: new Date(),
-      status: 'Not Started'
-    };
-    setProjects([...projects, newProject]);
-    navigate(`/project/${newProject.id}`);
+    createProjectMutation.mutate();
   };
 
-  const handleStatusChange = (projectId: string, newStatus: string) => {
+  const handleStatusChange = async (projectId: string, newStatus: string) => {
     if (newStatus === 'Delete') {
       const project = projects.find(p => p.id === projectId);
       if (project) {
@@ -57,18 +110,14 @@ const Landing = () => {
       return;
     }
 
-    setProjects(projects.map(project => 
-      project.id === projectId ? { ...project, status: newStatus } : project
-    ));
+    updateProjectMutation.mutate({ id: projectId, status: newStatus });
     toast.success(`Project status updated to ${newStatus}`);
   };
 
   const handleDeleteConfirm = () => {
     if (deleteProject) {
-      // In a real app, you would also move the project to the recycle bin here
-      setProjects(projects.filter(p => p.id !== deleteProject.id));
+      softDeleteMutation.mutate(deleteProject.id);
       setDeleteProject(null);
-      toast.success('Project moved to recycle bin');
     }
   };
 
@@ -89,7 +138,11 @@ const Landing = () => {
 
       <Card className="p-6">
         <div className="max-h-[600px] overflow-y-auto">
-          {projects.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading projects...
+            </div>
+          ) : projects.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No projects yet. Click "New Project" to get started.
             </div>
@@ -101,11 +154,11 @@ const Landing = () => {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/5 transition-colors"
                 >
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/project/${project.id}`)}>
-                    <h3 className="font-medium truncate">{project.projectName || 'Untitled Project'}</h3>
+                    <h3 className="font-medium truncate">{project.project_name || 'Untitled Project'}</h3>
                     <div className="text-sm text-muted-foreground">
-                      <span>{project.clientName || 'No client'}</span>
+                      <span>{project.client_name || 'No client'}</span>
                       <span className="mx-2">•</span>
-                      <span>Due {format(project.deadline, 'PP')}</span>
+                      <span>Due {project.deadline ? format(new Date(project.deadline), 'PP') : 'No deadline'}</span>
                     </div>
                   </div>
                   <Select
