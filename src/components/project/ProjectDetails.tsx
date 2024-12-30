@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { CalendarIcon } from 'lucide-react';
 
 interface ProjectDetailsProps {
   projectName: string;
@@ -37,13 +32,6 @@ const ProjectDetails = ({
     }
   };
 
-  const handleCalendarSelect = (date: Date | undefined) => {
-    setDeadline(date);
-    if (date) {
-      setDateInput(format(date, 'yyyy-MM-dd'));
-    }
-  };
-
   return (
     <Card className="p-6 animate-fade-in">
       <div className="space-y-4">
@@ -69,36 +57,12 @@ const ProjectDetails = ({
 
         <div className="space-y-2">
           <Label>Project Deadline</Label>
-          <div className="flex gap-2">
-            <Input
-              type="date"
-              value={dateInput}
-              onChange={handleDateInputChange}
-              className="flex-1"
-            />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-[280px] justify-start text-left font-normal",
-                    !deadline && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deadline ? format(deadline, "PPP") : "Select deadline"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={deadline}
-                  onSelect={handleCalendarSelect}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <Input
+            type="date"
+            value={dateInput}
+            onChange={handleDateInputChange}
+            className="flex-1"
+          />
         </div>
       </div>
     </Card>
