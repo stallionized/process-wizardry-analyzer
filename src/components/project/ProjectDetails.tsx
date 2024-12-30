@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface ProjectDetailsProps {
   projectName: string;
@@ -21,7 +23,17 @@ const ProjectDetails = ({
   deadline,
   setDeadline
 }: ProjectDetailsProps) => {
+  // Store initial values to revert to on cancel
+  const [initialValues] = useState({
+    projectName,
+    clientName,
+    deadline,
+    dateInput: deadline ? format(deadline, 'yyyy-MM-dd') : ''
+  });
+
   const [dateInput, setDateInput] = useState(deadline ? format(deadline, 'yyyy-MM-dd') : '');
+  const [tempProjectName, setTempProjectName] = useState(projectName);
+  const [tempClientName, setTempClientName] = useState(clientName);
 
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -32,6 +44,22 @@ const ProjectDetails = ({
     }
   };
 
+  const handleSave = () => {
+    setProjectName(tempProjectName);
+    setClientName(tempClientName);
+    toast.success('Project details saved successfully');
+  };
+
+  const handleCancel = () => {
+    setTempProjectName(initialValues.projectName);
+    setTempClientName(initialValues.clientName);
+    setDateInput(initialValues.dateInput);
+    if (initialValues.deadline) {
+      setDeadline(initialValues.deadline);
+    }
+    toast.info('Changes cancelled');
+  };
+
   return (
     <Card className="p-6 animate-fade-in">
       <div className="space-y-4">
@@ -39,8 +67,8 @@ const ProjectDetails = ({
           <Label htmlFor="projectName">Project Name</Label>
           <Input
             id="projectName"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
+            value={tempProjectName}
+            onChange={(e) => setTempProjectName(e.target.value)}
             placeholder="Enter project name"
           />
         </div>
@@ -49,8 +77,8 @@ const ProjectDetails = ({
           <Label htmlFor="clientName">Client Name</Label>
           <Input
             id="clientName"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
+            value={tempClientName}
+            onChange={(e) => setTempClientName(e.target.value)}
             placeholder="Enter client name"
           />
         </div>
@@ -63,6 +91,20 @@ const ProjectDetails = ({
             onChange={handleDateInputChange}
             className="flex-1"
           />
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+          >
+            Save
+          </Button>
         </div>
       </div>
     </Card>
