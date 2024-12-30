@@ -24,13 +24,16 @@ import { Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
+
+type ProjectStatus = Database['public']['Enums']['project_status'];
 
 interface Project {
   id: string;
   project_name: string;
   client_name: string | null;
   deadline: string | null;
-  status: 'Not Started' | 'In Progress' | 'Completed' | 'Suspended';
+  status: ProjectStatus;
 }
 
 const Landing = () => {
@@ -52,7 +55,7 @@ const Landing = () => {
   });
 
   const updateProjectMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: ProjectStatus }) => {
       const { error } = await supabase
         .from('projects')
         .update({ status })
@@ -101,7 +104,7 @@ const Landing = () => {
     createProjectMutation.mutate();
   };
 
-  const handleStatusChange = async (projectId: string, newStatus: string) => {
+  const handleStatusChange = async (projectId: string, newStatus: ProjectStatus | 'Delete') => {
     if (newStatus === 'Delete') {
       const project = projects.find(p => p.id === projectId);
       if (project) {
