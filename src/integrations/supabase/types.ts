@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      client_users: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_users_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       files: {
         Row: {
           created_at: string | null
@@ -49,6 +96,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          client_id: string | null
           client_name: string | null
           created_at: string | null
           deadline: string | null
@@ -57,8 +105,10 @@ export type Database = {
           project_name: string
           status: Database["public"]["Enums"]["project_status"] | null
           updated_at: string | null
+          visible_in_client_portal: boolean | null
         }
         Insert: {
+          client_id?: string | null
           client_name?: string | null
           created_at?: string | null
           deadline?: string | null
@@ -67,8 +117,10 @@ export type Database = {
           project_name: string
           status?: Database["public"]["Enums"]["project_status"] | null
           updated_at?: string | null
+          visible_in_client_portal?: boolean | null
         }
         Update: {
+          client_id?: string | null
           client_name?: string | null
           created_at?: string | null
           deadline?: string | null
@@ -77,8 +129,17 @@ export type Database = {
           project_name?: string
           status?: Database["public"]["Enums"]["project_status"] | null
           updated_at?: string | null
+          visible_in_client_portal?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
