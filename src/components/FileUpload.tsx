@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -29,7 +30,6 @@ const FileUpload = ({ onUpload, className }: FileUploadProps) => {
     if (selectedType) {
       onUpload(acceptedFiles, selectedType);
     } else {
-      // Use toast to show error message
       toast.error('Please select a file type before uploading');
     }
   }, [onUpload, selectedType]);
