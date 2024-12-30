@@ -29,7 +29,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <div className="container flex h-14 items-center">
           <Link to="/" className="font-bold text-xl">ProcessAI</Link>
           <div className="ml-auto flex items-center space-x-4">
-            <NavLink to="/admin">Admin</NavLink>
+            <NavLink to="/">Admin</NavLink>
             <NavLink to="/client">Client Portal</NavLink>
           </div>
         </div>
