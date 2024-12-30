@@ -3,27 +3,44 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import FileUpload from '@/components/FileUpload';
 import { toast } from 'sonner';
-import { ArrowRight } from 'lucide-react';
+import { Trash2, File } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-interface UploadedFile extends File {
+interface UploadedFile {
+  id: string;
+  name: string;
   type: string;
+  url: string;
 }
 
 const Index = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
 
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
-    const filesWithType = uploadedFiles.map(file => ({
-      ...file,
+    const newFiles = uploadedFiles.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
       type: fileType,
-    })) as UploadedFile[];
+      url: URL.createObjectURL(file)
+    }));
     
-    setFiles(prev => [...prev, ...filesWithType]);
+    setFiles(prev => [...prev, ...newFiles]);
     toast.success(`${uploadedFiles.length} files uploaded successfully`);
   };
 
-  const handleAnalyze = () => {
-    toast.info('Analysis started! This feature will be implemented in the next iteration.');
+  const handleDelete = (fileId: string) => {
+    setFiles(prev => prev.filter(file => file.id !== fileId));
+    toast.success('File deleted successfully');
   };
 
   return (
@@ -38,29 +55,58 @@ const Index = () => {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Upload Files</h2>
         <FileUpload onUpload={handleUpload} />
-        
-        {files.length > 0 && (
-          <div className="mt-4">
-            <h3 className="font-medium mb-2">Uploaded Files:</h3>
-            <ul className="space-y-2">
-              {files.map((file, index) => (
-                <li key={index} className="text-sm text-gray-600">
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB) - {file.type}
-                </li>
-              ))}
-            </ul>
-            
-            <Button 
-              className="mt-4"
-              onClick={handleAnalyze}
-              disabled={files.length === 0}
-            >
-              Start Analysis
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </Card>
+
+      {files.length > 0 && (
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Uploaded Files</h2>
+          <div className="space-y-4">
+            {files.map((file) => (
+              <div key={file.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <File className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <a 
+                      href={file.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium hover:underline"
+                    >
+                      {file.name}
+                    </a>
+                    <p className="text-sm text-muted-foreground">Type: {file.type}</p>
+                  </div>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete this file and all related results and analyses.
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => handleDelete(file.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
