@@ -5,16 +5,24 @@ import FileUpload from '@/components/FileUpload';
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
 
-const Index = () => {
-  const [files, setFiles] = useState<File[]>([]);
+interface UploadedFile extends File {
+  type: string;
+}
 
-  const handleUpload = (uploadedFiles: File[]) => {
-    setFiles(prev => [...prev, ...uploadedFiles]);
+const Index = () => {
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+
+  const handleUpload = (uploadedFiles: File[], fileType: string) => {
+    const filesWithType = uploadedFiles.map(file => ({
+      ...file,
+      type: fileType,
+    })) as UploadedFile[];
+    
+    setFiles(prev => [...prev, ...filesWithType]);
     toast.success(`${uploadedFiles.length} files uploaded successfully`);
   };
 
   const handleAnalyze = () => {
-    // TODO: Implement AI analysis
     toast.info('Analysis started! This feature will be implemented in the next iteration.');
   };
 
@@ -37,7 +45,7 @@ const Index = () => {
             <ul className="space-y-2">
               {files.map((file, index) => (
                 <li key={index} className="text-sm text-gray-600">
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB) - {file.type}
                 </li>
               ))}
             </ul>
