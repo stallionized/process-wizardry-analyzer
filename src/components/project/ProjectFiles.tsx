@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import FileUploadTab from './FileUploadTab';
+import { sendFilesToWebhook } from '@/services/webhookService';
 
 interface ProjectFilesProps {
   projectId: string;
@@ -131,37 +132,12 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       // Get all new dataset files
       const newDatasetFiles = files.filter(file => file.isNew && file.type === 'dataset');
       
-      // Send new dataset files to webhook
+      // Try to send new dataset files to webhook, but don't fail if webhook fails
       if (newDatasetFiles.length > 0) {
-        try {
-          // Format the data to match webhook expectations
-          const webhookData = {
-            data: {
-              projectId,
-              files: newDatasetFiles.map(file => ({
-                id: file.id,
-                name: file.name,
-                url: file.url
-              }))
-            }
-          };
-
-          const response = await fetch('https://hook.us1.make.com/54vxfeqcuks6v5o1yxl2bieb8i97lfnq', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(webhookData),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Webhook response:', errorText);
-            throw new Error(`Failed to send files to webhook: ${errorText}`);
-          }
-        } catch (error) {
-          console.error('Webhook error:', error);
-          throw new Error('Failed to process dataset files');
+        const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
+        if (!webhookSuccess) {
+          console.warn('Webhook processing failed, but continuing with file submission');
+          toast.warning('File processing may be delayed, but files were submitted successfully');
         }
       }
 
