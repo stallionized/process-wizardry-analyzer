@@ -19,7 +19,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!scrollContainerRef.current) return;
 
-      const scrollAmount = 40; // Adjust scroll amount as needed
+      const scrollAmount = 40;
       const container = scrollContainerRef.current;
 
       switch (e.key) {
@@ -58,19 +58,16 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
       }
     };
 
-    // Add event listener when the component mounts
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('keydown', handleKeyDown);
-      // Make the container focusable
-      container.tabIndex = 0;
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Make the container focusable
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.tabIndex = 0;
+      scrollContainerRef.current.focus();
     }
 
-    // Clean up event listener when component unmounts
     return () => {
-      if (container) {
-        container.removeEventListener('keydown', handleKeyDown);
-      }
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
