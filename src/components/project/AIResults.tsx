@@ -4,15 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
-import {
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
 
 interface AIResultsProps {
   projectId: string;
@@ -28,9 +19,13 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        return null;
+      }
       
       // Add type guard to ensure the results match our expected structure
       const results = data?.results;
