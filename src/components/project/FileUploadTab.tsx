@@ -33,16 +33,11 @@ interface FileUploadTabProps {
 }
 
 const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabProps) => {
-  const [pendingFiles, setPendingFiles] = useState<UploadedFile[]>([]);
-
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
     onUpload(uploadedFiles, fileType);
-    const newFiles = files.filter(f => f.isNew).map(f => ({ ...f }));
-    setPendingFiles(newFiles);
   };
 
   const handleSubmit = () => {
-    setPendingFiles([]);
     onSubmit?.();
     toast.success('Files submitted successfully');
   };
@@ -114,8 +109,8 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabPro
             </div>
           </ScrollArea>
           {hasNewFiles && (
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleSubmit}>
+            <div className="mt-4">
+              <Button onClick={handleSubmit} className="w-full">
                 Submit Files
               </Button>
             </div>

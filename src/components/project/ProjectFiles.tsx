@@ -17,7 +17,8 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       const { data: files, error } = await supabase
         .from('files')
         .select('*')
-        .eq('project_id', projectId);
+        .eq('project_id', projectId)
+        .is('deleted_at', null);
 
       if (error) throw error;
 
@@ -62,6 +63,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
               name: file.name,
               type,
               storage_path: filePath,
+              created_at: null, // This will mark the file as new
             });
 
           if (dbError) throw dbError;
