@@ -22,6 +22,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
   const { data: analysisResults, isLoading, error } = useQuery({
     queryKey: ['analysis', projectId],
     queryFn: async () => {
+      console.log('Fetching analysis results for project:', projectId);
       const { data, error } = await supabase
         .from('analysis_results')
         .select('*')
@@ -30,11 +31,17 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching analysis results:', error);
+        throw error;
+      }
       
       if (!data) {
+        console.log('No analysis results found');
         return null;
       }
+      
+      console.log('Analysis results found:', data);
       
       // Add type guard to ensure the results match our expected structure
       const results = data?.results;
@@ -64,6 +71,8 @@ const AIResults = ({ projectId }: AIResultsProps) => {
 
       return typedResults;
     },
+    // Refresh every 5 seconds while loading to check for new results
+    refetchInterval: (data) => (!data ? 5000 : false),
   });
 
   if (isLoading) {
