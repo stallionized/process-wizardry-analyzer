@@ -64,4 +64,21 @@
   [role="dialog"] .matrix-container [data-radix-scroll-area-viewport] {
     @apply h-full;
   }
+
+  /* Ensure scrollbars are visible */
+  .matrix-container [data-radix-scroll-area-scrollbar] {
+    @apply flex touch-none select-none transition-colors;
+  }
+
+  .matrix-container [data-radix-scroll-area-thumb] {
+    @apply relative flex-1 rounded-full bg-border;
+  }
+
+  .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
+    @apply h-full w-2.5 border-l border-l-transparent p-[1px];
+  }
+
+  .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
+    @apply h-2.5 flex-col border-t border-t-transparent p-[1px];
+  }
 }
