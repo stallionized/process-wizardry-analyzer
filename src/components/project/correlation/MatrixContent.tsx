@@ -17,13 +17,13 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
 
   return (
     <div className="matrix-container border rounded-lg relative">
-      <ScrollArea className="h-[500px]" type="always">
+      <ScrollArea className="h-[500px] overflow-visible" type="always">
         <div className="min-w-max">
           <Table>
             <TableHeader>
               <TableRow className="sticky top-0 z-20">
                 <TableHead 
-                  className="w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-30"
+                  className="w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                 >
                   Variables
                 </TableHead>
@@ -44,7 +44,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
               {variables.map((variable1) => (
                 <TableRow key={variable1} className="relative">
                   <TableHead 
-                    className="font-medium w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-10"
+                    className="font-medium w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                     title={variable1}
                   >
                     <div className="max-w-[12rem] break-words">
