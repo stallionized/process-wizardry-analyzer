@@ -31,7 +31,17 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         .single();
 
       if (error) throw error;
-      return data?.results as AnalysisResults;
+      
+      // Add type guard to ensure the results match our expected structure
+      const results = data?.results;
+      if (!results || 
+          typeof results !== 'object' || 
+          !('correlationMatrix' in results) || 
+          !('mappings' in results)) {
+        throw new Error('Invalid analysis results format');
+      }
+      
+      return results as AnalysisResults;
     },
   });
 
