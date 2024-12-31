@@ -17,7 +17,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
 
   return (
     <div className="matrix-container border rounded-lg relative">
-      <ScrollArea className="h-[500px]" type="always">
+      <ScrollArea className="h-[500px] w-full overflow-auto" type="scroll">
         <div className="min-w-max">
           <Table>
             <TableHeader>
@@ -62,8 +62,8 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableBody>
           </Table>
         </div>
-        <ScrollBar orientation="horizontal" />
-        <ScrollBar orientation="vertical" />
+        <ScrollBar orientation="horizontal" className="h-2.5" />
+        <ScrollBar orientation="vertical" className="w-2.5" />
       </ScrollArea>
     </div>
   );
