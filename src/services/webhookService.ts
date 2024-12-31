@@ -1,11 +1,6 @@
-interface FileData {
-  id: string;
-  name: string;
-  url: string;
-}
+import { FileData } from '@/types';
 
 export const sendFilesToWebhook = async (projectId: string, files: FileData[]) => {
-  // Skip webhook call if URL is not configured
   const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || '';
   if (!WEBHOOK_URL) {
     console.log('No webhook URL configured, skipping webhook call');
@@ -13,7 +8,6 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
   }
 
   try {
-    // Format data according to Make.com webhook requirements
     const webhookData = {
       data: {
         projectId,
@@ -33,21 +27,35 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
       body: JSON.stringify(webhookData),
     });
 
-    // Store response text immediately to avoid stream already read error
-    const responseText = await response.text();
-
     if (!response.ok) {
-      console.warn('Webhook warning:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: responseText
-      });
+      console.error('Webhook call failed:', await response.text());
       return false;
     }
 
     return true;
   } catch (error) {
-    console.warn('Webhook warning:', error);
+    console.error('Error calling webhook:', error);
     return false;
+  }
+};
+
+export const analyzeDataset = async (fileUrl: string, projectId: string) => {
+  try {
+    const response = await fetch('/functions/analyze-dataset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fileUrl, projectId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to analyze dataset');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error analyzing dataset:', error);
+    throw error;
   }
 };

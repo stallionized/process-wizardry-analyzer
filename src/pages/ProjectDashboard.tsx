@@ -62,7 +62,7 @@ const ProjectDashboard = () => {
         </TabsContent>
 
         <TabsContent value="results">
-          <AIResults />
+          <AIResults projectId={id} />
         </TabsContent>
       </Tabs>
     </div>
