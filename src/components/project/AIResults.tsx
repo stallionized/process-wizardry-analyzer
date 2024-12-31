@@ -11,8 +11,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface AIResultsProps {
   projectId: string;
@@ -110,6 +112,23 @@ const AIResults = ({ projectId }: AIResultsProps) => {
 
   const { correlationMatrix, mappings } = analysisResults;
 
+  // Get unique variables from the correlation matrix
+  const variables = Object.keys(correlationMatrix);
+
+  // Check if correlation matrix is empty
+  const isCorrelationMatrixEmpty = variables.length === 0;
+
+  if (isCorrelationMatrixEmpty) {
+    return (
+      <Card className="p-6 animate-fade-in">
+        <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
+        <p className="text-muted-foreground">
+          No correlation data available. Please ensure your uploaded files contain numerical data for analysis.
+        </p>
+      </Card>
+    );
+  }
+
   // Convert correlation matrix to scatter plot data
   const scatterData = Object.entries(correlationMatrix).flatMap(([variable1, correlations]) =>
     Object.entries(correlations).map(([variable2, correlation]) => ({
@@ -120,13 +139,61 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     }))
   );
 
+  // Function to get color based on correlation value
+  const getCorrelationColor = (value: number) => {
+    if (value === 1) return '#4CAF50';  // Perfect positive correlation
+    if (value > 0.7) return '#81C784';  // Strong positive correlation
+    if (value > 0.3) return '#A5D6A7';  // Moderate positive correlation
+    if (value > -0.3) return '#FFFFFF'; // Weak or no correlation
+    if (value > -0.7) return '#EF9A9A'; // Moderate negative correlation
+    if (value >= -1) return '#E57373';  // Strong negative correlation
+    return '#F44336';                   // Perfect negative correlation
+  };
+
   return (
     <Card className="p-6 animate-fade-in">
       <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
       
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-medium mb-3">Correlation Analysis</h3>
+          <h3 className="text-lg font-medium mb-3">Correlation Matrix</h3>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Variables</TableHead>
+                  {variables.map((variable) => (
+                    <TableHead key={variable}>{variable}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {variables.map((variable1) => (
+                  <TableRow key={variable1}>
+                    <TableCell className="font-medium">{variable1}</TableCell>
+                    {variables.map((variable2) => {
+                      const correlation = correlationMatrix[variable1]?.[variable2] || 0;
+                      return (
+                        <TableCell 
+                          key={`${variable1}-${variable2}`}
+                          style={{
+                            backgroundColor: getCorrelationColor(correlation),
+                            transition: 'background-color 0.2s'
+                          }}
+                        >
+                          {correlation.toFixed(2)}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium mb-3">Correlation Visualization</h3>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -150,11 +217,14 @@ const AIResults = ({ projectId }: AIResultsProps) => {
                     return null;
                   }}
                 />
-                <Scatter
-                  data={scatterData}
-                  fill="#8884d8"
-                  fillOpacity={0.6}
-                />
+                <Scatter data={scatterData}>
+                  {scatterData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`}
+                      fill={getCorrelationColor(entry.correlation)}
+                    />
+                  ))}
+                </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
           </div>
