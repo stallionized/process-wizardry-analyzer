@@ -26,14 +26,6 @@ serve(async (req) => {
       throw new Error('No files provided for analysis');
     }
 
-    // Validate file URLs
-    for (const file of files) {
-      if (!file.url || typeof file.url !== 'string') {
-        console.error('Invalid file URL:', file);
-        throw new Error(`Invalid URL for file: ${file.name}`);
-      }
-    }
-
     // Download and process the first file
     const fileUrl = files[0].url;
     console.log('Attempting to download file:', fileUrl);
@@ -44,9 +36,9 @@ serve(async (req) => {
     }
 
     const fileContent = await response.text();
-    console.log('File content loaded, length:', fileContent.length);
+    console.log('File content loaded, first 100 chars:', fileContent.substring(0, 100));
 
-    // Process with OpenAI using gpt-4o model
+    // Process with OpenAI
     console.log('Sending to OpenAI for analysis...');
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -59,37 +51,36 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a data analysis assistant specialized in correlation analysis. Your task is to:
+            content: `You are a data analysis assistant. Your task is to analyze numerical data and create a correlation matrix.
 
-1. Identify all numerical columns in the dataset
-2. Calculate the Pearson correlation coefficient between each pair of numerical variables
-3. Return ONLY a JSON object with the correlation matrix and any text-to-number mappings used
-
-The response must be ONLY a valid JSON object with this exact structure:
+IMPORTANT: You must return ONLY a JSON object with this exact structure, and nothing else:
 {
   "correlationMatrix": {
-    "variable1": {
-      "variable2": number,  // correlation coefficient between -1 and 1
-      ...
+    "column1": {
+      "column2": number,
+      "column3": number
     },
-    ...
-  },
-  "mappings": {
-    "columnName": {
-      "textValue": number,
-      ...
+    "column2": {
+      "column3": number
     }
-  }
+  },
+  "mappings": {}
 }
 
-Do not include any explanatory text, markdown, or additional information. Return only the JSON object.`
+Rules:
+1. Only analyze numerical columns
+2. All correlation values must be between -1 and 1
+3. Return symmetric correlations (if A to B is 0.5, B to A is also 0.5)
+4. Include self-correlations (always 1.0)
+5. Do not include any text, explanations, or markdown
+6. The response must be valid JSON`
           },
           {
             role: 'user',
-            content: `Analyze this dataset and calculate the correlation matrix:\n\n${fileContent}`
+            content: `Parse this data and return only the correlation matrix as specified:\n\n${fileContent}`
           }
         ],
-        temperature: 0.1, // Lower temperature for more consistent output
+        temperature: 0, // Set to 0 for most consistent output
       }),
     });
 
@@ -100,7 +91,7 @@ Do not include any explanatory text, markdown, or additional information. Return
     }
 
     const openaiData = await openaiResponse.json();
-    console.log('OpenAI raw response:', openaiData);
+    console.log('OpenAI response structure:', JSON.stringify(openaiData, null, 2));
 
     if (!openaiData.choices?.[0]?.message?.content) {
       throw new Error('Invalid response format from OpenAI');
@@ -109,26 +100,27 @@ Do not include any explanatory text, markdown, or additional information. Return
     // Parse the response content as JSON
     let analysis;
     try {
-      analysis = JSON.parse(openaiData.choices[0].message.content.trim());
-      console.log('Successfully parsed analysis:', analysis);
+      const content = openaiData.choices[0].message.content.trim();
+      console.log('Attempting to parse OpenAI content:', content);
+      analysis = JSON.parse(content);
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', openaiData.choices[0].message.content);
       throw new Error('Failed to parse analysis results as JSON');
     }
 
-    // Validate the analysis structure and correlation values
-    if (!analysis.correlationMatrix || !analysis.mappings) {
+    // Validate the analysis structure
+    if (!analysis.correlationMatrix) {
       console.error('Invalid analysis structure:', analysis);
-      throw new Error('Analysis results do not match expected structure');
+      throw new Error('Analysis results missing correlationMatrix');
     }
 
-    // Validate correlation values are between -1 and 1
-    for (const variable in analysis.correlationMatrix) {
-      for (const corr in analysis.correlationMatrix[variable]) {
-        const value = analysis.correlationMatrix[variable][corr];
+    // Validate correlation values
+    for (const col1 in analysis.correlationMatrix) {
+      for (const col2 in analysis.correlationMatrix[col1]) {
+        const value = analysis.correlationMatrix[col1][col2];
         if (typeof value !== 'number' || value < -1 || value > 1) {
-          console.error('Invalid correlation value:', value);
-          throw new Error('Correlation values must be numbers between -1 and 1');
+          console.error(`Invalid correlation value for ${col1}-${col2}:`, value);
+          throw new Error(`Invalid correlation value: ${value}`);
         }
       }
     }
