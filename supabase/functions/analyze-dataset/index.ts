@@ -14,11 +14,16 @@ serve(async (req) => {
   }
 
   try {
-    const { files } = await req.json();
+    const { files, projectId } = await req.json();
     console.log('Processing files:', files);
+    console.log('Project ID:', projectId);
 
     if (!files || !Array.isArray(files) || files.length === 0) {
       throw new Error('No files provided for analysis');
+    }
+
+    if (!projectId) {
+      throw new Error('Project ID is required');
     }
 
     // Download and process the first file
@@ -118,7 +123,7 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    console.log('Saving analysis results for project:', files[0].project_id);
+    console.log('Saving analysis results for project:', projectId);
 
     const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
       method: 'POST',
@@ -129,7 +134,7 @@ serve(async (req) => {
         'Prefer': 'return=minimal',
       },
       body: JSON.stringify({
-        project_id: files[0].project_id,
+        project_id: projectId,
         results: analysis,
       }),
     });
