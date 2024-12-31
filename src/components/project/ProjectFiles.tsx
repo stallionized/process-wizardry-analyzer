@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import FileUploadTab from './FileUploadTab';
-import { useNavigate } from 'react-router-dom';
 
 interface ProjectFilesProps {
   projectId: string;
@@ -11,28 +10,10 @@ interface ProjectFilesProps {
 
 const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  // Check authentication status
-  const { data: session } = useQuery({
-    queryKey: ['session'],
-    queryFn: async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Auth error:', error);
-        toast.error('Authentication error');
-        navigate('/');
-        return null;
-      }
-      return session;
-    },
-  });
 
   const { data: files = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: ['files', projectId],
     queryFn: async () => {
-      if (!session) return [];
-
       const { data: files, error } = await supabase
         .from('files')
         .select('*')
@@ -63,15 +44,10 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
       return filesWithUrls;
     },
-    enabled: !!session,
   });
 
   const uploadFileMutation = useMutation({
     mutationFn: async ({ files, type }: { files: File[], type: string }) => {
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
       const uploadedFiles = await Promise.all(
         files.map(async (file) => {
           const fileExt = file.name.split('.').pop();
@@ -119,10 +95,6 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
   const deleteFileMutation = useMutation({
     mutationFn: async (fileId: string) => {
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
       const { data: file, error: fetchError } = await supabase
         .from('files')
         .select('storage_path')
@@ -156,10 +128,6 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
   const submitFilesMutation = useMutation({
     mutationFn: async () => {
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
       const { error } = await supabase
         .from('files')
         .update({ created_at: new Date().toISOString() })
@@ -180,10 +148,6 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
   if (isLoadingFiles) {
     return <div>Loading files...</div>;
-  }
-
-  if (!session) {
-    return <div>Please log in to access files</div>;
   }
 
   return (
