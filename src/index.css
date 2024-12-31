@@ -49,7 +49,7 @@
 
 @layer components {
   .matrix-container {
-    @apply relative overflow-auto;
+    @apply relative overflow-hidden;
     width: 100%;
     height: 500px;
   }
