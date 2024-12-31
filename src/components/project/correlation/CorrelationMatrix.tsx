@@ -9,19 +9,26 @@ interface CorrelationMatrixProps {
 const getCorrelationColor = (value: number) => {
   const intensity = Math.abs(value);
   if (value === 1) {
-    return '#006400'; // Darker green for perfect correlation
+    return '#004d00'; // Darker green for perfect correlation
   } else if (value > 0) {
-    return `rgb(${Math.round(100 * (1 - intensity))}, ${Math.round(120 * intensity)}, 0)`;
+    return `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(200 * intensity)}, ${Math.round(255 * (1 - intensity))})`;
   } else {
-    return `rgb(${Math.round(120 * intensity)}, ${Math.round(100 * (1 + value))}, 0)`;
+    return `rgb(${Math.round(200 * intensity)}, ${Math.round(255 * (1 + value))}, ${Math.round(255 * (1 + value))})`;
   }
+};
+
+const getTextColor = (correlation: number) => {
+  const intensity = Math.abs(correlation);
+  return intensity > 0.3 ? 'white' : 'black';
 };
 
 const GradientKey = () => (
   <div className="flex items-center gap-4 mt-4">
     <div className="flex items-center gap-2">
-      <div className="h-4 w-12 rounded" style={{ background: 'linear-gradient(to right, rgb(120, 0, 0), rgb(100, 100, 100), rgb(0, 120, 0))' }} />
-      <div className="flex justify-between w-full text-xs">
+      <div className="h-4 w-12 rounded" style={{ 
+        background: 'linear-gradient(to right, rgb(200, 0, 0), rgb(255, 255, 255), rgb(0, 77, 0))'
+      }} />
+      <div className="flex justify-between w-full text-xs font-semibold">
         <span>-1</span>
         <span>0</span>
         <span>1</span>
@@ -59,20 +66,18 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
                     </TableCell>
                     {variables.map((variable2) => {
                       const correlation = correlationMatrix[variable1]?.[variable2] || 0;
-                      const opacity = Math.abs(correlation);
-                      const textColor = Math.abs(correlation) > 0.3 ? 'white' : 'black';
+                      const textColor = getTextColor(correlation);
                       
                       return (
                         <TableCell 
                           key={`${variable1}-${variable2}`}
                           style={{
                             backgroundColor: getCorrelationColor(correlation),
-                            opacity: opacity * 0.9 + 0.1,
                             width: '4rem',
                             maxWidth: '4rem',
                             minWidth: '4rem',
                           }}
-                          className="text-center font-medium text-sm py-2 px-1"
+                          className="text-center font-bold text-sm py-2 px-1"
                         >
                           <span style={{ color: textColor }}>
                             {correlation.toFixed(2)}
