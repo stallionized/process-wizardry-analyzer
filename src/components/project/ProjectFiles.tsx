@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import FileUploadTab from './FileUploadTab';
+import { useNavigate } from 'react-router-dom';
 
 interface ProjectFilesProps {
   projectId: string;
@@ -10,17 +11,38 @@ interface ProjectFilesProps {
 
 const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // Check authentication status
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Auth error:', error);
+        toast.error('Authentication error');
+        navigate('/');
+        return null;
+      }
+      return session;
+    },
+  });
 
   const { data: files = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: ['files', projectId],
     queryFn: async () => {
+      if (!session) return [];
+
       const { data: files, error } = await supabase
         .from('files')
         .select('*')
         .eq('project_id', projectId)
         .is('deleted_at', null);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Files fetch error:', error);
+        throw error;
+      }
 
       const filesWithUrls = await Promise.all(
         files.map(async (file) => {
@@ -41,10 +63,15 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
       return filesWithUrls;
     },
+    enabled: !!session,
   });
 
   const uploadFileMutation = useMutation({
     mutationFn: async ({ files, type }: { files: File[], type: string }) => {
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const uploadedFiles = await Promise.all(
         files.map(async (file) => {
           const fileExt = file.name.split('.').pop();
@@ -54,7 +81,10 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
             .from('project-files')
             .upload(filePath, file);
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error('Storage upload error:', uploadError);
+            throw uploadError;
+          }
 
           const { error: dbError } = await supabase
             .from('files')
@@ -66,7 +96,10 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
               created_at: null, // This will mark the file as new
             });
 
-          if (dbError) throw dbError;
+          if (dbError) {
+            console.error('Database insert error:', dbError);
+            throw dbError;
+          }
 
           return file.name;
         })
@@ -78,10 +111,18 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
       toast.success(`${uploadedFiles.length} file(s) uploaded successfully`);
     },
+    onError: (error) => {
+      console.error('Upload mutation error:', error);
+      toast.error('Failed to upload file(s)');
+    },
   });
 
   const deleteFileMutation = useMutation({
     mutationFn: async (fileId: string) => {
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const { data: file, error: fetchError } = await supabase
         .from('files')
         .select('storage_path')
@@ -107,10 +148,18 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
       toast.success('File deleted successfully');
     },
+    onError: (error) => {
+      console.error('Delete mutation error:', error);
+      toast.error('Failed to delete file');
+    },
   });
 
   const submitFilesMutation = useMutation({
     mutationFn: async () => {
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const { error } = await supabase
         .from('files')
         .update({ created_at: new Date().toISOString() })
@@ -121,11 +170,20 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
+      toast.success('Files submitted successfully');
+    },
+    onError: (error) => {
+      console.error('Submit mutation error:', error);
+      toast.error('Failed to submit files');
     },
   });
 
   if (isLoadingFiles) {
     return <div>Loading files...</div>;
+  }
+
+  if (!session) {
+    return <div>Please log in to access files</div>;
   }
 
   return (
