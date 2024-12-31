@@ -67,35 +67,43 @@
 
   /* Ensure scrollbars are visible and styled properly */
   .matrix-container [data-radix-scroll-area-scrollbar] {
-    @apply flex touch-none select-none transition-colors bg-muted/10 hover:bg-muted/20;
+    @apply flex touch-none select-none transition-colors;
+    background-color: rgba(0, 0, 0, 0.05);
   }
 
   .matrix-container [data-radix-scroll-area-thumb] {
-    @apply relative flex-1 rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/40 transition-colors;
+    @apply relative flex-1 rounded-full transition-colors;
+    background-color: rgba(0, 0, 0, 0.2);
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-    @apply h-full w-2.5 border-l border-l-transparent p-[1px];
+    @apply w-2.5 border-l border-l-transparent p-[1px];
+    height: 100%;
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
     @apply h-2.5 flex-col border-t border-t-transparent p-[1px];
   }
 
-  /* Ensure sticky elements maintain proper z-index and background */
+  /* Sticky header and first column styles */
   .matrix-container thead tr th {
+    @apply bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
     position: sticky;
     top: 0;
     z-index: 20;
   }
 
   .matrix-container tbody tr th:first-child {
+    @apply bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
     position: sticky;
     left: 0;
     z-index: 10;
   }
 
   .matrix-container thead tr th:first-child {
+    @apply bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
+    position: sticky;
+    left: 0;
     z-index: 30;
   }
 }
