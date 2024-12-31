@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import * as XLSX from 'https://deno.land/x/xlsx@v0.0.2/mod.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -15,9 +16,8 @@ serve(async (req) => {
   }
 
   try {
-    const { projectId, files } = await req.json();
-    console.log('Processing request for project:', projectId);
-    console.log('Files to analyze:', files);
+    const { files } = await req.json();
+    console.log('Processing files:', files);
 
     if (!files || !Array.isArray(files) || files.length === 0) {
       throw new Error('No files provided for analysis');
@@ -32,95 +32,60 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
 
-    const fileContent = await response.text();
-    console.log('File content loaded successfully');
+    const arrayBuffer = await response.arrayBuffer();
+    console.log('File downloaded successfully');
 
-    // Process with OpenAI
-    console.log('Sending to OpenAI for analysis...');
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a data analysis assistant that calculates Pearson correlation coefficients between numerical columns in datasets.
+    // Parse Excel file
+    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-Your response must be ONLY a valid JSON object with this exact structure:
-{
-  "correlationMatrix": {
-    "column1": {
-      "column2": number,
-      "column3": number
-    },
-    "column2": {
-      "column3": number
-    }
-  },
-  "mappings": {}
-}
+    console.log('Parsed Excel data:', jsonData);
 
-Rules:
-1. Only analyze numerical columns
-2. All correlation values must be between -1 and 1
-3. Return symmetric correlations (if A to B is 0.5, B to A is also 0.5)
-4. Include self-correlations (always 1.0)
-5. Do not include any explanatory text
-6. Return only valid JSON`
-          },
-          {
-            role: 'user',
-            content: `Calculate the correlation matrix for this data:\n\n${fileContent}`
-          }
-        ],
-        temperature: 0,
-      }),
+    // Extract numerical columns
+    const numericalData: Record<string, number[]> = {};
+    const headers = Object.keys(jsonData[0] || {});
+
+    headers.forEach(header => {
+      const values = jsonData.map(row => row[header]);
+      if (values.every(value => typeof value === 'number' || !isNaN(Number(value)))) {
+        numericalData[header] = values.map(value => Number(value));
+      }
     });
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData}`);
-    }
+    console.log('Extracted numerical columns:', Object.keys(numericalData));
 
-    const openaiData = await openaiResponse.json();
-    console.log('Received OpenAI response:', JSON.stringify(openaiData));
+    // Calculate correlation matrix
+    const correlationMatrix: Record<string, Record<string, number>> = {};
+    const columns = Object.keys(numericalData);
 
-    if (!openaiData.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenAI');
-    }
+    columns.forEach(col1 => {
+      correlationMatrix[col1] = {};
+      columns.forEach(col2 => {
+        const values1 = numericalData[col1];
+        const values2 = numericalData[col2];
+        
+        // Calculate Pearson correlation coefficient
+        const mean1 = values1.reduce((a, b) => a + b) / values1.length;
+        const mean2 = values2.reduce((a, b) => a + b) / values2.length;
+        
+        const variance1 = values1.reduce((a, b) => a + Math.pow(b - mean1, 2), 0);
+        const variance2 = values2.reduce((a, b) => a + Math.pow(b - mean2, 2), 0);
+        
+        const covariance = values1.reduce((a, b, i) => a + (b - mean1) * (values2[i] - mean2), 0);
+        
+        const correlation = covariance / Math.sqrt(variance1 * variance2);
+        correlationMatrix[col1][col2] = Number(correlation.toFixed(4));
+      });
+    });
 
-    // Parse and validate the response
-    let analysis;
-    try {
-      const content = openaiData.choices[0].message.content.trim();
-      console.log('Attempting to parse OpenAI content:', content);
-      analysis = JSON.parse(content);
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', openaiData.choices[0].message.content);
-      throw new Error('Failed to parse analysis results');
-    }
+    console.log('Calculated correlation matrix:', correlationMatrix);
 
-    // Validate the analysis structure
-    if (!analysis.correlationMatrix || typeof analysis.correlationMatrix !== 'object') {
-      console.error('Invalid analysis structure:', analysis);
-      throw new Error('Analysis results missing correlationMatrix');
-    }
-
-    // Validate correlation values
-    for (const col1 in analysis.correlationMatrix) {
-      for (const col2 in analysis.correlationMatrix[col1]) {
-        const value = analysis.correlationMatrix[col1][col2];
-        if (typeof value !== 'number' || value < -1 || value > 1) {
-          console.error(`Invalid correlation value for ${col1}-${col2}:`, value);
-          throw new Error(`Invalid correlation value: ${value}`);
-        }
-      }
-    }
+    // Prepare the analysis results
+    const analysis = {
+      correlationMatrix,
+      mappings: {} // Keep mappings empty for now
+    };
 
     // Save results to Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -135,7 +100,7 @@ Rules:
         'Prefer': 'return=minimal',
       },
       body: JSON.stringify({
-        project_id: projectId,
+        project_id: files[0].project_id,
         results: analysis,
       }),
     });
