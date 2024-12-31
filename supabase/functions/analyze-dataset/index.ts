@@ -13,10 +13,13 @@ serve(async (req) => {
 
   try {
     const { fileUrl, projectId } = await req.json()
+    console.log('Processing analysis for project:', projectId)
+    console.log('File URL:', fileUrl)
 
     // Download file content from Supabase Storage
     const response = await fetch(fileUrl)
     const fileContent = await response.text()
+    console.log('File content loaded successfully')
 
     // Initialize OpenAI
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -26,32 +29,57 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: `You are a data analysis assistant. You will:
-              1. Read the dataset
-              2. Convert any text columns to numerical representations
-              3. Calculate a Pearson Correlation Matrix
-              4. Return the results in a specific JSON format`
+            content: `You are a data analysis assistant. Analyze the provided dataset and return a JSON object with:
+              1. A correlation matrix showing relationships between numerical variables
+              2. Mappings of any text values to numerical representations
+              
+              The response must be a valid JSON object with exactly this structure:
+              {
+                "correlationMatrix": {
+                  "variable1": {
+                    "variable2": number,
+                    ...
+                  },
+                  ...
+                },
+                "mappings": {
+                  "columnName": {
+                    "textValue": number,
+                    ...
+                  },
+                  ...
+                }
+              }`
           },
           {
             role: 'user',
-            content: `Analyze this dataset and return a JSON object with:
-              1. The processed dataset with text columns converted to numerical values
-              2. The correlation matrix
-              3. A mapping of text values to numbers for each converted column
+            content: `Analyze this dataset and return the JSON object as specified:
               
-              Dataset:
               ${fileContent}`
           }
         ],
       }),
     })
 
+    if (!openaiResponse.ok) {
+      const errorData = await openaiResponse.text()
+      console.error('OpenAI API error:', errorData)
+      throw new Error(`OpenAI API error: ${errorData}`)
+    }
+
     const gptResult = await openaiResponse.json()
+    console.log('OpenAI response received:', gptResult)
+
+    if (!gptResult.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from OpenAI')
+    }
+
     const analysis = JSON.parse(gptResult.choices[0].message.content)
+    console.log('Parsed analysis:', analysis)
 
     // Save results to Supabase
     const supabase = createClient(
@@ -67,14 +95,17 @@ serve(async (req) => {
         created_at: new Date().toISOString()
       })
 
-    if (dbError) throw dbError
+    if (dbError) {
+      console.error('Database error:', dbError)
+      throw dbError
+    }
 
     return new Response(
       JSON.stringify({ success: true, analysis }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in analyze-dataset function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
