@@ -59,36 +59,37 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a data analysis assistant. Analyze the provided dataset and return ONLY a JSON object with:
-              1. A correlation matrix showing relationships between numerical variables
-              2. Mappings of any text values to numerical representations
-              
-              The response must be ONLY a valid JSON object with exactly this structure:
-              {
-                "correlationMatrix": {
-                  "variable1": {
-                    "variable2": number,
-                    ...
-                  },
-                  ...
-                },
-                "mappings": {
-                  "columnName": {
-                    "textValue": number,
-                    ...
-                  },
-                  ...
-                }
-              }
-              
-              Do not include any explanatory text or markdown formatting. Return only the JSON object.`
+            content: `You are a data analysis assistant specialized in correlation analysis. Your task is to:
+
+1. Identify all numerical columns in the dataset
+2. Calculate the Pearson correlation coefficient between each pair of numerical variables
+3. Return ONLY a JSON object with the correlation matrix and any text-to-number mappings used
+
+The response must be ONLY a valid JSON object with this exact structure:
+{
+  "correlationMatrix": {
+    "variable1": {
+      "variable2": number,  // correlation coefficient between -1 and 1
+      ...
+    },
+    ...
+  },
+  "mappings": {
+    "columnName": {
+      "textValue": number,
+      ...
+    }
+  }
+}
+
+Do not include any explanatory text, markdown, or additional information. Return only the JSON object.`
           },
           {
             role: 'user',
-            content: `Analyze this dataset and return the JSON object as specified:\n\n${fileContent}`
+            content: `Analyze this dataset and calculate the correlation matrix:\n\n${fileContent}`
           }
         ],
-        temperature: 0.1, // Lower temperature for more consistent, structured output
+        temperature: 0.1, // Lower temperature for more consistent output
       }),
     });
 
@@ -115,10 +116,21 @@ serve(async (req) => {
       throw new Error('Failed to parse analysis results as JSON');
     }
 
-    // Validate the analysis structure
+    // Validate the analysis structure and correlation values
     if (!analysis.correlationMatrix || !analysis.mappings) {
       console.error('Invalid analysis structure:', analysis);
       throw new Error('Analysis results do not match expected structure');
+    }
+
+    // Validate correlation values are between -1 and 1
+    for (const variable in analysis.correlationMatrix) {
+      for (const corr in analysis.correlationMatrix[variable]) {
+        const value = analysis.correlationMatrix[variable][corr];
+        if (typeof value !== 'number' || value < -1 || value > 1) {
+          console.error('Invalid correlation value:', value);
+          throw new Error('Correlation values must be numbers between -1 and 1');
+        }
+      }
     }
 
     // Save results to Supabase
