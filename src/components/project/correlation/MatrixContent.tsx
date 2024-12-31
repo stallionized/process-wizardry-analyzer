@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CorrelationCell } from './CorrelationCell';
 
@@ -13,10 +13,73 @@ const truncateText = (text: string, maxLength: number = 20) => {
 
 export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
   const variables = Object.keys(correlationMatrix);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!scrollContainerRef.current) return;
+
+      const scrollAmount = 40; // Adjust scroll amount as needed
+      const container = scrollContainerRef.current;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          container.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'ArrowDown':
+          container.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'ArrowLeft':
+          container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'ArrowRight':
+          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'PageUp':
+          container.scrollBy({ top: -container.clientHeight, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'PageDown':
+          container.scrollBy({ top: container.clientHeight, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'Home':
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'End':
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+      }
+    };
+
+    // Add event listener when the component mounts
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('keydown', handleKeyDown);
+      // Make the container focusable
+      container.tabIndex = 0;
+    }
+
+    // Clean up event listener when component unmounts
+    return () => {
+      if (container) {
+        container.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+  }, []);
 
   return (
     <div className="matrix-container">
-      <div className="matrix-scroll-area">
+      <div 
+        ref={scrollContainerRef}
+        className="matrix-scroll-area focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+      >
         <Table>
           <TableHeader>
             <TableRow>

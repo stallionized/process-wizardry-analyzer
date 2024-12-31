@@ -55,20 +55,25 @@
 
   .matrix-scroll-area {
     @apply h-full overflow-auto;
+    /* Show both scrollbars */
+    overflow: auto;
+    /* Custom scrollbar styling */
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+    scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
   }
 
+  /* Webkit scrollbar styling */
   .matrix-scroll-area::-webkit-scrollbar {
     @apply w-2 h-2;
+    display: block;
   }
 
   .matrix-scroll-area::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    @apply bg-transparent rounded-full;
   }
 
   .matrix-scroll-area::-webkit-scrollbar-thumb {
-    @apply bg-secondary/30 rounded-full hover:bg-secondary/50 transition-colors;
+    @apply bg-secondary/50 rounded-full hover:bg-secondary/70 transition-colors;
   }
 
   .matrix-header {
@@ -76,7 +81,8 @@
   }
 
   .matrix-first-column {
-    @apply sticky left-0 z-10 bg-background shadow-sm;
+    @apply sticky left-0 z-10 shadow-sm;
+    background-color: hsl(var(--background));
   }
 
   /* Dialog-specific styles */
