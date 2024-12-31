@@ -49,11 +49,11 @@
 
 @layer components {
   .matrix-container {
-    @apply relative overflow-hidden;
+    @apply relative;
   }
   
   .matrix-container [data-radix-scroll-area-viewport] {
-    @apply overflow-visible !important;
+    @apply overflow-auto !important;
   }
 
   /* Dialog-specific styles for the matrix */
