@@ -49,7 +49,7 @@
 
 @layer components {
   .matrix-container {
-    @apply relative;
+    @apply relative overflow-hidden;
   }
   
   .matrix-container [data-radix-scroll-area-viewport] {
@@ -67,32 +67,35 @@
 
   /* Ensure scrollbars are visible and styled properly */
   .matrix-container [data-radix-scroll-area-scrollbar] {
-    @apply flex touch-none select-none;
-    background-color: transparent;
-    transition: background-color 160ms ease-out;
+    display: flex;
+    touch-action: none;
+    user-select: none;
+    background: rgba(0, 0, 0, 0.05);
+    transition: background 160ms ease-out;
+    padding: 2px;
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar]:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.1);
   }
 
   .matrix-container [data-radix-scroll-area-thumb] {
-    @apply relative flex-1 rounded-full;
-    background-color: rgba(0, 0, 0, 0.2);
-    transition: background-color 160ms ease-out;
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 9999px;
+    position: relative;
   }
 
   .matrix-container [data-radix-scroll-area-thumb]:hover {
-    background-color: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.3);
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
     width: 12px;
-    padding: 2px;
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
+    flex-direction: column;
     height: 12px;
-    padding: 2px;
   }
 }
