@@ -50,11 +50,11 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-20 bg-background sticky left-0 z-10">Variables</TableHead>
+                  <TableHead className="w-32 bg-background sticky left-0 z-10">Variables</TableHead>
                   {variables.map((variable) => (
                     <TableHead 
                       key={variable} 
-                      className="w-12 px-1 text-center h-32"
+                      className="w-32 px-1 text-center h-32"
                     >
                       <div className="transform -rotate-90 origin-center whitespace-nowrap">
                         {variable}
@@ -66,7 +66,7 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
               <TableBody>
                 {variables.map((variable1) => (
                   <TableRow key={variable1}>
-                    <TableCell className="font-medium w-20 bg-background sticky left-0">
+                    <TableCell className="font-medium w-32 bg-background sticky left-0">
                       {variable1}
                     </TableCell>
                     {variables.map((variable2) => {
@@ -78,9 +78,9 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
                           key={`${variable1}-${variable2}`}
                           style={{
                             backgroundColor: getCorrelationColor(correlation),
-                            width: '3rem',
-                            maxWidth: '3rem',
-                            minWidth: '3rem',
+                            width: '8rem',
+                            maxWidth: '8rem',
+                            minWidth: '8rem',
                           }}
                           className="text-center font-bold text-sm py-2 px-1"
                         >
