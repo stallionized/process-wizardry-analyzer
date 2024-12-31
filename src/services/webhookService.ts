@@ -6,20 +6,23 @@ interface FileData {
 
 export const sendFilesToWebhook = async (projectId: string, files: FileData[]) => {
   // Skip webhook call if URL is not configured
-  const WEBHOOK_URL = 'https://hook.us1.make.com/54vxfeqcuks6v5o1yxl2bieb8i97lfnq';
+  const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || '';
   if (!WEBHOOK_URL) {
     console.log('No webhook URL configured, skipping webhook call');
     return true;
   }
 
   try {
+    // Format data according to Make.com webhook requirements
     const webhookData = {
-      projectId,
-      files: files.map(file => ({
-        id: file.id,
-        name: file.name,
-        url: file.url
-      }))
+      data: {
+        projectId,
+        files: files.map(file => ({
+          id: file.id,
+          name: file.name,
+          url: file.url
+        }))
+      }
     };
 
     const response = await fetch(WEBHOOK_URL, {
