@@ -33,6 +33,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
             name: file.name,
             type: file.type,
             url: publicUrl,
+            isNew: !file.created_at,
           };
         })
       );
@@ -106,6 +107,21 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     },
   });
 
+  const submitFilesMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('files')
+        .update({ created_at: new Date().toISOString() })
+        .eq('project_id', projectId)
+        .is('created_at', null);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files', projectId] });
+    },
+  });
+
   if (isLoadingFiles) {
     return <div>Loading files...</div>;
   }
@@ -115,6 +131,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       files={files}
       onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
       onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
+      onSubmit={() => submitFilesMutation.mutate()}
     />
   );
 };
