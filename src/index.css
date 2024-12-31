@@ -49,11 +49,12 @@
 
 @layer components {
   .matrix-container {
-    @apply relative overflow-hidden;
+    @apply relative;
   }
   
   .matrix-container [data-radix-scroll-area-viewport] {
     @apply overflow-auto;
+    width: 100% !important;
   }
 
   /* Dialog-specific styles for the matrix */
@@ -70,24 +71,15 @@
     display: flex;
     touch-action: none;
     user-select: none;
-    background: rgba(0, 0, 0, 0.05);
-    transition: background 160ms ease-out;
     padding: 2px;
-  }
-
-  .matrix-container [data-radix-scroll-area-scrollbar]:hover {
     background: rgba(0, 0, 0, 0.1);
   }
 
   .matrix-container [data-radix-scroll-area-thumb] {
     flex: 1;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 9999px;
     position: relative;
-  }
-
-  .matrix-container [data-radix-scroll-area-thumb]:hover {
-    background: rgba(0, 0, 0, 0.3);
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
