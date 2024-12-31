@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import FileUpload from '@/components/FileUpload';
-import { Trash2, File } from 'lucide-react';
+import { Trash2, File, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -30,9 +30,10 @@ interface FileUploadTabProps {
   onUpload: (files: File[], fileType: string) => void;
   onDelete: (fileId: string) => void;
   onSubmit?: () => void;
+  isLoading?: boolean;
 }
 
-const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabProps) => {
+const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading }: FileUploadTabProps) => {
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
     onUpload(uploadedFiles, fileType);
   };
@@ -43,6 +44,17 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabPro
   };
 
   const hasNewFiles = files.some(file => file.isNew);
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 flex items-center justify-center min-h-[200px]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading files...</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -57,7 +69,10 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabPro
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-4">
               {files.map((file) => (
-                <div key={file.id} className="flex items-center justify-between p-3 bg-muted rounded-lg animate-scale-in">
+                <div 
+                  key={file.id} 
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg animate-scale-in hover:bg-muted/80 transition-colors"
+                >
                   <div className="flex items-center space-x-3">
                     <File className="h-5 w-5 text-muted-foreground" />
                     <div>
@@ -76,18 +91,18 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabPro
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">Type: {file.type}</p>
+                      <p className="text-sm text-muted-foreground capitalize">Type: {file.type.replace('-', ' ')}</p>
                     </div>
                   </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                         <Trash2 className="h-5 w-5" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete File</AlertDialogTitle>
                         <AlertDialogDescription>
                           This will permanently delete this file and all related results and analyses.
                           This action cannot be undone.
@@ -110,8 +125,19 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit }: FileUploadTabPro
           </ScrollArea>
           {hasNewFiles && (
             <div className="mt-4">
-              <Button onClick={handleSubmit} className="w-full">
-                Submit Files
+              <Button 
+                onClick={handleSubmit} 
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Files'
+                )}
               </Button>
             </div>
           )}
