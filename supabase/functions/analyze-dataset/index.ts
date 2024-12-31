@@ -43,7 +43,7 @@ serve(async (req) => {
     const fileContent = await response.text();
     console.log('File content loaded, length:', fileContent.length);
 
-    // Process with OpenAI
+    // Process with OpenAI using gpt-4o model
     console.log('Sending to OpenAI for analysis using gpt-4o model...');
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
