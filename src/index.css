@@ -53,7 +53,7 @@
   }
   
   .matrix-container [data-radix-scroll-area-viewport] {
-    @apply overflow-auto !important;
+    @apply overflow-auto;
   }
 
   /* Dialog-specific styles for the matrix */
@@ -67,8 +67,8 @@
 
   /* Ensure scrollbars are visible and styled properly */
   .matrix-container [data-radix-scroll-area-scrollbar] {
-    @apply flex touch-none select-none;
-    background-color: rgba(0, 0, 0, 0.05);
+    @apply flex touch-none select-none p-0.5;
+    background-color: transparent;
     transition: background-color 160ms ease-out;
   }
 
@@ -87,15 +87,11 @@
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-    width: 12px;
-    padding: 2px;
-    height: 100%;
+    width: 10px;
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
-    height: 12px;
-    padding: 2px;
-    width: 100%;
+    height: 10px;
   }
 
   /* Sticky header and first column styles */
