@@ -17,20 +17,25 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
 
   return (
     <div className="matrix-container border rounded-lg relative">
-      <ScrollArea className="h-[500px] w-full overflow-auto" type="scroll">
+      <ScrollArea className="h-[500px] w-full" type="scroll">
         <div className="min-w-max">
           <Table>
             <TableHeader>
-              <TableRow className="sticky top-0 z-20">
+              <TableRow>
+                {/* Top-left corner cell - needs to be sticky in both directions */}
                 <TableHead 
-                  className="w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                  className="w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 
+                            sticky left-0 z-30 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                 >
                   Variables
                 </TableHead>
+                {/* Header row cells - sticky top */}
                 {variables.map((variable) => (
                   <TableHead 
                     key={variable} 
-                    className="w-32 px-2 text-left whitespace-normal min-w-[8rem] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+                    className="w-32 px-2 text-left whitespace-normal min-w-[8rem] 
+                              sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
+                              z-20"
                     title={variable}
                   >
                     <div className="max-w-[8rem] break-words">
@@ -42,15 +47,18 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableHeader>
             <TableBody>
               {variables.map((variable1) => (
-                <TableRow key={variable1} className="relative">
+                <TableRow key={variable1}>
+                  {/* First column cells - sticky left */}
                   <TableHead 
-                    className="font-medium w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                    className="font-medium w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 
+                              sticky left-0 z-10 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                     title={variable1}
                   >
                     <div className="max-w-[12rem] break-words">
                       {truncateText(variable1)}
                     </div>
                   </TableHead>
+                  {/* Data cells */}
                   {variables.map((variable2) => (
                     <CorrelationCell
                       key={`${variable1}-${variable2}`}
@@ -62,8 +70,8 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableBody>
           </Table>
         </div>
-        <ScrollBar orientation="horizontal" className="h-2.5" />
-        <ScrollBar orientation="vertical" className="w-2.5" />
+        <ScrollBar orientation="horizontal" />
+        <ScrollBar orientation="vertical" />
       </ScrollArea>
     </div>
   );

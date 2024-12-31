@@ -81,4 +81,21 @@
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
     @apply h-2.5 flex-col border-t border-t-transparent p-[1px];
   }
+
+  /* Ensure sticky elements maintain proper z-index and background */
+  .matrix-container thead tr th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .matrix-container tbody tr th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+  }
+
+  .matrix-container thead tr th:first-child {
+    z-index: 30;
+  }
 }
