@@ -38,7 +38,7 @@ serve(async (req) => {
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-    console.log('Parsed Excel data:', jsonData);
+    console.log('Parsed Excel data rows:', jsonData.length);
 
     // Extract numerical columns
     const numericalData: Record<string, number[]> = {};
@@ -77,7 +77,7 @@ serve(async (req) => {
       });
     });
 
-    console.log('Calculated correlation matrix:', correlationMatrix);
+    console.log('Calculated correlation matrix');
 
     // Prepare the analysis results
     const analysis = {
@@ -90,8 +90,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase configuration');
       throw new Error('Missing Supabase configuration');
     }
+
+    console.log('Saving analysis results for project:', files[0].project_id);
 
     const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
       method: 'POST',
@@ -108,10 +111,12 @@ serve(async (req) => {
     });
 
     if (!supabaseResponse.ok) {
-      const supabaseError = await supabaseResponse.text();
-      console.error('Failed to save analysis results:', supabaseError);
-      throw new Error('Failed to save analysis results');
+      const errorText = await supabaseResponse.text();
+      console.error('Supabase error response:', errorText);
+      throw new Error(`Failed to save analysis results: ${errorText}`);
     }
+
+    console.log('Analysis results saved successfully');
 
     return new Response(
       JSON.stringify({ success: true, analysis }),
@@ -120,7 +125,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in analyze-dataset function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
