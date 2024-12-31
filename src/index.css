@@ -55,6 +55,7 @@
   .matrix-container [data-radix-scroll-area-viewport] {
     @apply overflow-auto;
     width: 100% !important;
+    height: 100% !important;
   }
 
   /* Dialog-specific styles for the matrix */
@@ -68,16 +69,17 @@
 
   /* Ensure scrollbars are visible and styled properly */
   .matrix-container [data-radix-scroll-area-scrollbar] {
-    display: flex;
+    display: flex !important;
     touch-action: none;
     user-select: none;
     padding: 2px;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
   }
 
   .matrix-container [data-radix-scroll-area-thumb] {
     flex: 1;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 9999px;
     position: relative;
   }
