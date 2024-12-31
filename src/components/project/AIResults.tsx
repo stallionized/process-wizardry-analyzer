@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { AnalysisResults } from '@/types';
 import {
   ScatterChart,
   Scatter,
@@ -30,7 +31,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         .single();
 
       if (error) throw error;
-      return data?.results;
+      return data?.results as AnalysisResults;
     },
   });
 
@@ -71,7 +72,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
 
   // Convert correlation matrix to scatter plot data
   const scatterData = Object.entries(correlationMatrix).flatMap(([variable1, correlations]) =>
-    Object.entries(correlations as Record<string, number>).map(([variable2, correlation]) => ({
+    Object.entries(correlations).map(([variable2, correlation]) => ({
       x: variable1,
       y: variable2,
       correlation: Number(correlation.toFixed(2)),
@@ -119,7 +120,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           </div>
         </div>
 
-        {Object.keys(mappings || {}).length > 0 && (
+        {Object.keys(mappings).length > 0 && (
           <div>
             <h3 className="text-lg font-medium mb-3">Variable Mappings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,7 +128,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
                 <div key={column} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                   <h4 className="font-medium mb-2">{column}</h4>
                   <div className="space-y-1">
-                    {Object.entries(mapping as Record<string, number>).map(([text, value]) => (
+                    {Object.entries(mapping).map(([text, value]) => (
                       <div key={text} className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{text}:</span>
                         <span>{value}</span>

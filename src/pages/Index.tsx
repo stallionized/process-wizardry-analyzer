@@ -36,6 +36,9 @@ const Index = () => {
     toast.success('File deleted successfully');
   };
 
+  // Create a temporary project ID for demo purposes
+  const demoProjectId = "demo-project";
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="space-y-2">
@@ -81,7 +84,7 @@ const Index = () => {
         </TabsContent>
 
         <TabsContent value="results">
-          <AIResults />
+          <AIResults projectId={demoProjectId} />
         </TabsContent>
       </Tabs>
     </div>
