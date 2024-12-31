@@ -16,11 +16,11 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
   const variables = Object.keys(correlationMatrix);
 
   return (
-    <div className="border rounded-lg">
-      <ScrollArea className="h-[500px]" type="always">
-        <div className="min-w-max">
+    <div className="border rounded-lg relative">
+      <ScrollArea className="h-[500px] w-full" type="always">
+        <div className="min-w-max overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-20 bg-background">
               <TableRow>
                 <TableHead className="w-48 bg-background sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                   Variables
@@ -60,7 +60,8 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableBody>
           </Table>
         </div>
-        <ScrollBar orientation="horizontal" />
+        <ScrollBar orientation="horizontal" className="h-3" />
+        <ScrollBar orientation="vertical" />
       </ScrollArea>
     </div>
   );

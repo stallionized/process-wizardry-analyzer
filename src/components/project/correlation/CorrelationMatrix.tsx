@@ -121,7 +121,7 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
           <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-6">
             <div className="h-full flex flex-col">
               <h2 className="text-xl font-semibold mb-4">Correlation Matrix</h2>
-              <div className="flex-1 overflow-auto">
+              <div className="flex-1 overflow-hidden">
                 <MatrixContent correlationMatrix={correlationMatrix} />
                 <GradientKey />
               </div>
