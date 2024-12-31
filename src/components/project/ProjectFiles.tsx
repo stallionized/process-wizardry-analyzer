@@ -34,7 +34,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
             name: file.name,
             type: file.type,
             url: publicUrl,
-            isNew: !file.created_at,
+            isNew: file.created_at === null,
           };
         })
       );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,7 +27,7 @@ interface UploadedFile {
 
 interface FileUploadTabProps {
   files: UploadedFile[];
-  onUpload: (uploadedFiles: File[], fileType: string) => void;
+  onUpload: (files: File[], fileType: string) => void;
   onDelete: (fileId: string) => void;
   onSubmit?: () => void;
 }
