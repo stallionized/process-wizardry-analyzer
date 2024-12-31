@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { CorrelationCell } from './CorrelationCell';
 
 interface MatrixContentProps {
@@ -16,19 +16,19 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
   const variables = Object.keys(correlationMatrix);
 
   return (
-    <div className="matrix-container border rounded-lg">
-      <ScrollArea className="h-[500px]" type="always">
+    <div className="relative border rounded-lg">
+      <ScrollArea className="h-[500px] w-full" type="always">
         <div className="min-w-max">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
-                <TableHead className="w-48 border-r bg-background">
+                <TableHead className="sticky left-0 z-20 w-48 min-w-[12rem] bg-background border-r">
                   Variables
                 </TableHead>
                 {variables.map((variable) => (
                   <TableHead 
                     key={variable} 
-                    className="w-32 px-2 text-left whitespace-normal min-w-[8rem] bg-background"
+                    className="px-2 text-left whitespace-normal min-w-[8rem]"
                     title={variable}
                   >
                     <div className="max-w-[8rem] break-words">
@@ -42,7 +42,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
               {variables.map((variable1) => (
                 <TableRow key={variable1}>
                   <TableHead 
-                    className="font-medium w-48 border-r bg-background"
+                    className="sticky left-0 z-10 font-medium w-48 min-w-[12rem] bg-background border-r"
                     title={variable1}
                   >
                     <div className="max-w-[12rem] break-words">
@@ -60,6 +60,8 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableBody>
           </Table>
         </div>
+        <ScrollBar orientation="horizontal" className="bg-secondary" />
+        <ScrollBar orientation="vertical" className="bg-secondary" />
       </ScrollArea>
     </div>
   );
