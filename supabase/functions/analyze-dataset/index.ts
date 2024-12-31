@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -26,7 +25,6 @@ serve(async (req) => {
       throw new Error('Project ID is required');
     }
 
-    // Download and process the first file
     const fileUrl = files[0].url;
     console.log('Downloading file from:', fileUrl);
 
@@ -38,7 +36,6 @@ serve(async (req) => {
     const arrayBuffer = await response.arrayBuffer();
     console.log('File downloaded successfully');
 
-    // Parse Excel file
     const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
@@ -49,36 +46,45 @@ serve(async (req) => {
       throw new Error('No data found in Excel file');
     }
 
-    // Extract numerical columns
+    // Extract columns and prepare data for correlation
+    const columns = Object.keys(jsonData[0] || {});
     const numericalData: Record<string, number[]> = {};
-    const headers = Object.keys(jsonData[0] || {});
+    const categoricalMappings: Record<string, Record<string, number>> = {};
 
-    headers.forEach(header => {
-      const values = jsonData.map(row => {
-        const value = row[header];
-        // Check if the value can be converted to a number
-        return typeof value === 'number' ? value : 
-               typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : NaN;
-      });
+    // Process each column
+    columns.forEach(column => {
+      const values = jsonData.map(row => row[column]);
+      
+      // Check if column contains numerical data
+      const isNumerical = values.every(value => 
+        typeof value === 'number' || 
+        (typeof value === 'string' && !isNaN(parseFloat(value.replace(/[^0-9.-]/g, ''))))
+      );
 
-      // Only include columns where all values are valid numbers
-      if (values.every(value => !isNaN(value))) {
-        numericalData[header] = values;
-        console.log(`Found numerical column: ${header} with ${values.length} values`);
+      if (isNumerical) {
+        // Convert to numbers
+        numericalData[column] = values.map(value => 
+          typeof value === 'number' ? value : parseFloat(value.replace(/[^0-9.-]/g, ''))
+        );
+      } else {
+        // Create mapping for categorical data
+        const uniqueValues = [...new Set(values)];
+        const mapping: Record<string, number> = {};
+        uniqueValues.forEach((value, index) => {
+          mapping[value] = index;
+        });
+        categoricalMappings[column] = mapping;
+        numericalData[column] = values.map(value => mapping[value]);
       }
     });
 
-    if (Object.keys(numericalData).length === 0) {
-      throw new Error('No numerical columns found in the Excel file');
-    }
-
     // Calculate correlation matrix
     const correlationMatrix: Record<string, Record<string, number>> = {};
-    const columns = Object.keys(numericalData);
+    const columns2 = Object.keys(numericalData);
 
-    columns.forEach(col1 => {
+    columns2.forEach(col1 => {
       correlationMatrix[col1] = {};
-      columns.forEach(col2 => {
+      columns2.forEach(col2 => {
         const values1 = numericalData[col1];
         const values2 = numericalData[col2];
         
@@ -106,12 +112,10 @@ serve(async (req) => {
     });
 
     console.log('Correlation matrix calculated successfully');
-    console.log('Number of variables:', columns.length);
 
-    // Prepare the analysis results
     const analysis = {
       correlationMatrix,
-      mappings: {} // Keep mappings empty for now
+      mappings: categoricalMappings
     };
 
     // Save results to Supabase
@@ -119,7 +123,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase configuration');
       throw new Error('Missing Supabase configuration');
     }
 
@@ -141,7 +144,6 @@ serve(async (req) => {
 
     if (!supabaseResponse.ok) {
       const errorText = await supabaseResponse.text();
-      console.error('Supabase error response:', errorText);
       throw new Error(`Failed to save analysis results: ${errorText}`);
     }
 
