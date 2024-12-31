@@ -22,15 +22,13 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead 
-                  className="sticky left-0 top-0 z-30 w-48 border-r bg-background"
-                >
+                <TableHead className="w-48 border-r bg-background">
                   Variables
                 </TableHead>
                 {variables.map((variable) => (
                   <TableHead 
                     key={variable} 
-                    className="sticky top-0 z-20 w-32 px-2 text-left whitespace-normal min-w-[8rem] bg-background"
+                    className="w-32 px-2 text-left whitespace-normal min-w-[8rem] bg-background"
                     title={variable}
                   >
                     <div className="max-w-[8rem] break-words">
@@ -44,7 +42,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
               {variables.map((variable1) => (
                 <TableRow key={variable1}>
                   <TableHead 
-                    className="sticky left-0 z-10 font-medium w-48 border-r bg-background"
+                    className="font-medium w-48 border-r bg-background"
                     title={variable1}
                   >
                     <div className="max-w-[12rem] break-words">
