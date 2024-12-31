@@ -49,49 +49,38 @@
 
 @layer components {
   .matrix-container {
-    @apply relative overflow-hidden;
-    width: 100%;
+    @apply relative overflow-hidden border rounded-lg;
     height: 500px;
   }
-  
-  .matrix-container [data-radix-scroll-area-viewport] {
-    @apply overflow-auto;
-    width: 100% !important;
-    height: 100% !important;
+
+  .matrix-scroll-area {
+    @apply h-full overflow-auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
   }
 
-  /* Dialog-specific styles for the matrix */
+  .matrix-scroll-area::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  .matrix-scroll-area::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .matrix-scroll-area::-webkit-scrollbar-thumb {
+    @apply bg-secondary/30 rounded-full hover:bg-secondary/50 transition-colors;
+  }
+
+  .matrix-header {
+    @apply sticky top-0 z-20 bg-background shadow-sm;
+  }
+
+  .matrix-first-column {
+    @apply sticky left-0 z-10 bg-background shadow-sm;
+  }
+
+  /* Dialog-specific styles */
   [role="dialog"] .matrix-container {
-    @apply h-full;
-  }
-
-  [role="dialog"] .matrix-container [data-radix-scroll-area-viewport] {
-    @apply h-full;
-  }
-
-  /* Ensure scrollbars are visible and styled properly */
-  .matrix-container [data-radix-scroll-area-scrollbar] {
-    display: flex !important;
-    touch-action: none;
-    user-select: none;
-    padding: 2px;
-    background: rgba(0, 0, 0, 0.3);
-    transition: background 160ms ease-out;
-  }
-
-  .matrix-container [data-radix-scroll-area-thumb] {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 9999px;
-    position: relative;
-  }
-
-  .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-    width: 12px;
-  }
-
-  .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
-    flex-direction: column;
-    height: 12px;
+    height: calc(90vh - 8rem);
   }
 }
