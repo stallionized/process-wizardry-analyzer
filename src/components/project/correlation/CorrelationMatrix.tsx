@@ -116,6 +116,11 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
   const variables = Object.keys(correlationMatrix);
   const correlationSummary = generateCorrelationSummary(correlationMatrix);
 
+  const truncateText = (text: string, maxLength: number = 20) => {
+    if (text.length <= maxLength) return text;
+    return `${text.substring(0, maxLength)}...`;
+  };
+
   return (
     <div>
       <h3 className="text-lg font-medium mb-3">Correlation Matrix</h3>
@@ -126,19 +131,22 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
       </Card>
 
       <div className="border rounded-lg">
-        <ScrollArea className="h-[500px] w-full">
+        <ScrollArea className="h-[500px] rounded-md" type="always">
           <div className="min-w-max">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-32 bg-background sticky left-0 z-10">Variables</TableHead>
+                  <TableHead className="w-48 bg-background sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    Variables
+                  </TableHead>
                   {variables.map((variable) => (
                     <TableHead 
                       key={variable} 
-                      className="w-32 px-1 text-center h-32"
+                      className="w-32 px-2 text-left whitespace-normal min-w-[8rem]"
+                      title={variable} // Show full text on hover
                     >
-                      <div className="transform -rotate-90 origin-center whitespace-nowrap">
-                        {variable}
+                      <div className="max-w-[8rem] break-words">
+                        {truncateText(variable)}
                       </div>
                     </TableHead>
                   ))}
@@ -147,8 +155,13 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
               <TableBody>
                 {variables.map((variable1) => (
                   <TableRow key={variable1}>
-                    <TableCell className="font-medium w-32 bg-background sticky left-0">
-                      {variable1}
+                    <TableCell 
+                      className="font-medium w-48 bg-background sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      title={variable1} // Show full text on hover
+                    >
+                      <div className="max-w-[12rem] break-words">
+                        {truncateText(variable1)}
+                      </div>
                     </TableCell>
                     {variables.map((variable2) => {
                       const correlation = correlationMatrix[variable1]?.[variable2] || 0;
