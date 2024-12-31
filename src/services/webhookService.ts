@@ -1,15 +1,12 @@
 import { FileData } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 export const sendFilesToWebhook = async (projectId: string, files: FileData[]) => {
-  const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || '';
-  if (!WEBHOOK_URL) {
-    console.log('No webhook URL configured, skipping webhook call');
-    return true;
-  }
-
+  console.log('Attempting to analyze files:', files);
+  
   try {
-    const webhookData = {
-      data: {
+    const response = await supabase.functions.invoke('analyze-dataset', {
+      body: {
         projectId,
         files: files.map(file => ({
           id: file.id,
@@ -17,24 +14,17 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
           url: file.url
         }))
       }
-    };
-
-    const response = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(webhookData),
     });
 
-    if (!response.ok) {
-      console.error('Webhook call failed:', await response.text());
+    if (!response.error) {
+      console.log('Analysis started successfully:', response.data);
+      return true;
+    } else {
+      console.error('Error starting analysis:', response.error);
       return false;
     }
-
-    return true;
   } catch (error) {
-    console.error('Error calling webhook:', error);
+    console.error('Error calling analysis function:', error);
     return false;
   }
 };

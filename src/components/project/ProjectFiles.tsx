@@ -131,14 +131,22 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     mutationFn: async () => {
       // Get all new dataset files
       const newDatasetFiles = files.filter(file => file.isNew && file.type === 'dataset');
+      console.log('New dataset files to process:', newDatasetFiles);
       
-      // Try to send new dataset files to webhook, but don't fail if webhook fails
-      if (newDatasetFiles.length > 0) {
-        const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
-        if (!webhookSuccess) {
-          console.warn('Webhook processing failed, but continuing with file submission');
-          toast.warning('Files submitted successfully. Processing may be delayed.');
-        }
+      if (newDatasetFiles.length === 0) {
+        console.log('No new dataset files to process');
+        return;
+      }
+
+      // Try to send new dataset files to webhook
+      const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
+      console.log('Webhook processing result:', webhookSuccess);
+
+      if (!webhookSuccess) {
+        console.warn('Webhook processing failed');
+        toast.warning('Files submitted. Analysis may be delayed.');
+      } else {
+        toast.success('Files submitted for analysis');
       }
 
       // Update all new files to mark them as no longer new
@@ -148,11 +156,17 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         .eq('project_id', projectId)
         .is('created_at', null);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating file status:', error);
+        throw error;
+      }
+
+      // Invalidate both files and analysis queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['files', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['analysis', projectId] });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
-      toast.success('Files submitted successfully');
     },
     onError: (error) => {
       console.error('Submit mutation error:', error);
@@ -170,6 +184,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
       onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
       onSubmit={() => submitFilesMutation.mutate()}
+      isLoading={submitFilesMutation.isPending}
     />
   );
 };
