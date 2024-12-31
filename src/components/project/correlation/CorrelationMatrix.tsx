@@ -9,11 +9,15 @@ interface CorrelationMatrixProps {
 const getCorrelationColor = (value: number) => {
   const intensity = Math.abs(value);
   if (value === 1) {
-    return '#004d00'; // Darker green for perfect correlation
+    return '#004d00'; // Dark green for perfect positive correlation
+  } else if (value === -1) {
+    return '#8b0000'; // Dark red for perfect negative correlation
   } else if (value > 0) {
-    return `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(200 * intensity)}, ${Math.round(255 * (1 - intensity))})`;
+    // Gradient from white to dark green
+    return `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity * 0.5))}, ${Math.round(255 * (1 - intensity))})`;
   } else {
-    return `rgb(${Math.round(200 * intensity)}, ${Math.round(255 * (1 + value))}, ${Math.round(255 * (1 + value))})`;
+    // Gradient from white to dark red
+    return `rgb(${Math.round(255 * (1 - intensity * 0.5))}, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))})`;
   }
 };
 
@@ -23,18 +27,21 @@ const getTextColor = (correlation: number) => {
 };
 
 const GradientKey = () => (
-  <div className="flex items-center gap-4 mt-4">
-    <div className="flex items-center gap-2">
-      <div className="h-4 w-12 rounded" style={{ 
-        background: 'linear-gradient(to right, rgb(200, 0, 0), rgb(255, 255, 255), rgb(0, 77, 0))'
-      }} />
-      <div className="flex justify-between w-full text-xs font-semibold">
-        <span>-1</span>
-        <span>0</span>
-        <span>1</span>
+  <div className="flex flex-col items-start gap-2 mt-6 ml-32">
+    <span className="text-sm font-medium">Correlation Strength</span>
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <div className="h-6 w-48 rounded" style={{ 
+          background: 'linear-gradient(to right, #8b0000, #ffffff, #004d00)',
+          border: '1px solid #e2e8f0'
+        }} />
+        <div className="flex justify-between w-48 text-xs font-medium">
+          <span>-1.0</span>
+          <span>0.0</span>
+          <span>1.0</span>
+        </div>
       </div>
     </div>
-    <span className="text-xs text-muted-foreground">Correlation Strength</span>
   </div>
 );
 
