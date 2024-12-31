@@ -40,18 +40,32 @@ serve(async (req) => {
 
     console.log('Parsed Excel data rows:', jsonData.length);
 
+    if (jsonData.length === 0) {
+      throw new Error('No data found in Excel file');
+    }
+
     // Extract numerical columns
     const numericalData: Record<string, number[]> = {};
     const headers = Object.keys(jsonData[0] || {});
 
     headers.forEach(header => {
-      const values = jsonData.map(row => row[header]);
-      if (values.every(value => typeof value === 'number' || !isNaN(Number(value)))) {
-        numericalData[header] = values.map(value => Number(value));
+      const values = jsonData.map(row => {
+        const value = row[header];
+        // Check if the value can be converted to a number
+        return typeof value === 'number' ? value : 
+               typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : NaN;
+      });
+
+      // Only include columns where all values are valid numbers
+      if (values.every(value => !isNaN(value))) {
+        numericalData[header] = values;
+        console.log(`Found numerical column: ${header} with ${values.length} values`);
       }
     });
 
-    console.log('Extracted numerical columns:', Object.keys(numericalData));
+    if (Object.keys(numericalData).length === 0) {
+      throw new Error('No numerical columns found in the Excel file');
+    }
 
     // Calculate correlation matrix
     const correlationMatrix: Record<string, Record<string, number>> = {};
@@ -63,21 +77,31 @@ serve(async (req) => {
         const values1 = numericalData[col1];
         const values2 = numericalData[col2];
         
-        // Calculate Pearson correlation coefficient
-        const mean1 = values1.reduce((a, b) => a + b) / values1.length;
-        const mean2 = values2.reduce((a, b) => a + b) / values2.length;
+        // Calculate mean
+        const mean1 = values1.reduce((a, b) => a + b, 0) / values1.length;
+        const mean2 = values2.reduce((a, b) => a + b, 0) / values2.length;
         
-        const variance1 = values1.reduce((a, b) => a + Math.pow(b - mean1, 2), 0);
-        const variance2 = values2.reduce((a, b) => a + Math.pow(b - mean2, 2), 0);
+        // Calculate covariance and variances
+        let covariance = 0;
+        let variance1 = 0;
+        let variance2 = 0;
         
-        const covariance = values1.reduce((a, b, i) => a + (b - mean1) * (values2[i] - mean2), 0);
+        for (let i = 0; i < values1.length; i++) {
+          const diff1 = values1[i] - mean1;
+          const diff2 = values2[i] - mean2;
+          covariance += diff1 * diff2;
+          variance1 += diff1 * diff1;
+          variance2 += diff2 * diff2;
+        }
         
+        // Calculate correlation coefficient
         const correlation = covariance / Math.sqrt(variance1 * variance2);
         correlationMatrix[col1][col2] = Number(correlation.toFixed(4));
       });
     });
 
-    console.log('Calculated correlation matrix');
+    console.log('Correlation matrix calculated successfully');
+    console.log('Number of variables:', columns.length);
 
     // Prepare the analysis results
     const analysis = {
