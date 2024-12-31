@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card } from '@/components/ui/card';
 
 interface CorrelationMatrixProps {
   correlationMatrix: Record<string, Record<string, number>>;
@@ -45,12 +46,57 @@ const GradientKey = () => (
   </div>
 );
 
+const generateCorrelationSummary = (correlationMatrix: Record<string, Record<string, number>>) => {
+  const significantCorrelations: { variables: [string, string]; correlation: number }[] = [];
+  const variables = Object.keys(correlationMatrix);
+
+  // Collect significant correlations (absolute value > 0.5)
+  variables.forEach((var1, i) => {
+    variables.slice(i + 1).forEach((var2) => {
+      const correlation = correlationMatrix[var1][var2];
+      if (Math.abs(correlation) > 0.5 && var1 !== var2) {
+        significantCorrelations.push({
+          variables: [var1, var2],
+          correlation,
+        });
+      }
+    });
+  });
+
+  // Sort by absolute correlation value
+  significantCorrelations.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+
+  if (significantCorrelations.length === 0) {
+    return "No significant correlations were found between variables (correlation > 0.5 or < -0.5).";
+  }
+
+  const correlationDescriptions = significantCorrelations.map(({ variables: [var1, var2], correlation }) => {
+    const strength = Math.abs(correlation) > 0.8 ? "strong" : "moderate";
+    const direction = correlation > 0 ? "positive" : "negative";
+    return `${var1} and ${var2} show a ${strength} ${direction} correlation (${correlation.toFixed(2)})`;
+  });
+
+  const topCorrelations = correlationDescriptions.slice(0, 3);
+  return `Key findings: ${topCorrelations.join('. ')}. ${
+    correlationDescriptions.length > 3
+      ? ` Plus ${correlationDescriptions.length - 3} other significant correlations found.`
+      : ''
+  }`;
+};
+
 export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps) => {
   const variables = Object.keys(correlationMatrix);
+  const correlationSummary = generateCorrelationSummary(correlationMatrix);
 
   return (
     <div>
       <h3 className="text-lg font-medium mb-3">Correlation Matrix</h3>
+      
+      <Card className="p-4 mb-6 bg-muted/50">
+        <h4 className="font-medium mb-2">AI Analysis Summary</h4>
+        <p className="text-sm text-muted-foreground">{correlationSummary}</p>
+      </Card>
+
       <div className="border rounded-lg">
         <ScrollArea className="h-[500px] w-full">
           <div className="min-w-max">
