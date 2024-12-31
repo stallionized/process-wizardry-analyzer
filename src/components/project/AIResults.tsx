@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Maximize2, X } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 interface AIResultsProps {
@@ -126,15 +126,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-medium">Variable Mappings</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => setMaximizedSection('mappings')}
-              >
-                <Maximize2 className="h-4 w-4" />
-                Maximize
-              </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(mappings).map(([column, mapping]) => (
@@ -154,37 +145,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           </div>
         )}
       </div>
-
-      <Dialog open={maximizedSection === 'mappings'} onOpenChange={() => setMaximizedSection(null)}>
-        <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-6 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Variable Mappings</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMaximizedSection(null)}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
-            {Object.entries(mappings).map(([column, mapping]) => (
-              <div key={column} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                <h4 className="font-medium mb-2">{column}</h4>
-                <div className="space-y-1">
-                  {Object.entries(mapping).map(([text, value]) => (
-                    <div key={text} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{text}:</span>
-                      <span>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };
