@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Maximize2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface CorrelationMatrixProps {
   correlationMatrix: Record<string, Record<string, number>>;
@@ -113,6 +116,7 @@ const generateCorrelationSummary = (correlationMatrix: Record<string, Record<str
 };
 
 export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps) => {
+  const [isMaximized, setIsMaximized] = useState(false);
   const variables = Object.keys(correlationMatrix);
   const correlationSummary = generateCorrelationSummary(correlationMatrix);
 
@@ -121,77 +125,116 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
     return `${text.substring(0, maxLength)}...`;
   };
 
+  const MatrixContent = () => (
+    <div className="border rounded-lg">
+      <ScrollArea className="h-[500px] rounded-md" type="always">
+        <div className="min-w-max">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-48 bg-background sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                  Variables
+                </TableHead>
+                {variables.map((variable) => (
+                  <TableHead 
+                    key={variable} 
+                    className="w-32 px-2 text-left whitespace-normal min-w-[8rem]"
+                    title={variable}
+                  >
+                    <div className="max-w-[8rem] break-words">
+                      {truncateText(variable)}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {variables.map((variable1) => (
+                <TableRow key={variable1}>
+                  <TableCell 
+                    className="font-medium w-48 bg-background sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                    title={variable1}
+                  >
+                    <div className="max-w-[12rem] break-words">
+                      {truncateText(variable1)}
+                    </div>
+                  </TableCell>
+                  {variables.map((variable2) => {
+                    const correlation = correlationMatrix[variable1]?.[variable2] || 0;
+                    const textColor = getTextColor(correlation);
+                    
+                    return (
+                      <TableCell 
+                        key={`${variable1}-${variable2}`}
+                        style={{
+                          backgroundColor: getCorrelationColor(correlation),
+                          width: '8rem',
+                          maxWidth: '8rem',
+                          minWidth: '8rem',
+                        }}
+                        className="text-center font-bold text-sm py-2 px-1"
+                      >
+                        <span style={{ color: textColor }}>
+                          {correlation.toFixed(2)}
+                        </span>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+
   return (
     <div>
-      <h3 className="text-lg font-medium mb-3">Correlation Matrix</h3>
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-medium">Correlation Matrix</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => setIsMaximized(true)}
+        >
+          <Maximize2 className="h-4 w-4" />
+          Maximize
+        </Button>
+      </div>
       
       <Card className="p-4 mb-6 bg-muted/50">
         <h4 className="font-medium mb-2">AI Analysis Summary</h4>
         <p className="text-sm text-muted-foreground">{correlationSummary}</p>
       </Card>
 
-      <div className="border rounded-lg">
-        <ScrollArea className="h-[500px] rounded-md" type="always">
-          <div className="min-w-max">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-48 bg-background sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                    Variables
-                  </TableHead>
-                  {variables.map((variable) => (
-                    <TableHead 
-                      key={variable} 
-                      className="w-32 px-2 text-left whitespace-normal min-w-[8rem]"
-                      title={variable} // Show full text on hover
-                    >
-                      <div className="max-w-[8rem] break-words">
-                        {truncateText(variable)}
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {variables.map((variable1) => (
-                  <TableRow key={variable1}>
-                    <TableCell 
-                      className="font-medium w-48 bg-background sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                      title={variable1} // Show full text on hover
-                    >
-                      <div className="max-w-[12rem] break-words">
-                        {truncateText(variable1)}
-                      </div>
-                    </TableCell>
-                    {variables.map((variable2) => {
-                      const correlation = correlationMatrix[variable1]?.[variable2] || 0;
-                      const textColor = getTextColor(correlation);
-                      
-                      return (
-                        <TableCell 
-                          key={`${variable1}-${variable2}`}
-                          style={{
-                            backgroundColor: getCorrelationColor(correlation),
-                            width: '8rem',
-                            maxWidth: '8rem',
-                            minWidth: '8rem',
-                          }}
-                          className="text-center font-bold text-sm py-2 px-1"
-                        >
-                          <span style={{ color: textColor }}>
-                            {correlation.toFixed(2)}
-                          </span>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </ScrollArea>
-      </div>
-      <GradientKey />
+      {!isMaximized ? (
+        <div className="animate-fade-in">
+          <MatrixContent />
+          <GradientKey />
+        </div>
+      ) : (
+        <Dialog open={isMaximized} onOpenChange={setIsMaximized}>
+          <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-6 animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Correlation Matrix</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMaximized(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="h-full overflow-hidden">
+              <MatrixContent />
+              <GradientKey />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
