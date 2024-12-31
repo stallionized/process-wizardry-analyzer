@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Maximize2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 
 interface AIResultsProps {
   projectId: string;
 }
 
 const AIResults = ({ projectId }: AIResultsProps) => {
-  const [maximizedSection, setMaximizedSection] = useState<'correlation' | 'mappings' | null>(null);
-
   const { data: analysisResults, isLoading, error } = useQuery({
     queryKey: ['analysis', projectId],
     queryFn: async () => {

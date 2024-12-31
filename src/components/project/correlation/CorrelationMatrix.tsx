@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Maximize2, X } from 'lucide-react';
+import { Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatrixContent } from './MatrixContent';
 import { GradientKey } from './GradientKey';
@@ -119,20 +119,12 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
       ) : (
         <Dialog open={isMaximized} onOpenChange={setIsMaximized}>
           <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-6 animate-scale-in">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Correlation Matrix</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMaximized(false)}
-                className="h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="h-full overflow-hidden">
-              <MatrixContent correlationMatrix={correlationMatrix} />
-              <GradientKey />
+            <div className="h-full flex flex-col">
+              <h2 className="text-xl font-semibold mb-4">Correlation Matrix</h2>
+              <div className="flex-1 overflow-hidden">
+                <MatrixContent correlationMatrix={correlationMatrix} />
+                <GradientKey />
+              </div>
             </div>
           </DialogContent>
         </Dialog>

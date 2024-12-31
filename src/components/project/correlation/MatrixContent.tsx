@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { CorrelationCell } from './CorrelationCell';
 
 interface MatrixContentProps {
@@ -16,8 +16,8 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
   const variables = Object.keys(correlationMatrix);
 
   return (
-    <div className="border rounded-lg">
-      <ScrollArea className="h-[500px] rounded-md" type="always">
+    <div className="border rounded-lg overflow-hidden">
+      <ScrollArea className="h-[500px] w-full" type="always">
         <div className="min-w-max">
           <Table>
             <TableHeader>
@@ -60,6 +60,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableBody>
           </Table>
         </div>
+        <ScrollBar orientation="horizontal" />
       </ScrollArea>
     </div>
   );
