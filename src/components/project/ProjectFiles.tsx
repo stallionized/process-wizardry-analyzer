@@ -134,19 +134,30 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       // Send new dataset files to webhook
       if (newDatasetFiles.length > 0) {
         try {
+          // Format the data to match webhook expectations
+          const webhookData = {
+            data: {
+              projectId,
+              files: newDatasetFiles.map(file => ({
+                id: file.id,
+                name: file.name,
+                url: file.url
+              }))
+            }
+          };
+
           const response = await fetch('https://hook.us1.make.com/54vxfeqcuks6v5o1yxl2bieb8i97lfnq', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              projectId,
-              files: newDatasetFiles,
-            }),
+            body: JSON.stringify(webhookData),
           });
 
           if (!response.ok) {
-            throw new Error('Failed to send files to webhook');
+            const errorText = await response.text();
+            console.error('Webhook response:', errorText);
+            throw new Error(`Failed to send files to webhook: ${errorText}`);
           }
         } catch (error) {
           console.error('Webhook error:', error);
