@@ -137,7 +137,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
         if (!webhookSuccess) {
           console.warn('Webhook processing failed, but continuing with file submission');
-          toast.warning('File processing may be delayed, but files were submitted successfully');
+          toast.warning('Files submitted successfully. Processing may be delayed.');
         }
       }
 
