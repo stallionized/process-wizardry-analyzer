@@ -36,7 +36,7 @@ export const CorrelationCell = ({ correlation }: CorrelationCellProps) => {
         maxWidth: '8rem',
         minWidth: '8rem',
       }}
-      className="text-center font-bold text-sm py-2 px-1 whitespace-nowrap"
+      className="text-center font-bold text-sm py-2 px-1 whitespace-nowrap select-none"
     >
       <span style={{ color: textColor }}>
         {correlation.toFixed(2)}

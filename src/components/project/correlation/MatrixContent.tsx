@@ -16,13 +16,15 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
   const variables = Object.keys(correlationMatrix);
 
   return (
-    <div className="border rounded-lg relative">
+    <div className="matrix-container border rounded-lg relative">
       <ScrollArea className="h-[500px] w-full" type="always">
-        <div className="min-w-max overflow-x-auto">
+        <div className="min-w-max">
           <Table>
-            <TableHeader className="sticky top-0 z-20 bg-background">
+            <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <TableRow>
-                <TableHead className="w-48 bg-background sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <TableHead 
+                  className="w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                >
                   Variables
                 </TableHead>
                 {variables.map((variable) => (
@@ -40,9 +42,9 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             </TableHeader>
             <TableBody>
               {variables.map((variable1) => (
-                <TableRow key={variable1}>
+                <TableRow key={variable1} className="relative">
                   <TableHead 
-                    className="font-medium w-48 bg-background sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                    className="font-medium w-48 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                     title={variable1}
                   >
                     <div className="max-w-[12rem] break-words">
@@ -61,7 +63,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
           </Table>
         </div>
         <ScrollBar orientation="horizontal" className="h-3" />
-        <ScrollBar orientation="vertical" />
+        <ScrollBar orientation="vertical" className="w-3" />
       </ScrollArea>
     </div>
   );
