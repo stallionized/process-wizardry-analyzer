@@ -17,7 +17,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!scrollContainerRef.current) return;
+      if (!scrollContainerRef.current || !document.activeElement?.contains(scrollContainerRef.current)) return;
 
       const scrollAmount = 40;
       const container = scrollContainerRef.current;
@@ -58,12 +58,11 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // Make the container focusable
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.tabIndex = 0;
-      scrollContainerRef.current.focus();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.tabIndex = 0;
+      container.focus();
+      window.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {

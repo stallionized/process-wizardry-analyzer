@@ -55,7 +55,8 @@
 
   .matrix-scroll-area {
     @apply h-full;
-    overflow: scroll !important; /* Force both scrollbars */
+    overflow-x: scroll;
+    overflow-y: scroll;
     scrollbar-width: thin;
     scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
   }
