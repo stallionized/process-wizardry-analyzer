@@ -67,24 +67,35 @@
 
   /* Ensure scrollbars are visible and styled properly */
   .matrix-container [data-radix-scroll-area-scrollbar] {
-    @apply flex touch-none select-none bg-muted/10 hover:bg-muted/20;
-    display: flex !important;
+    @apply flex touch-none select-none;
+    background-color: rgba(0, 0, 0, 0.05);
+    transition: background-color 160ms ease-out;
+  }
+
+  .matrix-container [data-radix-scroll-area-scrollbar]:hover {
+    background-color: rgba(0, 0, 0, 0.1);
   }
 
   .matrix-container [data-radix-scroll-area-thumb] {
-    @apply relative flex-1 rounded-full bg-muted/50 hover:bg-muted/70;
-    position: relative;
+    @apply relative flex-1 rounded-full;
+    background-color: rgba(0, 0, 0, 0.2);
+    transition: background-color 160ms ease-out;
+  }
+
+  .matrix-container [data-radix-scroll-area-thumb]:hover {
+    background-color: rgba(0, 0, 0, 0.3);
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-    width: 10px !important;
+    width: 12px;
     padding: 2px;
     height: 100%;
   }
 
   .matrix-container [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
-    height: 10px !important;
+    height: 12px;
     padding: 2px;
+    width: 100%;
   }
 
   /* Sticky header and first column styles */
