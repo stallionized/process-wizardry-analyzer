@@ -128,6 +128,33 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
   const submitFilesMutation = useMutation({
     mutationFn: async () => {
+      // Get all new dataset files
+      const newDatasetFiles = files.filter(file => file.isNew && file.type === 'dataset');
+      
+      // Send new dataset files to webhook
+      if (newDatasetFiles.length > 0) {
+        try {
+          const response = await fetch('https://hook.us1.make.com/54vxfeqcuks6v5o1yxl2bieb8i97lfnq', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              projectId,
+              files: newDatasetFiles,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to send files to webhook');
+          }
+        } catch (error) {
+          console.error('Webhook error:', error);
+          throw new Error('Failed to process dataset files');
+        }
+      }
+
+      // Update all new files to mark them as no longer new
       const { error } = await supabase
         .from('files')
         .update({ created_at: new Date().toISOString() })
