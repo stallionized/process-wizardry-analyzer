@@ -1,8 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import * as XLSX from 'https://deno.land/x/xlsx@v0.0.2/mod.ts';
-
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+import * as XLSX from 'https://deno.land/x/sheetjs@v0.18.3/xlsx.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,6 +88,10 @@ serve(async (req) => {
     // Save results to Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration');
+    }
 
     const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
       method: 'POST',
