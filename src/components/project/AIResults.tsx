@@ -34,14 +34,31 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       
       // Add type guard to ensure the results match our expected structure
       const results = data?.results;
-      if (!results || 
-          typeof results !== 'object' || 
-          !('correlationMatrix' in results) || 
-          !('mappings' in results)) {
+      if (!results || typeof results !== 'object') {
         throw new Error('Invalid analysis results format');
       }
+
+      // Cast to unknown first, then check if it matches our expected structure
+      const typedResults = results as unknown;
       
-      return results as AnalysisResults;
+      // Type guard function to verify the shape matches AnalysisResults
+      const isAnalysisResults = (value: unknown): value is AnalysisResults => {
+        const candidate = value as Partial<AnalysisResults>;
+        return (
+          typeof candidate === 'object' &&
+          candidate !== null &&
+          'correlationMatrix' in candidate &&
+          'mappings' in candidate &&
+          typeof candidate.correlationMatrix === 'object' &&
+          typeof candidate.mappings === 'object'
+        );
+      };
+
+      if (!isAnalysisResults(typedResults)) {
+        throw new Error('Invalid analysis results structure');
+      }
+
+      return typedResults;
     },
   });
 
