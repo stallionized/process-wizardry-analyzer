@@ -6,10 +6,15 @@ interface CorrelationMatrixProps {
 }
 
 const getCorrelationColor = (value: number) => {
-  // Convert correlation value to a color on a red-to-green scale
-  const red = value < 0 ? 255 : Math.round(255 * (1 - value));
-  const green = value > 0 ? 255 : Math.round(255 * (1 + value));
-  return `rgb(${red}, ${green}, 0)`;
+  // Convert correlation value to a darker red-to-green scale
+  const intensity = Math.abs(value);
+  if (value === 1) {
+    return '#00A300'; // Darker green for perfect correlation
+  } else if (value > 0) {
+    return `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(200 * intensity)}, 0)`;
+  } else {
+    return `rgb(${Math.round(200 * intensity)}, ${Math.round(255 * (1 + value))}, 0)`;
+  }
 };
 
 export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps) => {
@@ -22,16 +27,18 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Variables</TableHead>
+              <TableHead className="w-32">Variables</TableHead>
               {variables.map((variable) => (
-                <TableHead key={variable}>{variable}</TableHead>
+                <TableHead key={variable} className="w-32 px-2 text-center">
+                  {variable}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {variables.map((variable1) => (
               <TableRow key={variable1}>
-                <TableCell className="font-medium">{variable1}</TableCell>
+                <TableCell className="font-medium w-32">{variable1}</TableCell>
                 {variables.map((variable2) => {
                   const correlation = correlationMatrix[variable1]?.[variable2] || 0;
                   const opacity = Math.abs(correlation);
@@ -40,13 +47,16 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
                       key={`${variable1}-${variable2}`}
                       style={{
                         backgroundColor: getCorrelationColor(correlation),
-                        opacity: opacity * 0.8 + 0.2, // Minimum opacity of 0.2
-                        color: Math.abs(correlation) > 0.5 ? 'white' : 'black',
-                        transition: 'all 0.2s'
+                        opacity: opacity * 0.9 + 0.1, // Minimum opacity of 0.1 for better visibility
+                        width: '8rem', // Fixed width for uniform sizing
+                        maxWidth: '8rem',
+                        minWidth: '8rem',
                       }}
-                      className="text-center"
+                      className="text-center font-medium text-sm py-2 px-2"
                     >
-                      {correlation.toFixed(2)}
+                      <span className={correlation === 1 ? 'text-white' : Math.abs(correlation) > 0.5 ? 'text-white' : 'text-black'}>
+                        {correlation.toFixed(2)}
+                      </span>
                     </TableCell>
                   );
                 })}

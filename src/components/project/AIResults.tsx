@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
-import { CorrelationVisualization } from './correlation/CorrelationVisualization';
 
 interface AIResultsProps {
   projectId: string;
@@ -118,7 +117,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       
       <div className="space-y-6">
         <CorrelationMatrix correlationMatrix={correlationMatrix} />
-        <CorrelationVisualization correlationMatrix={correlationMatrix} />
 
         {Object.keys(mappings).length > 0 && (
           <div>
