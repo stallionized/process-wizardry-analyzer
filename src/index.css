@@ -50,7 +50,7 @@
 @layer components {
   .matrix-container {
     @apply relative border rounded-lg;
-    width: min(800px, 100%);
+    width: min(1200px, 100%);
     height: min(600px, calc(90vh - 12rem));
     overflow-y: auto;
     overflow-x: scroll;
