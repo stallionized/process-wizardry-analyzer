@@ -1,11 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Maximize2, Copy } from 'lucide-react';
+import { Maximize2, Copy, Image, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatrixContent } from './MatrixContent';
 import { GradientKey } from './GradientKey';
 import { useMatrixCopy } from '@/hooks/useMatrixCopy';
 import { generateCorrelationSummary } from './utils/correlationUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface CorrelationMatrixProps {
   correlationMatrix: Record<string, Record<string, number>>;
@@ -16,7 +22,7 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
   const matrixRef = useRef<HTMLDivElement>(null);
   const variables = Object.keys(correlationMatrix);
   const correlationSummary = generateCorrelationSummary(correlationMatrix);
-  const { copyMatrixToClipboard } = useMatrixCopy(matrixRef);
+  const { copyMatrixAsText, copyMatrixAsImage } = useMatrixCopy(matrixRef);
 
   if (variables.length === 0) {
     return (
@@ -29,20 +35,33 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
     );
   }
 
+  const CopyButton = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Copy className="h-4 w-4" />
+          Copy
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={copyMatrixAsText} className="gap-2">
+          <FileText className="h-4 w-4" />
+          Copy as Text
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={copyMatrixAsImage} className="gap-2">
+          <Image className="h-4 w-4" />
+          Copy as Image
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-medium">Correlation Matrix</h3>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={copyMatrixToClipboard}
-          >
-            <Copy className="h-4 w-4" />
-            Copy
-          </Button>
+          <CopyButton />
           <Button
             variant="outline"
             size="sm"
@@ -71,15 +90,7 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
             <div className="h-full flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Correlation Matrix</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={copyMatrixToClipboard}
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy
-                </Button>
+                <CopyButton />
               </div>
               <div ref={matrixRef} className="flex-1 overflow-hidden">
                 <MatrixContent correlationMatrix={correlationMatrix} />
