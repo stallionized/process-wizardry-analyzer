@@ -51,6 +51,8 @@
   .matrix-container {
     @apply relative border rounded-lg;
     width: 100%;
+    height: 400px;
+    overflow-y: auto;
   }
 
   .matrix-scroll-area {
@@ -59,7 +61,7 @@
   }
 
   .matrix-header {
-    @apply bg-background shadow-sm;
+    @apply bg-background shadow-sm sticky top-0 z-10;
   }
 
   .matrix-first-column {
