@@ -50,41 +50,24 @@
 @layer components {
   .matrix-container {
     @apply relative border rounded-lg;
-    height: 500px;
     width: 100%;
-    overflow: hidden;
   }
 
   .matrix-scroll-area {
-    @apply absolute inset-0;
-    overflow: scroll;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
-  }
-
-  .matrix-scroll-area::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  .matrix-scroll-area::-webkit-scrollbar-track {
-    @apply bg-transparent rounded-full;
-  }
-
-  .matrix-scroll-area::-webkit-scrollbar-thumb {
-    @apply bg-secondary/50 rounded-full hover:bg-secondary/70 transition-colors;
+    @apply relative;
+    width: 100%;
   }
 
   .matrix-header {
-    @apply sticky top-0 z-20 bg-background shadow-sm;
+    @apply bg-background shadow-sm;
   }
 
   .matrix-first-column {
-    @apply sticky left-0 z-10 shadow-sm;
-    background-color: hsl(var(--background)) !important;
+    @apply bg-background shadow-sm;
   }
 
   [role="dialog"] .matrix-container {
-    height: calc(90vh - 8rem);
+    max-height: calc(90vh - 8rem);
+    width: 100%;
   }
 }
