@@ -71,7 +71,7 @@
   }
 
   [role="dialog"] {
-    @apply bg-transparent p-8;
+    @apply bg-transparent;
     min-width: min-content;
     max-width: 90vw;
     margin: 2rem;
@@ -79,6 +79,8 @@
 
   [role="dialog"] > div {
     @apply bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-8;
+    width: fit-content;
+    margin: 0 auto;
   }
 
   [role="dialog"] .matrix-container {
