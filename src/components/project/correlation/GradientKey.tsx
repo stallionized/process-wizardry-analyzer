@@ -1,8 +1,8 @@
 import React from 'react';
 
 export const GradientKey = () => (
-  <div className="flex flex-col items-start gap-8 pl-4">
-    <div className="text-sm font-medium leading-tight">
+  <div className="flex flex-col items-center gap-8 pl-4">
+    <div className="text-sm font-medium leading-tight text-center">
       <div>Correlation</div>
       <div>Strength</div>
     </div>
