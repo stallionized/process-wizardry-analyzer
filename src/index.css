@@ -52,11 +52,13 @@
     @apply relative border rounded-lg;
     height: 500px;
     width: 100%;
+    overflow: hidden;
   }
 
   .matrix-scroll-area {
     @apply absolute inset-0;
-    overflow: scroll;
+    overflow-x: scroll;
+    overflow-y: scroll;
     scrollbar-width: thin;
     scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
   }
