@@ -72,9 +72,9 @@
 
   [role="dialog"] {
     @apply bg-white dark:bg-gray-900 rounded-lg;
-    width: 98vw;  /* Increased from 95vw */
-    height: 98vh; /* Increased from 95vh */
-    margin: 0.5rem; /* Decreased from 1rem to accommodate larger size */
+    width: 99.5vw;  /* Increased from 98vw */
+    height: 99.5vh; /* Increased from 98vh */
+    margin: 0.25rem; /* Decreased from 0.5rem to maximize space */
     position: relative;
   }
 
@@ -84,8 +84,8 @@
 
   [role="dialog"] .matrix-container {
     @apply bg-gray-50 dark:bg-gray-800;
-    height: min(600px, calc(98vh - 16rem)); /* Adjusted to match new height */
-    width: min(1400px, calc(98vw - 8rem));  /* Increased from 1200px */
+    height: min(800px, calc(99.5vh - 12rem)); /* Increased height and adjusted calculation */
+    width: min(1600px, calc(99.5vw - 6rem));  /* Increased from 1400px and adjusted calculation */
   }
 
   [role="dialog"] [data-state="open"].close-button {
