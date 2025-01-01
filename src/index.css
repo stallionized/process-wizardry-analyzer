@@ -78,7 +78,7 @@
   }
 
   [role="dialog"] > div {
-    @apply p-8 h-full;
+    @apply p-8 h-full bg-white dark:bg-gray-900;
   }
 
   [role="dialog"] .matrix-container {
