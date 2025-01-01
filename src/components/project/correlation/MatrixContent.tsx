@@ -39,6 +39,22 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
           container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
           e.preventDefault();
           break;
+        case 'PageUp':
+          container.scrollBy({ top: -container.clientHeight, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'PageDown':
+          container.scrollBy({ top: container.clientHeight, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'Home':
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+          e.preventDefault();
+          break;
+        case 'End':
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+          e.preventDefault();
+          break;
       }
     };
 
@@ -63,13 +79,13 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="matrix-first-column w-48 min-w-[12rem] z-20">
+              <TableHead className="matrix-first-column w-48 min-w-[12rem] bg-white dark:bg-gray-900">
                 Variables
               </TableHead>
               {variables.map((variable) => (
                 <TableHead 
                   key={variable} 
-                  className="px-2 text-left whitespace-normal min-w-[8rem] matrix-header"
+                  className="px-2 text-left whitespace-normal min-w-[8rem] bg-white dark:bg-gray-900"
                   title={variable}
                 >
                   <div className="max-w-[8rem] break-words">
@@ -83,7 +99,7 @@ export const MatrixContent = ({ correlationMatrix }: MatrixContentProps) => {
             {variables.map((variable1) => (
               <TableRow key={variable1}>
                 <TableHead 
-                  className="matrix-first-column font-medium w-48 min-w-[12rem] z-10"
+                  className="matrix-first-column font-medium w-48 min-w-[12rem] bg-white dark:bg-gray-900"
                   title={variable1}
                 >
                   <div className="max-w-[12rem] break-words">

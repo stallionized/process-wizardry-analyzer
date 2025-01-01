@@ -51,14 +51,15 @@
   .matrix-container {
     @apply relative border rounded-lg;
     width: min(1200px, 100%);
-    height: min(800px, calc(90vh - 12rem));
-    overflow: auto;
+    height: min(600px, calc(90vh - 12rem));
+    overflow-y: auto;
+    overflow-x: scroll;
   }
 
   .matrix-scroll-area {
     @apply relative;
-    width: max-content;
-    min-width: 100%;
+    width: 100%;
+    min-width: max-content;
   }
 
   .matrix-header {
@@ -66,7 +67,7 @@
   }
 
   .matrix-first-column {
-    @apply bg-background shadow-sm sticky left-0;
+    @apply bg-background shadow-sm;
   }
 
   [role="dialog"] {
