@@ -87,11 +87,35 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
     if (!matrixRef.current) return;
 
     try {
-      const canvas = await html2canvas(matrixRef.current, {
+      // Create a clone of the matrix container to capture full content
+      const clone = matrixRef.current.cloneNode(true) as HTMLElement;
+      
+      // Set styles to ensure full content is captured
+      Object.assign(clone.style, {
+        position: 'fixed',
+        left: '-9999px',
+        top: '-9999px',
+        width: 'auto',
+        height: 'auto',
+        transform: 'none',
+        overflow: 'visible'
+      });
+
+      // Add clone to document temporarily
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
         backgroundColor: null,
         scale: 2, // Higher quality
         logging: false,
+        width: clone.scrollWidth,
+        height: clone.scrollHeight,
+        windowWidth: clone.scrollWidth,
+        windowHeight: clone.scrollHeight
       });
+
+      // Remove clone after capture
+      document.body.removeChild(clone);
 
       canvas.toBlob(async (blob) => {
         if (!blob) {
