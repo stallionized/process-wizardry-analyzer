@@ -60,7 +60,6 @@
     overflow: scroll;
     scrollbar-width: thin;
     scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
-    display: block;
   }
 
   .matrix-scroll-area::-webkit-scrollbar {
