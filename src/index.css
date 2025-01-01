@@ -71,7 +71,7 @@
   }
 
   [role="dialog"] {
-    @apply bg-white dark:bg-gray-900;
+    @apply bg-white dark:bg-gray-900 rounded-lg;
     width: 90vw;
     height: 90vh;
     margin: 2rem;
