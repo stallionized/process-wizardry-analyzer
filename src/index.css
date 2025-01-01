@@ -71,11 +71,13 @@
   }
 
   [role="dialog"] {
-    @apply bg-background;
+    @apply bg-background p-6 rounded-lg;
+    background-color: hsl(var(--background));
   }
 
   [role="dialog"] .matrix-container {
     max-height: calc(90vh - 8rem);
     width: 100%;
+    max-width: calc(95vw - 3rem);
   }
 }
