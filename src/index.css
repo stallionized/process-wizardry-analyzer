@@ -50,8 +50,8 @@
 @layer components {
   .matrix-container {
     @apply relative border rounded-lg;
-    width: 100%;
-    height: 400px;
+    width: min(800px, 100%);
+    height: min(600px, calc(90vh - 12rem));
     overflow-y: auto;
     overflow-x: scroll;
   }
@@ -71,13 +71,15 @@
   }
 
   [role="dialog"] {
-    @apply bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg;
+    @apply bg-white dark:bg-gray-900 p-8 rounded-xl shadow-2xl;
     min-width: min-content;
     max-width: 90vw;
+    margin: 2rem;
   }
 
   [role="dialog"] .matrix-container {
-    height: min(600px, calc(90vh - 12rem));
-    width: min(1200px, calc(90vw - 6rem));
+    @apply bg-gray-50 dark:bg-gray-800;
+    height: min(600px, calc(90vh - 16rem));
+    width: min(1000px, calc(90vw - 8rem));
   }
 }
