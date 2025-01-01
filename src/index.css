@@ -71,13 +71,13 @@
   }
 
   [role="dialog"] {
-    @apply bg-background p-6 rounded-lg;
-    background-color: hsl(var(--background));
+    @apply bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg;
+    min-width: min-content;
+    max-width: 90vw;
   }
 
   [role="dialog"] .matrix-container {
-    max-height: calc(90vh - 8rem);
-    width: 100%;
-    max-width: calc(95vw - 3rem);
+    height: min(600px, calc(90vh - 12rem));
+    width: min(1200px, calc(90vw - 6rem));
   }
 }
