@@ -57,15 +57,15 @@
 
   .matrix-scroll-area {
     @apply absolute inset-0;
-    overflow: auto;
+    overflow: scroll;
     scrollbar-width: thin;
     scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
+    display: block;
   }
 
   .matrix-scroll-area::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-    display: block !important;
   }
 
   .matrix-scroll-area::-webkit-scrollbar-track {
@@ -85,7 +85,6 @@
     background-color: hsl(var(--background)) !important;
   }
 
-  /* Dialog-specific styles */
   [role="dialog"] .matrix-container {
     height: calc(90vh - 8rem);
   }
