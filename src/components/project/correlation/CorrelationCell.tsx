@@ -35,6 +35,7 @@ export const CorrelationCell = ({ correlation }: CorrelationCellProps) => {
         width: '8rem',
         maxWidth: '8rem',
         minWidth: '8rem',
+        height: '3rem',
       }}
       className="text-center font-bold text-sm py-2 px-1 whitespace-nowrap select-none"
     >
