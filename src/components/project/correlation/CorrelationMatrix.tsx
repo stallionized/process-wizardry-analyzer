@@ -126,11 +126,11 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
             <div className="h-full flex flex-col">
               <h2 className="text-xl font-semibold mb-4">Correlation Matrix</h2>
               <div className="flex-1 overflow-hidden">
-                <div className="animate-fade-in flex items-start gap-4">
+                <div className="animate-fade-in flex items-start gap-2">
                   <div className="flex-1">
                     <MatrixContent correlationMatrix={correlationMatrix} />
                   </div>
-                  <div className="flex-none pl-2">
+                  <div className="flex-none pl-1">
                     <GradientKey />
                   </div>
                 </div>
