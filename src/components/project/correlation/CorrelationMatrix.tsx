@@ -91,6 +91,17 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
     );
   }
 
+  const matrixWithLegend = (
+    <div className="animate-fade-in flex gap-8">
+      <div className="flex-1">
+        <MatrixContent correlationMatrix={correlationMatrix} />
+      </div>
+      <div className="flex-none">
+        <GradientKey />
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
@@ -112,18 +123,14 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
       </div>
 
       {!isMaximized ? (
-        <div className="animate-fade-in flex gap-8">
-          <MatrixContent correlationMatrix={correlationMatrix} />
-          <GradientKey />
-        </div>
+        matrixWithLegend
       ) : (
         <Dialog open={isMaximized} onOpenChange={setIsMaximized}>
           <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-6">
             <div className="h-full flex flex-col">
               <h2 className="text-xl font-semibold mb-4">Correlation Matrix</h2>
-              <div className="flex-1 overflow-hidden flex gap-8">
-                <MatrixContent correlationMatrix={correlationMatrix} />
-                <GradientKey />
+              <div className="flex-1 overflow-hidden">
+                {matrixWithLegend}
               </div>
             </div>
           </DialogContent>
