@@ -122,15 +122,15 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
         </div>
       ) : (
         <Dialog open={isMaximized} onOpenChange={setIsMaximized}>
-          <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-6">
+          <DialogContent className="max-w-[98vw] w-[98vw] h-[95vh] p-4">
             <div className="h-full flex flex-col">
               <h2 className="text-xl font-semibold mb-4">Correlation Matrix</h2>
               <div className="flex-1 overflow-hidden">
-                <div className="animate-fade-in flex gap-8">
+                <div className="animate-fade-in flex items-start gap-4">
                   <div className="flex-1">
                     <MatrixContent correlationMatrix={correlationMatrix} />
                   </div>
-                  <div className="flex-none">
+                  <div className="flex-none pl-2">
                     <GradientKey />
                   </div>
                 </div>
