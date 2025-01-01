@@ -57,8 +57,7 @@
 
   .matrix-scroll-area {
     @apply absolute inset-0;
-    overflow-x: scroll;
-    overflow-y: scroll;
+    overflow: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(96, 165, 250, 0.5) transparent;
   }
