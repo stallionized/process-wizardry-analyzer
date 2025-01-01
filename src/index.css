@@ -88,7 +88,7 @@
     width: min(1600px, calc(99.5vw - 6rem));
   }
 
-  [role="dialog"] [data-state="open"].close-button {
+  [role="dialog"] button[aria-label="Close"] {
     @apply absolute right-8 top-8 opacity-70 hover:opacity-100 transition-opacity;
     z-index: 51;
   }
