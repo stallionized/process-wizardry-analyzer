@@ -61,7 +61,7 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
       </div>
 
       {!isMaximized ? (
-        <div ref={matrixRef} className="animate-fade-in flex gap-8">
+        <div ref={matrixRef} className="animate-fade-in">
           <MatrixContent correlationMatrix={correlationMatrix} />
           <GradientKey />
         </div>
@@ -81,7 +81,7 @@ export const CorrelationMatrix = ({ correlationMatrix }: CorrelationMatrixProps)
                   Copy
                 </Button>
               </div>
-              <div ref={matrixRef} className="flex-1 overflow-hidden flex gap-8">
+              <div ref={matrixRef} className="flex-1 overflow-hidden">
                 <MatrixContent correlationMatrix={correlationMatrix} />
                 <GradientKey />
               </div>
