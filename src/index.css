@@ -72,9 +72,9 @@
 
   [role="dialog"] {
     @apply bg-white dark:bg-gray-900 rounded-lg;
-    width: 90vw;
-    height: 90vh;
-    margin: 2rem;
+    width: 95vw;  /* Increased from 90vw */
+    height: 95vh; /* Increased from 90vh */
+    margin: 1rem; /* Decreased from 2rem to accommodate larger size */
     position: relative;
   }
 
@@ -84,8 +84,8 @@
 
   [role="dialog"] .matrix-container {
     @apply bg-gray-50 dark:bg-gray-800;
-    height: min(600px, calc(90vh - 16rem));
-    width: min(1000px, calc(90vw - 8rem));
+    height: min(600px, calc(95vh - 16rem)); /* Adjusted to match new height */
+    width: min(1200px, calc(95vw - 8rem));  /* Increased from 1000px */
   }
 
   [role="dialog"] [data-state="open"].close-button {
