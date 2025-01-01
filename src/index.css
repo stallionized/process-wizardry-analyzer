@@ -71,10 +71,14 @@
   }
 
   [role="dialog"] {
-    @apply bg-white dark:bg-gray-900 p-8 rounded-xl shadow-2xl;
+    @apply bg-transparent p-8;
     min-width: min-content;
     max-width: 90vw;
     margin: 2rem;
+  }
+
+  [role="dialog"] > div {
+    @apply bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-8;
   }
 
   [role="dialog"] .matrix-container {
