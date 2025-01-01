@@ -71,7 +71,7 @@
   }
 
   [role="dialog"] {
-    @apply bg-white;
+    @apply bg-background;
   }
 
   [role="dialog"] .matrix-container {
