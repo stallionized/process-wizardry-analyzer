@@ -2,10 +2,29 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import * as XLSX from 'https://deno.land/x/sheetjs@v0.18.3/xlsx.mjs';
 
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const SYSTEM_PROMPT = `You are a Six Sigma Master Black Belt process engineer and master data scientist with over 20 years of experience across various industries. Your expertise includes:
+
+- Advanced statistical analysis and process optimization
+- Deep understanding of manufacturing and process engineering principles
+- Extensive experience with data-driven decision making
+- Expert knowledge of Six Sigma methodologies and tools
+- Mastery of statistical process control and quality improvement techniques
+- Proven track record in implementing process improvements across diverse industries
+
+When analyzing data and providing insights:
+- Focus on practical, actionable recommendations
+- Identify potential process improvements and optimization opportunities
+- Highlight statistical significance and correlations
+- Provide context based on industry best practices
+- Consider both technical and business implications
+- Emphasize data-driven decision making`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -149,8 +168,40 @@ serve(async (req) => {
 
     console.log('Analysis results saved successfully');
 
+    // Now let's get GPT to analyze the results with our expert system prompt
+    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { 
+            role: 'user', 
+            content: `Please analyze this correlation matrix and provide insights from a process engineering perspective: ${JSON.stringify(correlationMatrix)}`
+          }
+        ],
+      }),
+    });
+
+    if (!gptResponse.ok) {
+      throw new Error('Failed to get AI analysis');
+    }
+
+    const gptData = await gptResponse.json();
+    const aiAnalysis = gptData.choices[0].message.content;
+
+    // Update the analysis with AI insights
+    const finalAnalysis = {
+      ...analysis,
+      aiInsights: aiAnalysis
+    };
+
     return new Response(
-      JSON.stringify({ success: true, analysis }),
+      JSON.stringify({ success: true, analysis: finalAnalysis }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
