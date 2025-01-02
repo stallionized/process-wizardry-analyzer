@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
+import { DescriptiveStats } from './descriptive/DescriptiveStats';
 
 interface AIResultsProps {
   projectId: string;
@@ -49,8 +50,12 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           candidate !== null &&
           'correlationMatrix' in candidate &&
           'mappings' in candidate &&
+          'descriptiveStats' in candidate &&
+          'statsAnalysis' in candidate &&
+          'corrAnalysis' in candidate &&
           typeof candidate.correlationMatrix === 'object' &&
-          typeof candidate.mappings === 'object'
+          typeof candidate.mappings === 'object' &&
+          typeof candidate.descriptiveStats === 'object'
         );
       };
 
@@ -96,28 +101,34 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { correlationMatrix, mappings } = analysisResults;
-  const variables = Object.keys(correlationMatrix);
-  const isCorrelationMatrixEmpty = variables.length === 0;
-
-  if (isCorrelationMatrixEmpty) {
-    return (
-      <Card className="p-6 animate-fade-in">
-        <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
-        <p className="text-muted-foreground">
-          No correlation data available. Please ensure your uploaded files contain numerical data for analysis.
-        </p>
-      </Card>
-    );
-  }
+  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, corrAnalysis } = analysisResults;
 
   return (
     <Card className="p-6 animate-fade-in">
       <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
       
-      <div className="space-y-6">
-        <CorrelationMatrix correlationMatrix={correlationMatrix} />
+      <div className="space-y-8">
+        {/* Descriptive Statistics Section */}
+        <div className="space-y-4">
+          <div className="p-4 mb-6 bg-muted/50 rounded-lg">
+            <h4 className="font-medium mb-2">AI Analysis Summary</h4>
+            <p className="text-sm text-muted-foreground">{statsAnalysis}</p>
+          </div>
+          
+          <DescriptiveStats stats={descriptiveStats} />
+        </div>
 
+        {/* Correlation Matrix Section */}
+        <div className="space-y-4">
+          <div className="p-4 mb-6 bg-muted/50 rounded-lg">
+            <h4 className="font-medium mb-2">Correlation Analysis</h4>
+            <p className="text-sm text-muted-foreground">{corrAnalysis}</p>
+          </div>
+
+          <CorrelationMatrix correlationMatrix={correlationMatrix} />
+        </div>
+
+        {/* Variable Mappings Section */}
         {Object.keys(mappings).length > 0 && (
           <div>
             <div className="flex justify-between items-center mb-3">

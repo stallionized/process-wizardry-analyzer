@@ -12,18 +12,21 @@ export type Database = {
       analysis_results: {
         Row: {
           created_at: string | null
+          descriptive_stats: Json | null
           id: string
           project_id: string
           results: Json
         }
         Insert: {
           created_at?: string | null
+          descriptive_stats?: Json | null
           id?: string
           project_id: string
           results: Json
         }
         Update: {
           created_at?: string | null
+          descriptive_stats?: Json | null
           id?: string
           project_id?: string
           results?: Json

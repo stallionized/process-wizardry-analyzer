@@ -24,7 +24,53 @@ When analyzing data and providing insights:
 - Highlight statistical significance and correlations
 - Provide context based on industry best practices
 - Consider both technical and business implications
-- Emphasize data-driven decision making`;
+- Emphasize data-driven decision making
+
+For descriptive statistics summaries:
+- Explain the findings in simple terms that a fifth grader could understand
+- Focus on what the numbers mean for the process
+- Highlight any unusual or interesting patterns
+- Use analogies when helpful to explain statistical concepts`;
+
+function calculateDescriptiveStats(data: number[]) {
+  const n = data.length;
+  if (n === 0) return null;
+
+  const sum = data.reduce((a, b) => a + b, 0);
+  const mean = sum / n;
+  
+  // Sort data for median and quartiles
+  const sorted = [...data].sort((a, b) => a - b);
+  const median = n % 2 === 0 
+    ? (sorted[n/2 - 1] + sorted[n/2]) / 2 
+    : sorted[Math.floor(n/2)];
+
+  // Calculate variance and standard deviation
+  const variance = data.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
+  const stdDev = Math.sqrt(variance);
+
+  // Calculate quartiles
+  const q1 = sorted[Math.floor(n * 0.25)];
+  const q3 = sorted[Math.floor(n * 0.75)];
+  
+  // Calculate min, max, and range
+  const min = sorted[0];
+  const max = sorted[n - 1];
+  const range = max - min;
+
+  return {
+    count: n,
+    mean: Number(mean.toFixed(4)),
+    median: Number(median.toFixed(4)),
+    stdDev: Number(stdDev.toFixed(4)),
+    variance: Number(variance.toFixed(4)),
+    min: Number(min.toFixed(4)),
+    max: Number(max.toFixed(4)),
+    range: Number(range.toFixed(4)),
+    q1: Number(q1.toFixed(4)),
+    q3: Number(q3.toFixed(4))
+  };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,10 +111,11 @@ serve(async (req) => {
       throw new Error('No data found in Excel file');
     }
 
-    // Extract columns and prepare data for correlation
+    // Extract columns and prepare data
     const columns = Object.keys(jsonData[0] || {});
     const numericalData: Record<string, number[]> = {};
     const categoricalMappings: Record<string, Record<string, number>> = {};
+    const descriptiveStats: Record<string, any> = {};
 
     // Process each column
     columns.forEach(column => {
@@ -82,9 +129,11 @@ serve(async (req) => {
 
       if (isNumerical) {
         // Convert to numbers
-        numericalData[column] = values.map(value => 
+        const numericValues = values.map(value => 
           typeof value === 'number' ? value : parseFloat(value.replace(/[^0-9.-]/g, ''))
         );
+        numericalData[column] = numericValues;
+        descriptiveStats[column] = calculateDescriptiveStats(numericValues);
       } else {
         // Create mapping for categorical data
         const uniqueValues = [...new Set(values)];
@@ -107,11 +156,10 @@ serve(async (req) => {
         const values1 = numericalData[col1];
         const values2 = numericalData[col2];
         
-        // Calculate mean
+        // Calculate correlation coefficient
         const mean1 = values1.reduce((a, b) => a + b, 0) / values1.length;
         const mean2 = values2.reduce((a, b) => a + b, 0) / values2.length;
         
-        // Calculate covariance and variances
         let covariance = 0;
         let variance1 = 0;
         let variance2 = 0;
@@ -124,17 +172,67 @@ serve(async (req) => {
           variance2 += diff2 * diff2;
         }
         
-        // Calculate correlation coefficient
         const correlation = covariance / Math.sqrt(variance1 * variance2);
         correlationMatrix[col1][col2] = Number(correlation.toFixed(4));
       });
     });
 
-    console.log('Correlation matrix calculated successfully');
+    // Get AI analysis of descriptive statistics
+    const statsPrompt = `As a Six Sigma Master Black Belt, please analyze these descriptive statistics and provide a simple summary that a fifth grader could understand: ${JSON.stringify(descriptiveStats)}`;
+    
+    const statsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: statsPrompt }
+        ],
+      }),
+    });
+
+    if (!statsResponse.ok) {
+      throw new Error('Failed to get AI analysis of descriptive statistics');
+    }
+
+    const statsAiData = await statsResponse.json();
+    const statsAnalysis = statsAiData.choices[0].message.content;
+
+    // Get AI analysis of correlations
+    const corrPrompt = `Please analyze this correlation matrix and provide insights from a process engineering perspective: ${JSON.stringify(correlationMatrix)}`;
+    
+    const corrResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: corrPrompt }
+        ],
+      }),
+    });
+
+    if (!corrResponse.ok) {
+      throw new Error('Failed to get AI analysis of correlations');
+    }
+
+    const corrAiData = await corrResponse.json();
+    const corrAnalysis = corrAiData.choices[0].message.content;
 
     const analysis = {
       correlationMatrix,
-      mappings: categoricalMappings
+      mappings: categoricalMappings,
+      descriptiveStats,
+      statsAnalysis,
+      corrAnalysis
     };
 
     // Save results to Supabase
@@ -158,6 +256,7 @@ serve(async (req) => {
       body: JSON.stringify({
         project_id: projectId,
         results: analysis,
+        descriptive_stats: descriptiveStats
       }),
     });
 
@@ -168,40 +267,8 @@ serve(async (req) => {
 
     console.log('Analysis results saved successfully');
 
-    // Now let's get GPT to analyze the results with our expert system prompt
-    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { 
-            role: 'user', 
-            content: `Please analyze this correlation matrix and provide insights from a process engineering perspective: ${JSON.stringify(correlationMatrix)}`
-          }
-        ],
-      }),
-    });
-
-    if (!gptResponse.ok) {
-      throw new Error('Failed to get AI analysis');
-    }
-
-    const gptData = await gptResponse.json();
-    const aiAnalysis = gptData.choices[0].message.content;
-
-    // Update the analysis with AI insights
-    const finalAnalysis = {
-      ...analysis,
-      aiInsights: aiAnalysis
-    };
-
     return new Response(
-      JSON.stringify({ success: true, analysis: finalAnalysis }),
+      JSON.stringify({ success: true, analysis }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
