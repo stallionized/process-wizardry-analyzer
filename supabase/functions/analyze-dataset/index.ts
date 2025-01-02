@@ -9,28 +9,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SYSTEM_PROMPT = `You are a Six Sigma Master Black Belt process engineer and master data scientist with over 20 years of experience across various industries. Your expertise includes:
-
-- Advanced statistical analysis and process optimization
-- Deep understanding of manufacturing and process engineering principles
-- Extensive experience with data-driven decision making
-- Expert knowledge of Six Sigma methodologies and tools
-- Mastery of statistical process control and quality improvement techniques
-- Proven track record in implementing process improvements across diverse industries
-
-When analyzing data and providing insights:
-- Focus on practical, actionable recommendations
-- Identify potential process improvements and optimization opportunities
-- Highlight statistical significance and correlations
-- Provide context based on industry best practices
-- Consider both technical and business implications
-- Emphasize data-driven decision making
-
-For descriptive statistics summaries:
-- Explain the findings in simple terms that a fifth grader could understand
+const SYSTEM_PROMPT = `You are a Six Sigma Master Black Belt process engineer and master data scientist with over 20 years of experience. When analyzing descriptive statistics:
+- Explain findings in simple terms that a fifth grader could understand
 - Focus on what the numbers mean for the process
 - Highlight any unusual or interesting patterns
-- Use analogies when helpful to explain statistical concepts`;
+- Avoid using special characters or unnecessary punctuation
+- Keep explanations concise and clear
+- Use simple analogies when helpful`;
 
 function calculateDescriptiveStats(data: number[]) {
   const n = data.length;
@@ -121,21 +106,18 @@ serve(async (req) => {
     columns.forEach(column => {
       const values = jsonData.map(row => row[column]);
       
-      // Check if column contains numerical data
       const isNumerical = values.every(value => 
         typeof value === 'number' || 
         (typeof value === 'string' && !isNaN(parseFloat(value.replace(/[^0-9.-]/g, ''))))
       );
 
       if (isNumerical) {
-        // Convert to numbers
         const numericValues = values.map(value => 
           typeof value === 'number' ? value : parseFloat(value.replace(/[^0-9.-]/g, ''))
         );
         numericalData[column] = numericValues;
         descriptiveStats[column] = calculateDescriptiveStats(numericValues);
       } else {
-        // Create mapping for categorical data
         const uniqueValues = [...new Set(values)];
         const mapping: Record<string, number> = {};
         uniqueValues.forEach((value, index) => {
@@ -156,7 +138,6 @@ serve(async (req) => {
         const values1 = numericalData[col1];
         const values2 = numericalData[col2];
         
-        // Calculate correlation coefficient
         const mean1 = values1.reduce((a, b) => a + b, 0) / values1.length;
         const mean2 = values2.reduce((a, b) => a + b, 0) / values2.length;
         
@@ -178,7 +159,7 @@ serve(async (req) => {
     });
 
     // Get AI analysis of descriptive statistics
-    const statsPrompt = `As a Six Sigma Master Black Belt, please analyze these descriptive statistics and provide a simple summary that a fifth grader could understand: ${JSON.stringify(descriptiveStats)}`;
+    const statsPrompt = `Please analyze these descriptive statistics and provide a simple summary that a fifth grader could understand. Focus on key patterns and interesting findings: ${JSON.stringify(descriptiveStats)}`;
     
     const statsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

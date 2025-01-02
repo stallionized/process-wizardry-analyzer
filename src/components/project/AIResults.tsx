@@ -120,11 +120,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
 
         {/* Correlation Matrix Section */}
         <div className="space-y-4">
-          <div className="p-4 mb-6 bg-muted/50 rounded-lg">
-            <h4 className="font-medium mb-2">Correlation Analysis</h4>
-            <p className="text-sm text-muted-foreground">{corrAnalysis}</p>
-          </div>
-
           <CorrelationMatrix correlationMatrix={correlationMatrix} />
         </div>
 

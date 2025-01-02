@@ -32,9 +32,9 @@ export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => 
   return (
     <div>
       <h3 className="text-lg font-medium mb-3">Descriptive Statistics</h3>
-      <div className="overflow-x-auto">
+      <div className="overflow-y-auto max-h-[400px] border rounded-lg">
         <table className="w-full border-collapse">
-          <thead>
+          <thead className="sticky top-0 bg-background">
             <tr className="bg-muted">
               <th className="p-2 text-left border">Variable</th>
               <th className="p-2 text-left border">Count</th>
@@ -52,15 +52,15 @@ export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => 
             {variables.map((variable) => (
               <tr key={variable} className="hover:bg-muted/50">
                 <td className="p-2 border font-medium">{variable}</td>
-                <td className="p-2 border">{stats[variable].count}</td>
-                <td className="p-2 border">{stats[variable].mean}</td>
-                <td className="p-2 border">{stats[variable].median}</td>
-                <td className="p-2 border">{stats[variable].stdDev}</td>
-                <td className="p-2 border">{stats[variable].min}</td>
-                <td className="p-2 border">{stats[variable].max}</td>
-                <td className="p-2 border">{stats[variable].range}</td>
-                <td className="p-2 border">{stats[variable].q1}</td>
-                <td className="p-2 border">{stats[variable].q3}</td>
+                <td className="p-2 border">{stats[variable].count.toFixed(0)}</td>
+                <td className="p-2 border">{stats[variable].mean.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].median.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].stdDev.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].min.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].max.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].range.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].q1.toFixed(4)}</td>
+                <td className="p-2 border">{stats[variable].q3.toFixed(4)}</td>
               </tr>
             ))}
           </tbody>
