@@ -38,25 +38,8 @@ export function generateExecutiveSummary(stats: Record<string, any>) {
   const variables = Object.keys(stats);
   if (variables.length === 0) return "No numerical variables found for analysis.";
 
-  let summary = "";
-  const highVariabilityVars = variables.filter(variable => 
-    (stats[variable].stdDev / stats[variable].mean * 100) > 50
-  );
-  
-  const lowVariabilityVars = variables.filter(variable => 
-    (stats[variable].stdDev / stats[variable].mean * 100) <= 25
-  );
-
-  if (highVariabilityVars.length > 0) {
-    summary += `High variability detected in: ${highVariabilityVars.join(', ')}. `;
-  }
-
-  if (lowVariabilityVars.length > 0) {
-    summary += `Consistent measurements found in: ${lowVariabilityVars.join(', ')}. `;
-  }
-
   const totalVars = variables.length;
-  summary += `Analysis covers ${totalVars} numerical variable${totalVars > 1 ? 's' : ''}.`;
+  const summary = `Descriptive statistics help us understand our data by finding things like averages and ranges. They tell us what's typical and how spread out our numbers are. We analyzed ${totalVars} different types of measurements in this dataset.`;
 
   return summary;
 }
