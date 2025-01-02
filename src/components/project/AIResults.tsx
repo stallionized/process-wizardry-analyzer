@@ -51,11 +51,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           'correlationMatrix' in candidate &&
           'mappings' in candidate &&
           'descriptiveStats' in candidate &&
-          'statsAnalysis' in candidate &&
-          'corrAnalysis' in candidate &&
-          typeof candidate.correlationMatrix === 'object' &&
-          typeof candidate.mappings === 'object' &&
-          typeof candidate.descriptiveStats === 'object'
+          'statsAnalysis' in candidate
         );
       };
 
@@ -101,7 +97,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, corrAnalysis } = analysisResults;
+  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis } = analysisResults;
 
   return (
     <Card className="p-6 animate-fade-in">
@@ -110,12 +106,13 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       <div className="space-y-8">
         {/* Descriptive Statistics Section */}
         <div className="space-y-4">
-          <div className="p-4 mb-6 bg-muted/50 rounded-lg">
+          <h3 className="text-lg font-medium">Descriptive Statistics</h3>
+          <DescriptiveStats stats={descriptiveStats} />
+          
+          <div className="p-4 bg-muted/50 rounded-lg">
             <h4 className="font-medium mb-2">AI Analysis Summary</h4>
             <p className="text-sm text-muted-foreground">{statsAnalysis}</p>
           </div>
-          
-          <DescriptiveStats stats={descriptiveStats} />
         </div>
 
         {/* Correlation Matrix Section */}

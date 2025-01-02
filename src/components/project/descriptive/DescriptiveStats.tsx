@@ -21,7 +21,6 @@ export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => 
   if (variables.length === 0) {
     return (
       <div>
-        <h3 className="text-lg font-medium mb-3">Descriptive Statistics</h3>
         <p className="text-muted-foreground">
           No numerical variables found for statistical analysis.
         </p>
@@ -30,9 +29,8 @@ export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => 
   }
 
   return (
-    <div>
-      <h3 className="text-lg font-medium mb-3">Descriptive Statistics</h3>
-      <div className="overflow-y-auto max-h-[400px] border rounded-lg">
+    <div className="border rounded-lg">
+      <div className="overflow-y-auto max-h-[400px]">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-background">
             <tr className="bg-muted">
