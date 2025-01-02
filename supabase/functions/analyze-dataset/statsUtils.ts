@@ -38,25 +38,25 @@ export function generateExecutiveSummary(stats: Record<string, any>) {
   const variables = Object.keys(stats);
   if (variables.length === 0) return "No numerical variables found for analysis.";
 
-  let summary = "Key Findings from Data Analysis:\n\n";
+  let summary = "";
+  const highVariabilityVars = variables.filter(variable => 
+    (stats[variable].stdDev / stats[variable].mean * 100) > 50
+  );
+  
+  const lowVariabilityVars = variables.filter(variable => 
+    (stats[variable].stdDev / stats[variable].mean * 100) <= 25
+  );
 
-  variables.forEach(variable => {
-    const stat = stats[variable];
-    const variability = stat.stdDev / stat.mean * 100;
-    
-    summary += `${variable}:\n`;
-    summary += `- Typical value (median): ${stat.median.toFixed(2)}\n`;
-    summary += `- Range: ${stat.min.toFixed(2)} to ${stat.max.toFixed(2)}\n`;
-    
-    if (variability > 50) {
-      summary += "- Shows high variability in measurements\n";
-    } else if (variability > 25) {
-      summary += "- Shows moderate variability in measurements\n";
-    } else {
-      summary += "- Shows consistent measurements\n";
-    }
-    summary += "\n";
-  });
+  if (highVariabilityVars.length > 0) {
+    summary += `High variability detected in: ${highVariabilityVars.join(', ')}. `;
+  }
+
+  if (lowVariabilityVars.length > 0) {
+    summary += `Consistent measurements found in: ${lowVariabilityVars.join(', ')}. `;
+  }
+
+  const totalVars = variables.length;
+  summary += `Analysis covers ${totalVars} numerical variable${totalVars > 1 ? 's' : ''}.`;
 
   return summary;
 }
