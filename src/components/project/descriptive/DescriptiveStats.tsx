@@ -32,18 +32,18 @@ export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => 
     <div className="border rounded-lg">
       <div className="overflow-y-auto max-h-[400px]">
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 bg-background">
-            <tr className="bg-muted">
-              <th className="p-2 text-left border">Variable</th>
-              <th className="p-2 text-left border">Count</th>
-              <th className="p-2 text-left border">Mean</th>
-              <th className="p-2 text-left border">Median</th>
-              <th className="p-2 text-left border">Std Dev</th>
-              <th className="p-2 text-left border">Min</th>
-              <th className="p-2 text-left border">Max</th>
-              <th className="p-2 text-left border">Range</th>
-              <th className="p-2 text-left border">Q1</th>
-              <th className="p-2 text-left border">Q3</th>
+          <thead className="sticky top-0 z-10">
+            <tr>
+              <th className="p-2 text-left border bg-background shadow-sm">Variable</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Count</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Mean</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Median</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Std Dev</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Min</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Max</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Range</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Q1</th>
+              <th className="p-2 text-left border bg-background shadow-sm">Q3</th>
             </tr>
           </thead>
           <tbody>
