@@ -30,20 +30,20 @@ export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => 
 
   return (
     <div className="border rounded-lg">
-      <div className="overflow-y-auto max-h-[400px]">
+      <div className="overflow-y-auto max-h-[400px] relative">
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10">
+          <thead className="sticky top-0 z-20 bg-white">
             <tr>
-              <th className="p-2 text-left border bg-background shadow-sm">Variable</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Count</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Mean</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Median</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Std Dev</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Min</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Max</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Range</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Q1</th>
-              <th className="p-2 text-left border bg-background shadow-sm">Q3</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Variable</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Count</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Mean</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Median</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Std Dev</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Min</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Max</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Range</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Q1</th>
+              <th className="p-2 text-left border bg-white shadow-sm">Q3</th>
             </tr>
           </thead>
           <tbody>
