@@ -138,7 +138,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         return;
       }
 
-      // Try to send new dataset files to webhook
+      // Try to send new dataset files to webhook for analysis
       const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
       console.log('Webhook processing result:', webhookSuccess);
 
