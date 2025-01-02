@@ -107,12 +107,11 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         {/* Descriptive Statistics Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Descriptive Statistics</h3>
-          <DescriptiveStats stats={descriptiveStats} />
-          
           <div className="p-4 bg-muted/50 rounded-lg">
             <h4 className="font-medium mb-2">AI Analysis Summary</h4>
             <p className="text-sm text-muted-foreground">{statsAnalysis}</p>
           </div>
+          <DescriptiveStats stats={descriptiveStats} />
         </div>
 
         {/* Correlation Matrix Section */}
