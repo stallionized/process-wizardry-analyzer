@@ -87,7 +87,7 @@ serve(async (req) => {
     const correlationMatrix = calculateCorrelationMatrix(numericalData);
     const statsAnalysis = generateExecutiveSummary(descriptiveStats);
 
-    // Prepare data for Claude's advanced statistical analysis
+    // Use Claude for advanced statistical analysis
     console.log('Preparing data for Claude analysis');
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -101,22 +101,56 @@ serve(async (req) => {
         max_tokens: 4096,
         messages: [{
           role: 'user',
-          content: `I have a dataset with the following numerical variables and their values. Please perform an ANOVA analysis and any other relevant statistical tests. Provide the results in a clear, structured JSON format that includes test statistics, p-values, and interpretations. Here's the data:\n\n${JSON.stringify(numericalData, null, 2)}`
+          content: `I have a dataset with the following numerical variables and their descriptive statistics. Please perform an ANOVA analysis and provide detailed statistical insights. Format your response as a JSON object with the following structure:
+          {
+            "anova": {
+              "results": [
+                {
+                  "variable": "variable_name",
+                  "fStatistic": number,
+                  "pValue": number,
+                  "interpretation": "string explaining significance"
+                }
+              ],
+              "summary": "overall analysis summary"
+            }
+          }
+          
+          Here's the data:
+          
+          Descriptive Statistics:
+          ${JSON.stringify(descriptiveStats, null, 2)}
+          
+          Numerical Data:
+          ${JSON.stringify(numericalData, null, 2)}
+          
+          Please ensure your response is valid JSON and includes detailed statistical interpretations.`
         }]
       })
     });
 
     if (!claudeResponse.ok) {
+      console.error('Claude API error:', await claudeResponse.text());
       throw new Error('Failed to get Claude analysis');
     }
 
     const claudeData = await claudeResponse.json();
     console.log('Claude analysis completed');
 
-    const advancedAnalysis = {
-      anova: JSON.parse(claudeData.content[0].text),
-      timestamp: new Date().toISOString()
-    };
+    let advancedAnalysis;
+    try {
+      // Extract the JSON from Claude's response
+      const jsonMatch = claudeData.content[0].text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        advancedAnalysis = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No valid JSON found in Claude response');
+      }
+    } catch (error) {
+      console.error('Error parsing Claude response:', error);
+      console.log('Claude raw response:', claudeData.content[0].text);
+      throw new Error('Failed to parse Claude analysis results');
+    }
 
     const analysis = {
       correlationMatrix,
@@ -158,21 +192,17 @@ serve(async (req) => {
 
     console.log('Analysis results saved successfully');
 
-    return new Response(
-      JSON.stringify({ success: true, analysis }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, analysis }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error in analyze-dataset function:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack 
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack 
+    }), { 
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
