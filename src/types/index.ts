@@ -35,9 +35,12 @@ export interface AnalysisResults {
     anova: {
       results: Array<{
         variable: string;
+        comparedWith: string;
         fStatistic: number;
         pValue: number;
+        effectSize: number;
         interpretation: string;
+        significanceLevel: string;
       }>;
       summary: string;
       charts: ChartData[];
