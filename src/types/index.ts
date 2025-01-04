@@ -22,5 +22,16 @@ export interface AnalysisResults {
   mappings: Record<string, Record<string, number>>;
   descriptiveStats: Record<string, DescriptiveStats>;
   statsAnalysis: string;
-  corrAnalysis: string;
+  advancedAnalysis: {
+    anova: {
+      results: Array<{
+        variable: string;
+        fStatistic: number;
+        pValue: number;
+        interpretation: string;
+      }>;
+      summary: string;
+    };
+    timestamp: string;
+  };
 }

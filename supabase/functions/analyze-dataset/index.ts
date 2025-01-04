@@ -5,6 +5,7 @@ import { calculateDescriptiveStats, generateExecutiveSummary } from './statsUtil
 import { calculateCorrelationMatrix } from './correlationUtils.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,17 +83,47 @@ serve(async (req) => {
       }
     });
 
-    // Calculate correlation matrix
+    // Calculate correlation matrix using ChatGPT
     const correlationMatrix = calculateCorrelationMatrix(numericalData);
-
-    // Generate executive summary
     const statsAnalysis = generateExecutiveSummary(descriptiveStats);
+
+    // Prepare data for Claude's advanced statistical analysis
+    console.log('Preparing data for Claude analysis');
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: `I have a dataset with the following numerical variables and their values. Please perform an ANOVA analysis and any other relevant statistical tests. Provide the results in a clear, structured JSON format that includes test statistics, p-values, and interpretations. Here's the data:\n\n${JSON.stringify(numericalData, null, 2)}`
+        }]
+      })
+    });
+
+    if (!claudeResponse.ok) {
+      throw new Error('Failed to get Claude analysis');
+    }
+
+    const claudeData = await claudeResponse.json();
+    console.log('Claude analysis completed');
+
+    const advancedAnalysis = {
+      anova: JSON.parse(claudeData.content[0].text),
+      timestamp: new Date().toISOString()
+    };
 
     const analysis = {
       correlationMatrix,
       mappings: categoricalMappings,
       descriptiveStats,
-      statsAnalysis
+      statsAnalysis,
+      advancedAnalysis
     };
 
     // Save results to Supabase

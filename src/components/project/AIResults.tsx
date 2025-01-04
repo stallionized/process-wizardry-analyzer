@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
+import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
 
 interface AIResultsProps {
   projectId: string;
@@ -51,7 +52,8 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           'correlationMatrix' in candidate &&
           'mappings' in candidate &&
           'descriptiveStats' in candidate &&
-          'statsAnalysis' in candidate
+          'statsAnalysis' in candidate &&
+          'advancedAnalysis' in candidate
         );
       };
 
@@ -97,7 +99,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis } = analysisResults;
+  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = analysisResults;
 
   return (
     <Card className="p-6 animate-fade-in">
@@ -118,6 +120,13 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <div className="space-y-4">
           <CorrelationMatrix correlationMatrix={correlationMatrix} />
         </div>
+
+        {/* Advanced Analysis Section (Claude) */}
+        {advancedAnalysis && (
+          <div className="space-y-4">
+            <AdvancedAnalysis analysis={advancedAnalysis} />
+          </div>
+        )}
 
         {/* Variable Mappings Section */}
         {Object.keys(mappings).length > 0 && (
