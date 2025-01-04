@@ -5,41 +5,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-export async function getClaudeAnalysis(
-  descriptiveStats: Record<string, DescriptiveStats>,
-  numericalData: Record<string, number[]>
-): Promise<any> {
-  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  if (!anthropicApiKey) {
-    throw new Error('ANTHROPIC_API_KEY is not set');
+function chunkData(data: Record<string, number[]>, chunkSize: number = 1000) {
+  const totalLength = Object.values(data)[0]?.length || 0;
+  const chunks: Array<Record<string, number[]>> = [];
+  
+  for (let i = 0; i < totalLength; i += chunkSize) {
+    const chunk: Record<string, number[]> = {};
+    Object.entries(data).forEach(([key, values]) => {
+      chunk[key] = values.slice(i, i + chunkSize);
+    });
+    chunks.push(chunk);
   }
+  
+  return chunks;
+}
 
-  // Create a minimal data summary to reduce tokens
+async function analyzeChunk(chunk: Record<string, number[]>, variables: string[]) {
   const dataSummary = {
-    variables: Object.keys(numericalData),
-    stats: Object.entries(descriptiveStats).reduce((acc, [key, stats]) => {
-      acc[key] = {
-        mean: Number(stats.mean.toFixed(2)),
-        stdDev: Number(stats.stdDev.toFixed(2)),
-        min: Number(stats.min.toFixed(2)),
-        max: Number(stats.max.toFixed(2))
-      };
-      return acc;
-    }, {} as Record<string, Partial<DescriptiveStats>>),
-    // Instead of sending all data, just send a sample
-    sampleData: Object.entries(numericalData).reduce((acc, [key, values]) => {
-      // Take only first 100 values to reduce token usage
-      acc[key] = values.slice(0, 100);
-      return acc;
-    }, {} as Record<string, number[]>)
+    variables,
+    sampleData: chunk,
+    dataPoints: Object.values(chunk)[0]?.length || 0
   };
 
-  const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide comprehensive ANOVA test results.
-
-CRITICAL: Your response must be a VALID JSON object with NO comments, NO markdown formatting, and NO explanations.
-The response must be parseable by JSON.parse() without any preprocessing.
-
-Required JSON structure:
+  const prompt = `You are a statistical analysis assistant. Analyze this dataset chunk and provide ANOVA test results.
+Your response must be valid JSON with this structure:
 {
   "anova": {
     "results": [
@@ -67,97 +56,144 @@ Required JSON structure:
   }
 }
 
-Dataset Summary: ${JSON.stringify(dataSummary)}`;
+Dataset Chunk: ${JSON.stringify(dataSummary)}`;
 
-  console.log('Sending request to Claude with prompt length:', prompt.length);
+  const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': Deno.env.get('ANTHROPIC_API_KEY') || '',
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-sonnet-20240229',
+      max_tokens: 4096,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    })
+  });
 
-  try {
-    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 4096,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-    });
-
-    if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text();
-      console.error('Claude API error:', errorText);
-      
-      // Check for rate limit error
-      if (errorText.includes('rate_limit_error')) {
-        throw new Error('Rate limit exceeded. Please try again in a minute.');
-      }
-      
-      throw new Error(`Failed to get Claude analysis: ${errorText}`);
+  if (!claudeResponse.ok) {
+    const errorText = await claudeResponse.text();
+    console.error('Claude API error:', errorText);
+    
+    if (errorText.includes('rate_limit_error')) {
+      // Wait for 1 minute before retrying
+      await new Promise(resolve => setTimeout(resolve, 61000));
+      return analyzeChunk(chunk, variables);
     }
+    
+    throw new Error(`Failed to get Claude analysis: ${errorText}`);
+  }
 
-    const claudeData = await claudeResponse.json();
-    console.log('Claude response received');
-
-    let responseText = claudeData.content[0].text.trim();
-    console.log('Raw Claude response:', responseText);
-
-    // Try to find JSON content within the response
+  const claudeData = await claudeResponse.json();
+  const responseText = claudeData.content[0].text.trim();
+  
+  try {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('No JSON object found in Claude response');
     }
-
-    responseText = jsonMatch[0];
-    console.log('Extracted JSON:', responseText);
-
-    try {
-      const analysis = JSON.parse(responseText);
-      
-      // Validate the analysis structure
-      if (!analysis.anova || !Array.isArray(analysis.anova.results)) {
-        console.error('Invalid analysis structure:', analysis);
-        throw new Error('Invalid analysis structure');
-      }
-
-      // Validate each result
-      analysis.anova.results.forEach((result: any, index: number) => {
-        const requiredFields = [
-          'variable',
-          'comparedWith',
-          'fStatistic',
-          'pValue',
-          'effectSize',
-          'interpretation',
-          'significanceLevel'
-        ];
-
-        const missingFields = requiredFields.filter(field => {
-          const value = result[field];
-          return value === undefined || value === null || 
-                 (typeof value === 'number' && isNaN(value));
-        });
-
-        if (missingFields.length > 0) {
-          console.error(`Result at index ${index} is missing fields:`, missingFields);
-          console.error('Result:', result);
-          throw new Error(`Missing or invalid fields in ANOVA result: ${missingFields.join(', ')}`);
-        }
-      });
-
-      return analysis;
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      console.error('Response that failed to parse:', responseText);
-      throw new Error(`Failed to parse Claude response: ${parseError.message}`);
-    }
+    
+    return JSON.parse(jsonMatch[0]);
   } catch (error) {
-    console.error('Error in Claude analysis:', error);
+    console.error('Failed to parse Claude response:', error);
     throw error;
   }
+}
+
+function mergeAnalyses(analyses: any[]) {
+  if (analyses.length === 0) return null;
+  
+  const merged = {
+    anova: {
+      results: [] as any[],
+      summary: '',
+      charts: [] as any[]
+    }
+  };
+
+  // Combine results and average the statistics
+  const resultMap = new Map();
+  analyses.forEach(analysis => {
+    analysis.anova.results.forEach((result: any) => {
+      const key = `${result.variable}-${result.comparedWith}`;
+      if (!resultMap.has(key)) {
+        resultMap.set(key, {
+          ...result,
+          fStatistic: 0,
+          pValue: 0,
+          effectSize: 0,
+          count: 0
+        });
+      }
+      
+      const existing = resultMap.get(key);
+      existing.fStatistic += result.fStatistic;
+      existing.pValue += result.pValue;
+      existing.effectSize += result.effectSize;
+      existing.count += 1;
+    });
+  });
+
+  // Calculate averages
+  resultMap.forEach(result => {
+    merged.anova.results.push({
+      ...result,
+      fStatistic: result.fStatistic / result.count,
+      pValue: result.pValue / result.count,
+      effectSize: result.effectSize / result.count
+    });
+  });
+
+  // Use the most comprehensive charts
+  const maxCharts = Math.max(...analyses.map(a => a.anova.charts.length));
+  const analysisWithMostCharts = analyses.find(a => a.anova.charts.length === maxCharts);
+  merged.anova.charts = analysisWithMostCharts?.anova.charts || [];
+
+  // Combine summaries
+  merged.anova.summary = analyses
+    .map(a => a.anova.summary)
+    .filter((summary, index, self) => self.indexOf(summary) === index)
+    .join(' ');
+
+  return merged;
+}
+
+export async function getClaudeAnalysis(
+  descriptiveStats: Record<string, DescriptiveStats>,
+  numericalData: Record<string, number[]>
+): Promise<any> {
+  console.log('Starting analysis of large dataset');
+  
+  const chunks = chunkData(numericalData);
+  const variables = Object.keys(numericalData);
+  const analyses: any[] = [];
+  
+  console.log(`Processing ${chunks.length} chunks of data`);
+
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      console.log(`Analyzing chunk ${i + 1}/${chunks.length}`);
+      const analysis = await analyzeChunk(chunks[i], variables);
+      analyses.push(analysis);
+      
+      // Wait between chunks to avoid rate limits
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    } catch (error) {
+      console.error(`Error analyzing chunk ${i + 1}:`, error);
+      // Continue with other chunks even if one fails
+    }
+  }
+
+  if (analyses.length === 0) {
+    throw new Error('Failed to analyze any chunks of the dataset');
+  }
+
+  console.log('Merging analyses from all chunks');
+  return mergeAnalyses(analyses);
 }
