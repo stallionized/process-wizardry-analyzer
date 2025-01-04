@@ -26,8 +26,12 @@ export async function getClaudeAnalysis(
       };
       return acc;
     }, {} as Record<string, Partial<DescriptiveStats>>),
-    sampleCount: Object.values(numericalData)[0]?.length || 0,
-    rawData: numericalData
+    // Instead of sending all data, just send a sample
+    sampleData: Object.entries(numericalData).reduce((acc, [key, values]) => {
+      // Take only first 100 values to reduce token usage
+      acc[key] = values.slice(0, 100);
+      return acc;
+    }, {} as Record<string, number[]>)
   };
 
   const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide comprehensive ANOVA test results.
@@ -63,7 +67,7 @@ Required JSON structure:
   }
 }
 
-Dataset: ${JSON.stringify(dataSummary)}`;
+Dataset Summary: ${JSON.stringify(dataSummary)}`;
 
   console.log('Sending request to Claude with prompt length:', prompt.length);
 
@@ -88,6 +92,12 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
       console.error('Claude API error:', errorText);
+      
+      // Check for rate limit error
+      if (errorText.includes('rate_limit_error')) {
+        throw new Error('Rate limit exceeded. Please try again in a minute.');
+      }
+      
       throw new Error(`Failed to get Claude analysis: ${errorText}`);
     }
 
