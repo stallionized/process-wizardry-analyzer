@@ -32,8 +32,8 @@ export async function getClaudeAnalysis(
 
   const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide comprehensive ANOVA test results.
 
-IMPORTANT: Return ONLY a valid JSON object. Do not include any comments, markdown formatting, or explanations.
-The response must be a pure JSON object that can be parsed with JSON.parse().
+CRITICAL: Your response must be a VALID JSON object with NO comments, NO markdown formatting, and NO explanations.
+The response must be parseable by JSON.parse() without any preprocessing.
 
 Required JSON structure:
 {
@@ -62,12 +62,6 @@ Required JSON structure:
     ]
   }
 }
-
-For each numerical variable:
-1. Compare it against all other variables using one-way ANOVA
-2. Calculate effect sizes (eta-squared)
-3. Add significance levels (*, **, ***, ns)
-4. Provide clear interpretations of results
 
 Dataset: ${JSON.stringify(dataSummary)}`;
 
@@ -100,19 +94,20 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     const claudeData = await claudeResponse.json();
     console.log('Claude response received');
 
-    const responseText = claudeData.content[0].text.trim();
+    let responseText = claudeData.content[0].text.trim();
     console.log('Raw Claude response:', responseText);
 
+    // Try to find JSON content within the response
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON object found in Claude response');
+    }
+
+    responseText = jsonMatch[0];
+    console.log('Extracted JSON:', responseText);
+
     try {
-      // Remove any potential markdown, comments or whitespace
-      const cleanedResponse = responseText
-        .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
-        .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '') // Remove comments
-        .replace(/^\s*[\r\n]/gm, ''); // Remove empty lines
-      
-      console.log('Cleaned response:', cleanedResponse);
-      
-      const analysis = JSON.parse(cleanedResponse);
+      const analysis = JSON.parse(responseText);
       
       // Validate the analysis structure
       if (!analysis.anova || !Array.isArray(analysis.anova.results)) {
