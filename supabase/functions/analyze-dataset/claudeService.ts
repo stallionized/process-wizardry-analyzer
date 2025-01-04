@@ -30,18 +30,12 @@ export async function getClaudeAnalysis(
     rawData: numericalData
   };
 
-  // Updated prompt to be more explicit about JSON formatting
   const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide comprehensive ANOVA test results.
 
-Your response must be ONLY a valid JSON object without any markdown formatting or additional text.
+IMPORTANT: Return ONLY a valid JSON object. Do not include any comments, markdown formatting, or explanations.
+The response must be a pure JSON object that can be parsed with JSON.parse().
 
-For each numerical variable in the dataset:
-1. Perform one-way ANOVA tests comparing it against all other variables
-2. Calculate effect sizes (eta-squared)
-3. Determine significance levels (*, **, ***, ns)
-4. Provide clear interpretations
-
-The JSON response must follow this exact structure (do not include any markdown or code block formatting):
+Required JSON structure:
 {
   "anova": {
     "results": [
@@ -68,6 +62,12 @@ The JSON response must follow this exact structure (do not include any markdown 
     ]
   }
 }
+
+For each numerical variable:
+1. Compare it against all other variables using one-way ANOVA
+2. Calculate effect sizes (eta-squared)
+3. Add significance levels (*, **, ***, ns)
+4. Provide clear interpretations of results
 
 Dataset: ${JSON.stringify(dataSummary)}`;
 
@@ -100,28 +100,48 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     const claudeData = await claudeResponse.json();
     console.log('Claude response received');
 
-    // Extract just the content from Claude's response
     const responseText = claudeData.content[0].text.trim();
     console.log('Raw Claude response:', responseText);
 
     try {
-      // Remove any potential markdown formatting
-      const cleanedResponse = responseText.replace(/```json\n|\n```/g, '');
+      // Remove any potential markdown, comments or whitespace
+      const cleanedResponse = responseText
+        .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
+        .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '') // Remove comments
+        .replace(/^\s*[\r\n]/gm, ''); // Remove empty lines
+      
+      console.log('Cleaned response:', cleanedResponse);
+      
       const analysis = JSON.parse(cleanedResponse);
       
       // Validate the analysis structure
       if (!analysis.anova || !Array.isArray(analysis.anova.results)) {
+        console.error('Invalid analysis structure:', analysis);
         throw new Error('Invalid analysis structure');
       }
 
-      // Ensure all required fields are present in each result
-      analysis.anova.results.forEach((result: any) => {
-        if (!result.variable || !result.comparedWith || 
-            typeof result.fStatistic !== 'number' || 
-            typeof result.pValue !== 'number' || 
-            typeof result.effectSize !== 'number' || 
-            !result.interpretation || !result.significanceLevel) {
-          throw new Error('Missing required fields in ANOVA results');
+      // Validate each result
+      analysis.anova.results.forEach((result: any, index: number) => {
+        const requiredFields = [
+          'variable',
+          'comparedWith',
+          'fStatistic',
+          'pValue',
+          'effectSize',
+          'interpretation',
+          'significanceLevel'
+        ];
+
+        const missingFields = requiredFields.filter(field => {
+          const value = result[field];
+          return value === undefined || value === null || 
+                 (typeof value === 'number' && isNaN(value));
+        });
+
+        if (missingFields.length > 0) {
+          console.error(`Result at index ${index} is missing fields:`, missingFields);
+          console.error('Result:', result);
+          throw new Error(`Missing or invalid fields in ANOVA result: ${missingFields.join(', ')}`);
         }
       });
 
