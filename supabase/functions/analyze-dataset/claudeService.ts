@@ -26,12 +26,19 @@ export async function getClaudeAnalysis(
       };
       return acc;
     }, {} as Record<string, Partial<DescriptiveStats>>),
-    sampleCount: Object.values(numericalData)[0]?.length || 0
+    sampleCount: Object.values(numericalData)[0]?.length || 0,
+    rawData: numericalData // Include raw data for ANOVA calculations
   };
 
-  // Simplified prompt to reduce token count and ensure valid JSON response
-  const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide insights in a specific JSON format.
+  // Prompt focused on comprehensive ANOVA analysis
+  const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide comprehensive ANOVA test results in a specific JSON format.
 Return ONLY valid JSON - no additional text, markdown, or explanations. The response must be parseable by JSON.parse().
+
+For each numerical variable in the dataset:
+1. Perform one-way ANOVA tests comparing it against all other variables
+2. Calculate effect sizes (eta-squared)
+3. Perform post-hoc tests where appropriate
+4. Create visualizations to illustrate significant relationships
 
 Required JSON structure:
 {
@@ -39,9 +46,12 @@ Required JSON structure:
     "results": [
       {
         "variable": "string",
+        "comparedWith": "string",
         "fStatistic": number,
         "pValue": number,
-        "interpretation": "string"
+        "effectSize": number,
+        "interpretation": "string",
+        "significanceLevel": "string"
       }
     ],
     "summary": "string",
@@ -72,7 +82,7 @@ Dataset: ${JSON.stringify(dataSummary)}`;
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20240229',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{
           role: 'user',
           content: prompt

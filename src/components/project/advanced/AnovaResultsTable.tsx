@@ -7,13 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-interface AnovaResult {
-  variable: string;
-  fStatistic: number;
-  pValue: number;
-  interpretation: string;
-}
+import { AnovaResult } from './types';
 
 interface AnovaResultsTableProps {
   results: AnovaResult[];
@@ -27,8 +21,11 @@ export const AnovaResultsTable: React.FC<AnovaResultsTableProps> = ({ results })
         <TableHeader>
           <TableRow>
             <TableHead>Variable</TableHead>
+            <TableHead>Compared With</TableHead>
             <TableHead>F-Statistic</TableHead>
             <TableHead>p-Value</TableHead>
+            <TableHead>Effect Size</TableHead>
+            <TableHead>Significance</TableHead>
             <TableHead>Interpretation</TableHead>
           </TableRow>
         </TableHeader>
@@ -36,9 +33,12 @@ export const AnovaResultsTable: React.FC<AnovaResultsTableProps> = ({ results })
           {results.map((result, index) => (
             <TableRow key={index}>
               <TableCell className="font-medium">{result.variable}</TableCell>
+              <TableCell>{result.comparedWith}</TableCell>
               <TableCell>{result.fStatistic.toFixed(4)}</TableCell>
               <TableCell>{result.pValue.toFixed(4)}</TableCell>
-              <TableCell>{result.interpretation}</TableCell>
+              <TableCell>{result.effectSize.toFixed(4)}</TableCell>
+              <TableCell>{result.significanceLevel}</TableCell>
+              <TableCell className="max-w-md">{result.interpretation}</TableCell>
             </TableRow>
           ))}
         </TableBody>
