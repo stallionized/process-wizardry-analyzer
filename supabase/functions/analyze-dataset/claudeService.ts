@@ -14,48 +14,48 @@ export async function getClaudeAnalysis(
     throw new Error('ANTHROPIC_API_KEY is not set');
   }
 
-  // Create a simplified summary of the data to reduce token usage
+  // Create a minimal data summary to reduce tokens
   const dataSummary = {
-    descriptiveStats: Object.entries(descriptiveStats).reduce((acc, [key, stats]) => {
+    variables: Object.keys(numericalData),
+    stats: Object.entries(descriptiveStats).reduce((acc, [key, stats]) => {
       acc[key] = {
-        mean: stats.mean,
-        stdDev: stats.stdDev,
-        min: stats.min,
-        max: stats.max
+        mean: Number(stats.mean.toFixed(2)),
+        stdDev: Number(stats.stdDev.toFixed(2)),
+        min: Number(stats.min.toFixed(2)),
+        max: Number(stats.max.toFixed(2))
       };
       return acc;
     }, {} as Record<string, Partial<DescriptiveStats>>),
-    sampleSize: Object.values(numericalData)[0]?.length || 0,
-    variables: Object.keys(numericalData)
+    sampleCount: Object.values(numericalData)[0]?.length || 0
   };
 
-  const prompt = `Analyze this dataset and provide statistical insights. Return ONLY a JSON object with this exact structure, no other text:
-  {
-    "anova": {
-      "results": [
-        {
-          "variable": "string",
-          "fStatistic": number,
-          "pValue": number,
-          "interpretation": "string"
-        }
-      ],
-      "summary": "string",
-      "charts": [
-        {
-          "type": "string (bar, line, scatter, or area)",
-          "title": "string",
-          "data": [{ }],
-          "xKey": "string",
-          "yKeys": ["string"],
-          "description": "string"
-        }
-      ]
-    }
+  // Simplified prompt to reduce token count
+  const prompt = `Analyze this dataset and provide statistical insights. Return ONLY a JSON object with this structure:
+{
+  "anova": {
+    "results": [
+      {
+        "variable": "string",
+        "fStatistic": number,
+        "pValue": number,
+        "interpretation": "string"
+      }
+    ],
+    "summary": "string",
+    "charts": [
+      {
+        "type": "string",
+        "title": "string",
+        "data": [],
+        "xKey": "string",
+        "yKeys": ["string"],
+        "description": "string"
+      }
+    ]
   }
+}
 
-  Dataset summary:
-  ${JSON.stringify(dataSummary, null, 2)}`;
+Dataset: ${JSON.stringify(dataSummary)}`;
 
   console.log('Sending request to Claude with prompt length:', prompt.length);
 
@@ -69,7 +69,7 @@ export async function getClaudeAnalysis(
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20240229',
-        max_tokens: 4096,
+        max_tokens: 2048, // Reduced from 4096
         messages: [{
           role: 'user',
           content: prompt
@@ -102,6 +102,6 @@ export async function getClaudeAnalysis(
     return analysis;
   } catch (error) {
     console.error('Error in Claude analysis:', error);
-    throw new Error(`Failed to get Claude analysis: ${error.message}`);
+    throw error;
   }
 }
