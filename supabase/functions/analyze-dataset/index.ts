@@ -101,9 +101,26 @@ serve(async (req) => {
             "interpretation": "string"
           }
         ],
-        "summary": "string"
+        "summary": "string",
+        "charts": [
+          {
+            "type": "string (bar, line, scatter, or area)",
+            "title": "string",
+            "data": [{ }],
+            "xKey": "string",
+            "yKeys": ["string"],
+            "description": "string"
+          }
+        ]
       }
     }
+
+    For the analysis, create multiple visualizations that help understand the data, such as:
+    - Distribution plots
+    - Time series analysis (if applicable)
+    - Relationship plots between variables
+    - Residual plots
+    - Any other relevant statistical visualizations
 
     Dataset statistics:
     ${JSON.stringify(descriptiveStats, null, 2)}

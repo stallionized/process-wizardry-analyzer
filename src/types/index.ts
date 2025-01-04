@@ -17,6 +17,15 @@ interface DescriptiveStats {
   q3: number;
 }
 
+interface ChartData {
+  type: string;
+  title: string;
+  data: Array<Record<string, any>>;
+  xKey: string;
+  yKeys: string[];
+  description?: string;
+}
+
 export interface AnalysisResults {
   correlationMatrix: Record<string, Record<string, number>>;
   mappings: Record<string, Record<string, number>>;
@@ -31,6 +40,7 @@ export interface AnalysisResults {
         interpretation: string;
       }>;
       summary: string;
+      charts: ChartData[];
     };
     timestamp: string;
   };
