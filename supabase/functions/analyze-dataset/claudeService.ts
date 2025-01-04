@@ -29,8 +29,11 @@ export async function getClaudeAnalysis(
     sampleCount: Object.values(numericalData)[0]?.length || 0
   };
 
-  // Simplified prompt to reduce token count
-  const prompt = `Analyze this dataset and provide statistical insights. Return ONLY a JSON object with this structure:
+  // Simplified prompt to reduce token count and ensure valid JSON response
+  const prompt = `You are a statistical analysis assistant. Analyze this dataset and provide insights in a specific JSON format.
+Return ONLY valid JSON - no additional text, markdown, or explanations. The response must be parseable by JSON.parse().
+
+Required JSON structure:
 {
   "anova": {
     "results": [
@@ -69,7 +72,7 @@ Dataset: ${JSON.stringify(dataSummary)}`;
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20240229',
-        max_tokens: 2048, // Reduced from 4096
+        max_tokens: 2048,
         messages: [{
           role: 'user',
           content: prompt
@@ -86,20 +89,25 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     const claudeData = await claudeResponse.json();
     console.log('Claude response received');
 
-    const responseText = claudeData.content[0].text;
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      throw new Error('No valid JSON found in Claude response');
-    }
+    // Extract just the JSON part from Claude's response
+    const responseText = claudeData.content[0].text.trim();
+    console.log('Raw Claude response:', responseText);
 
-    const analysis = JSON.parse(jsonMatch[0]);
-    
-    if (!analysis.anova || !Array.isArray(analysis.anova.results)) {
-      throw new Error('Invalid analysis structure');
-    }
+    try {
+      // Attempt to parse the response as JSON
+      const analysis = JSON.parse(responseText);
+      
+      // Validate the analysis structure
+      if (!analysis.anova || !Array.isArray(analysis.anova.results)) {
+        throw new Error('Invalid analysis structure');
+      }
 
-    return analysis;
+      return analysis;
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Response that failed to parse:', responseText);
+      throw new Error(`Failed to parse Claude response: ${parseError.message}`);
+    }
   } catch (error) {
     console.error('Error in Claude analysis:', error);
     throw error;
