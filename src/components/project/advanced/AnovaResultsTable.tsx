@@ -22,7 +22,7 @@ interface AnovaResultsTableProps {
 export const AnovaResultsTable: React.FC<AnovaResultsTableProps> = ({ results }) => {
   return (
     <div>
-      <h4 className="text-lg font-medium mb-4">ANOVA Results</h4>
+      <h4 className="text-lg font-medium mb-4">ANOVA</h4>
       <Table>
         <TableHeader>
           <TableRow>
