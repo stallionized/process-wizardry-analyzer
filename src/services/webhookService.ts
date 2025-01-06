@@ -13,6 +13,9 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
           name: file.name,
           url: file.url
         }))
+      },
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
 
@@ -32,7 +35,10 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
 export const analyzeDataset = async (fileUrl: string, projectId: string) => {
   try {
     const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: { fileUrl, projectId }
+      body: { fileUrl, projectId },
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (error) {
