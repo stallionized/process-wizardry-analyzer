@@ -1,3 +1,5 @@
+import { chunkData, processChunkData } from './utils/dataChunking.ts';
+import { generateAllPossiblePairs, mergeAnalyses } from './utils/analysisUtils.ts';
 import { DescriptiveStats } from './types.ts';
 
 const corsHeaders = {
@@ -5,41 +7,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function chunkData(data: Record<string, number[]>, chunkSize: number = 500) {
-  const totalLength = Object.values(data)[0]?.length || 0;
-  const chunks: Array<Record<string, number[]>> = [];
-  
-  for (let i = 0; i < totalLength; i += chunkSize) {
-    const chunk: Record<string, number[]> = {};
-    Object.entries(data).forEach(([key, values]) => {
-      chunk[key] = values.slice(i, i + chunkSize);
-    });
-    chunks.push(chunk);
-  }
-  
-  return chunks;
-}
-
-async function analyzeChunk(chunk: Record<string, number[]>, variables: string[], retryCount = 0): Promise<any> {
+async function analyzeChunk(
+  chunk: Record<string, number[]>, 
+  variablePairs: [string, string][], 
+  retryCount = 0
+): Promise<any> {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 61000;
 
   try {
-    const processedChunk: Record<string, number[]> = {};
-    Object.entries(chunk).forEach(([key, values]) => {
-      processedChunk[key] = values.map(v => Number(v.toFixed(2)));
-    });
-
+    const processedChunk = processChunkData(chunk);
+    
     const dataSummary = {
-      variables,
+      variablePairs,
       sampleSize: Object.values(processedChunk)[0]?.length || 0,
       data: processedChunk
     };
 
     const prompt = `You are a statistical analysis assistant specializing in ANOVA and post-hoc testing.
-Analyze this dataset chunk and provide comprehensive ANOVA results including post-hoc tests where relevant.
+Analyze this dataset chunk and provide comprehensive one-way ANOVA results for ALL possible variable pairs provided.
 For each variable pair, determine if there's a significant relationship and provide appropriate visualizations.
 Include post-hoc tests for significant ANOVA results.
+
+Important instructions:
+1. Analyze EVERY variable pair provided in the variablePairs array
+2. For each pair, treat one variable as the independent variable and the other as dependent
+3. Calculate F-statistic, p-value, and effect size for each comparison
+4. Provide detailed interpretation for each test
+5. Include visualizations that help understand the relationships
+6. Run post-hoc tests for any significant results
 
 Return ONLY valid JSON matching this structure:
 {
@@ -53,7 +49,6 @@ Return ONLY valid JSON matching this structure:
         "effectSize": number,
         "interpretation": "string",
         "significanceLevel": "string",
-        "isSignificant": boolean,
         "postHocResults": [
           {
             "group1": "string",
@@ -82,7 +77,7 @@ Return ONLY valid JSON matching this structure:
 
 Dataset: ${JSON.stringify(dataSummary)}`;
 
-    console.log(`Analyzing chunk with ${dataSummary.sampleSize} samples`);
+    console.log(`Analyzing chunk with ${dataSummary.sampleSize} samples and ${variablePairs.length} variable pairs`);
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -108,7 +103,7 @@ Dataset: ${JSON.stringify(dataSummary)}`;
       if (errorText.includes('rate_limit_error') && retryCount < MAX_RETRIES) {
         console.log(`Rate limit hit, retry ${retryCount + 1}/${MAX_RETRIES} after ${RETRY_DELAY}ms`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        return analyzeChunk(chunk, variables, retryCount + 1);
+        return analyzeChunk(chunk, variablePairs, retryCount + 1);
       }
       
       throw new Error(`Failed to get Claude analysis: ${errorText}`);
@@ -138,66 +133,10 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     if (retryCount < MAX_RETRIES) {
       console.log(`Error occurred, retry ${retryCount + 1}/${MAX_RETRIES} after delay`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      return analyzeChunk(chunk, variables, retryCount + 1);
+      return analyzeChunk(chunk, variablePairs, retryCount + 1);
     }
     throw error;
   }
-}
-
-function mergeAnalyses(analyses: any[]) {
-  if (analyses.length === 0) return null;
-  
-  const merged = {
-    anova: {
-      results: [] as any[],
-      summary: '',
-    }
-  };
-
-  const resultMap = new Map();
-
-  analyses.forEach(analysis => {
-    if (!analysis?.anova?.results) return;
-    
-    analysis.anova.results.forEach((result: any) => {
-      const key = `${result.variable}-${result.comparedWith}`;
-      if (!resultMap.has(key)) {
-        resultMap.set(key, {
-          ...result,
-          fStatistic: 0,
-          pValue: 0,
-          effectSize: 0,
-          count: 0
-        });
-      }
-      
-      const existing = resultMap.get(key);
-      existing.fStatistic += result.fStatistic;
-      existing.pValue += result.pValue;
-      existing.effectSize += result.effectSize;
-      existing.count += 1;
-    });
-  });
-
-  resultMap.forEach(result => {
-    if (result.count > 0) {
-      merged.anova.results.push({
-        ...result,
-        fStatistic: result.fStatistic / result.count,
-        pValue: result.pValue / result.count,
-        effectSize: result.effectSize / result.count
-      });
-    }
-  });
-
-  const uniqueSummaries = analyses
-    .map(a => a.anova.summary)
-    .filter((summary): summary is string => typeof summary === 'string')
-    .filter((summary, index, self) => self.indexOf(summary) === index);
-  
-  merged.anova.summary = uniqueSummaries.join(' ');
-
-  return merged;
 }
 
 export async function getClaudeAnalysis(
@@ -206,8 +145,12 @@ export async function getClaudeAnalysis(
 ): Promise<any> {
   console.log('Starting comprehensive ANOVA analysis of dataset');
   
-  const chunks = chunkData(numericalData);
   const variables = Object.keys(numericalData);
+  const variablePairs = generateAllPossiblePairs(variables);
+  
+  console.log(`Generated ${variablePairs.length} variable pairs for analysis`);
+  
+  const chunks = chunkData(numericalData);
   const analyses: any[] = [];
   
   console.log(`Processing ${chunks.length} chunks of data`);
@@ -215,7 +158,7 @@ export async function getClaudeAnalysis(
   for (let i = 0; i < chunks.length; i++) {
     try {
       console.log(`Analyzing chunk ${i + 1}/${chunks.length}`);
-      const analysis = await analyzeChunk(chunks[i], variables);
+      const analysis = await analyzeChunk(chunks[i], variablePairs);
       
       if (analysis && analysis.anova) {
         analyses.push(analysis);
