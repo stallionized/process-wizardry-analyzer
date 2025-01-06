@@ -23,8 +23,8 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    console.log('Starting analysis process');
     const input = await req.json() as AnalysisInput;
+    console.log('Starting analysis process');
     console.log('Processing files:', input.files);
     console.log('Project ID:', input.projectId);
 
@@ -94,19 +94,25 @@ serve(async (req) => {
 
     console.log('Analysis results saved successfully');
 
-    return new Response(JSON.stringify({ success: true, analysis }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
-    });
+    return new Response(
+      JSON.stringify({ success: true, analysis }), 
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    );
+
   } catch (error) {
     console.error('Error in analyze-dataset function:', error);
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
         details: error.stack 
-      }), { 
-        status: 500,
+      }), 
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
