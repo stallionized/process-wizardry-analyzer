@@ -1,49 +1,80 @@
 import React from 'react';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { AnovaResultsTable } from './AnovaResultsTable';
 import { ChartComponent } from './ChartComponent';
-import type { AdvancedAnalysisProps } from './types';
+import { PostHocResultsTable } from './PostHocResultsTable';
+import type { AdvancedAnalysisProps, AnovaResult } from './types';
 
 export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ analysis }) => {
   const { anova } = analysis;
+  const significantResults = anova.results.filter(result => result.isSignificant);
+  const nonSignificantResults = anova.results.filter(result => !result.isSignificant);
   
-  // Prepare data for the default ANOVA chart
-  const defaultChartData = {
-    type: 'bar',
-    title: 'ANOVA Test Results',
-    data: anova.results.map(result => ({
-      name: result.variable,
-      'F-Statistic': result.fStatistic,
-      'p-value': result.pValue
-    })),
-    xKey: 'name',
-    yKeys: ['F-Statistic', 'p-value']
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
-        {/* ANOVA Results Table */}
-        <AnovaResultsTable results={anova.results} />
-
-        {/* Default ANOVA Visualization */}
-        <ChartComponent chartData={defaultChartData} />
-
-        {/* Additional Charts from Claude */}
-        {anova.charts && anova.charts.length > 0 && (
-          <div className="space-y-8">
-            <h4 className="text-lg font-medium">Additional Statistical Visualizations</h4>
-            {anova.charts.map((chartData, index) => (
-              <ChartComponent key={index} chartData={chartData} />
-            ))}
-          </div>
-        )}
-
-        {/* Summary */}
-        <div className="mt-6">
-          <h4 className="text-lg font-medium mb-2">Analysis Summary</h4>
-          <p className="text-muted-foreground">{anova.summary}</p>
-        </div>
+    <div className="space-y-8">
+      {/* Summary Section */}
+      <div className="p-4 bg-muted/50 rounded-lg">
+        <h4 className="font-medium mb-2">ANOVA Analysis Summary</h4>
+        <p className="text-sm text-muted-foreground">{anova.summary}</p>
       </div>
+
+      {/* Non-Significant Results Section */}
+      {nonSignificantResults.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium">Non-Significant ANOVA Results</h4>
+          <ScrollArea className="h-[300px] rounded-md border">
+            <AnovaResultsTable results={nonSignificantResults} />
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* Significant Results Section */}
+      {significantResults.length > 0 && (
+        <div className="space-y-8">
+          <h4 className="text-lg font-medium">Significant ANOVA Results</h4>
+          {significantResults.map((result, index) => (
+            <div key={index} className="space-y-6 p-6 border rounded-lg">
+              <h5 className="text-base font-medium">
+                Analysis for {result.variable} vs {result.comparedWith}
+              </h5>
+              
+              {/* ANOVA Result Summary */}
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="font-medium">F-Statistic</p>
+                  <p>{result.fStatistic.toFixed(4)}</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="font-medium">p-Value</p>
+                  <p>{result.pValue.toFixed(4)}</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="font-medium">Effect Size</p>
+                  <p>{result.effectSize.toFixed(4)}</p>
+                </div>
+              </div>
+
+              {/* Interpretation */}
+              <div className="text-sm text-muted-foreground">
+                <p>{result.interpretation}</p>
+              </div>
+
+              {/* Visualizations */}
+              {result.visualizations?.map((chartData, chartIndex) => (
+                <ChartComponent key={chartIndex} chartData={chartData} />
+              ))}
+
+              {/* Post Hoc Results */}
+              {result.postHocResults && result.postHocResults.length > 0 && (
+                <div className="space-y-4">
+                  <h6 className="text-base font-medium">Post Hoc Analysis</h6>
+                  <PostHocResultsTable results={result.postHocResults} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

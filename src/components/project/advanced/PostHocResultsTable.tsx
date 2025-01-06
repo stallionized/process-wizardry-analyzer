@@ -7,33 +7,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AnovaResult } from './types';
+import { PostHocResult } from './types';
 
-interface AnovaResultsTableProps {
-  results: AnovaResult[];
+interface PostHocResultsTableProps {
+  results: PostHocResult[];
 }
 
-export const AnovaResultsTable: React.FC<AnovaResultsTableProps> = ({ results }) => {
+export const PostHocResultsTable: React.FC<PostHocResultsTableProps> = ({ results }) => {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Variable</TableHead>
-          <TableHead>Compared With</TableHead>
-          <TableHead>F-Statistic</TableHead>
+          <TableHead>Group 1</TableHead>
+          <TableHead>Group 2</TableHead>
+          <TableHead>Mean Difference</TableHead>
           <TableHead>p-Value</TableHead>
-          <TableHead>Effect Size</TableHead>
+          <TableHead>Significance</TableHead>
           <TableHead>Interpretation</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {results.map((result, index) => (
           <TableRow key={index}>
-            <TableCell className="font-medium">{result.variable}</TableCell>
-            <TableCell>{result.comparedWith}</TableCell>
-            <TableCell>{result.fStatistic.toFixed(4)}</TableCell>
+            <TableCell>{result.group1}</TableCell>
+            <TableCell>{result.group2}</TableCell>
+            <TableCell>{result.meanDifference.toFixed(4)}</TableCell>
             <TableCell>{result.pValue.toFixed(4)}</TableCell>
-            <TableCell>{result.effectSize.toFixed(4)}</TableCell>
+            <TableCell>{result.significant ? 'Significant' : 'Not Significant'}</TableCell>
             <TableCell className="max-w-md">{result.interpretation}</TableCell>
           </TableRow>
         ))}

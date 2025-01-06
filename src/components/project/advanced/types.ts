@@ -7,6 +7,15 @@ export interface ChartData {
   description?: string;
 }
 
+export interface PostHocResult {
+  group1: string;
+  group2: string;
+  meanDifference: number;
+  pValue: number;
+  significant: boolean;
+  interpretation: string;
+}
+
 export interface AnovaResult {
   variable: string;
   comparedWith: string;
@@ -15,6 +24,9 @@ export interface AnovaResult {
   effectSize: number;
   interpretation: string;
   significanceLevel: string;
+  isSignificant: boolean;
+  postHocResults?: PostHocResult[];
+  visualizations?: ChartData[];
 }
 
 export interface AdvancedAnalysisProps {
@@ -23,6 +35,7 @@ export interface AdvancedAnalysisProps {
       results: AnovaResult[];
       summary: string;
       charts: ChartData[];
+      nonSignificantResults?: AnovaResult[];
     };
     timestamp: string;
   };

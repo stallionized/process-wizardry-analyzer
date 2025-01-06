@@ -22,10 +22,9 @@ function chunkData(data: Record<string, number[]>, chunkSize: number = 500) {
 
 async function analyzeChunk(chunk: Record<string, number[]>, variables: string[], retryCount = 0): Promise<any> {
   const MAX_RETRIES = 3;
-  const RETRY_DELAY = 61000; // 61 seconds to be safe with rate limits
+  const RETRY_DELAY = 61000;
 
   try {
-    // Prepare a simplified dataset summary with rounded numbers
     const processedChunk: Record<string, number[]> = {};
     Object.entries(chunk).forEach(([key, values]) => {
       processedChunk[key] = values.map(v => Number(v.toFixed(2)));
@@ -37,8 +36,12 @@ async function analyzeChunk(chunk: Record<string, number[]>, variables: string[]
       data: processedChunk
     };
 
-    const prompt = `You are a statistical analysis assistant. Analyze this dataset chunk and provide ANOVA results.
-Return ONLY valid JSON matching this structure, with no additional text or formatting:
+    const prompt = `You are a statistical analysis assistant specializing in ANOVA and post-hoc testing.
+Analyze this dataset chunk and provide comprehensive ANOVA results including post-hoc tests where relevant.
+For each variable pair, determine if there's a significant relationship and provide appropriate visualizations.
+Include post-hoc tests for significant ANOVA results.
+
+Return ONLY valid JSON matching this structure:
 {
   "anova": {
     "results": [
@@ -49,20 +52,31 @@ Return ONLY valid JSON matching this structure, with no additional text or forma
         "pValue": number,
         "effectSize": number,
         "interpretation": "string",
-        "significanceLevel": "string"
+        "significanceLevel": "string",
+        "isSignificant": boolean,
+        "postHocResults": [
+          {
+            "group1": "string",
+            "group2": "string",
+            "meanDifference": number,
+            "pValue": number,
+            "significant": boolean,
+            "interpretation": "string"
+          }
+        ],
+        "visualizations": [
+          {
+            "type": "string",
+            "title": "string",
+            "data": [],
+            "xKey": "string",
+            "yKeys": ["string"],
+            "description": "string"
+          }
+        ]
       }
     ],
-    "summary": "string",
-    "charts": [
-      {
-        "type": "string",
-        "title": "string",
-        "data": [],
-        "xKey": "string",
-        "yKeys": ["string"],
-        "description": "string"
-      }
-    ]
+    "summary": "string"
   }
 }
 
@@ -104,7 +118,6 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     const responseText = claudeData.content[0].text.trim();
     
     try {
-      // Extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No JSON object found in Claude response');
@@ -112,7 +125,6 @@ Dataset: ${JSON.stringify(dataSummary)}`;
       
       const parsedResponse = JSON.parse(jsonMatch[0]);
       
-      // Validate the response structure
       if (!parsedResponse.anova || !Array.isArray(parsedResponse.anova.results)) {
         throw new Error('Invalid analysis structure in response');
       }
@@ -139,13 +151,10 @@ function mergeAnalyses(analyses: any[]) {
     anova: {
       results: [] as any[],
       summary: '',
-      charts: [] as any[]
     }
   };
 
-  // Combine results and average the statistics
   const resultMap = new Map();
-  let totalSamples = 0;
 
   analyses.forEach(analysis => {
     if (!analysis?.anova?.results) return;
@@ -168,11 +177,8 @@ function mergeAnalyses(analyses: any[]) {
       existing.effectSize += result.effectSize;
       existing.count += 1;
     });
-
-    totalSamples += 1;
   });
 
-  // Calculate averages and add to results
   resultMap.forEach(result => {
     if (result.count > 0) {
       merged.anova.results.push({
@@ -184,14 +190,6 @@ function mergeAnalyses(analyses: any[]) {
     }
   });
 
-  // Use the most comprehensive charts
-  const maxCharts = Math.max(...analyses.map(a => a.anova.charts?.length || 0));
-  const analysisWithMostCharts = analyses.find(a => a.anova.charts?.length === maxCharts);
-  if (analysisWithMostCharts?.anova.charts) {
-    merged.anova.charts = analysisWithMostCharts.anova.charts;
-  }
-
-  // Combine summaries
   const uniqueSummaries = analyses
     .map(a => a.anova.summary)
     .filter((summary): summary is string => typeof summary === 'string')
@@ -206,7 +204,7 @@ export async function getClaudeAnalysis(
   descriptiveStats: Record<string, DescriptiveStats>,
   numericalData: Record<string, number[]>
 ): Promise<any> {
-  console.log('Starting analysis of dataset');
+  console.log('Starting comprehensive ANOVA analysis of dataset');
   
   const chunks = chunkData(numericalData);
   const variables = Object.keys(numericalData);
@@ -224,13 +222,11 @@ export async function getClaudeAnalysis(
         console.log(`Successfully analyzed chunk ${i + 1}`);
       }
       
-      // Add a small delay between chunks to avoid rate limits
       if (i < chunks.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error(`Error analyzing chunk ${i + 1}:`, error);
-      // Continue with other chunks even if one fails
     }
   }
 
