@@ -28,6 +28,11 @@ serve(async (req) => {
     try {
       const body = await req.text();
       console.log('Received request body:', body);
+      
+      if (!body) {
+        throw new Error('Request body is empty');
+      }
+      
       input = JSON.parse(body);
     } catch (error) {
       console.error('Error parsing request body:', error);
@@ -46,16 +51,17 @@ serve(async (req) => {
       );
     }
 
-    console.log('Processing files:', input.files);
-    console.log('Project ID:', input.projectId);
-
-    if (!input.files?.length) {
+    // Validate required fields
+    if (!input.files?.length && !input.fileUrl) {
       throw new Error('No files provided for analysis');
     }
 
     if (!input.projectId) {
       throw new Error('Project ID is required');
     }
+
+    console.log('Processing files:', input.files);
+    console.log('Project ID:', input.projectId);
 
     // Process Excel data
     const {
