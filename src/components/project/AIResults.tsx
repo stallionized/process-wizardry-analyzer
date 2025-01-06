@@ -61,7 +61,22 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         throw new Error('Invalid analysis results structure');
       }
 
-      return typedResults;
+      // Transform the ANOVA results to include isSignificant property
+      const transformedResults = {
+        ...typedResults,
+        advancedAnalysis: {
+          ...typedResults.advancedAnalysis,
+          anova: {
+            ...typedResults.advancedAnalysis.anova,
+            results: typedResults.advancedAnalysis.anova.results.map(result => ({
+              ...result,
+              isSignificant: parseFloat(result.pValue.toString()) < 0.05
+            }))
+          }
+        }
+      };
+
+      return transformedResults;
     },
     refetchInterval: (data) => (!data ? 5000 : false),
   });
