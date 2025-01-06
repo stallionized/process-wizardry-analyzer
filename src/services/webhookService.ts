@@ -5,15 +5,19 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
   console.log('Attempting to analyze files:', files);
   
   try {
+    const payload = {
+      projectId,
+      files: files.map(file => ({
+        id: file.id,
+        name: file.name,
+        url: file.url
+      }))
+    };
+
+    console.log('Sending payload to analyze-dataset:', payload);
+
     const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: {
-        projectId,
-        files: files.map(file => ({
-          id: file.id,
-          name: file.name,
-          url: file.url
-        }))
-      },
+      body: payload,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -34,8 +38,11 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
 
 export const analyzeDataset = async (fileUrl: string, projectId: string) => {
   try {
+    const payload = { fileUrl, projectId };
+    console.log('Sending single file analysis payload:', payload);
+
     const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: { fileUrl, projectId },
+      body: payload,
       headers: {
         'Content-Type': 'application/json'
       }

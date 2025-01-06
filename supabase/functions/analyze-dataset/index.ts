@@ -23,8 +23,29 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    const input = await req.json() as AnalysisInput;
-    console.log('Starting analysis process');
+    // Safely parse the JSON body
+    let input: AnalysisInput;
+    try {
+      const body = await req.text();
+      console.log('Received request body:', body);
+      input = JSON.parse(body);
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid JSON in request body',
+          details: error.message
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          },
+          status: 400
+        }
+      );
+    }
+
     console.log('Processing files:', input.files);
     console.log('Project ID:', input.projectId);
 
