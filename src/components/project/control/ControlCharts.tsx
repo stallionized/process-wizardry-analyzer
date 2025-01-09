@@ -59,6 +59,18 @@ export const ControlCharts: React.FC<ControlChartsProps> = ({ charts }) => {
     );
   }
 
+  const renderDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={payload.isOutOfControl ? 6 : 4}
+        fill={payload.isOutOfControl ? '#ff0000' : '#8884d8'}
+      />
+    );
+  };
+
   return (
     <div className="space-y-8">
       {charts.map((chart, index) => (
@@ -103,10 +115,7 @@ export const ControlCharts: React.FC<ControlChartsProps> = ({ charts }) => {
                 type="monotone"
                 dataKey="value"
                 stroke="#8884d8"
-                dot={point => ({
-                  fill: point.isOutOfControl ? '#ff0000' : '#8884d8',
-                  r: point.isOutOfControl ? 6 : 4
-                })}
+                dot={renderDot}
               />
             </LineChart>
           </div>
