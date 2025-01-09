@@ -7,9 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function analyzeChunk(
-  chunk: Record<string, number[]>, 
-  variablePairs: [string, string][], 
+async function analyzeControlCharts(
+  chunk: Record<string, number[]>,
   retryCount = 0
 ): Promise<any> {
   const MAX_RETRIES = 3;
@@ -19,65 +18,57 @@ async function analyzeChunk(
     const processedChunk = processChunkData(chunk);
     
     const dataSummary = {
-      variablePairs,
       sampleSize: Object.values(processedChunk)[0]?.length || 0,
       data: processedChunk
     };
 
-    const prompt = `You are a statistical analysis assistant specializing in ANOVA and post-hoc testing.
-Analyze this dataset chunk and provide comprehensive one-way ANOVA results for ALL possible variable pairs provided.
-For each variable pair, determine if there's a significant relationship and provide appropriate visualizations.
-Include post-hoc tests for significant ANOVA results.
+    const prompt = `You are a statistical process control expert specializing in control charts.
+Analyze this dataset and generate all possible control charts for monitoring and process control.
 
 Important instructions:
-1. Analyze EVERY variable pair provided in the variablePairs array
-2. For each pair, treat one variable as the independent variable and the other as dependent
-3. Calculate F-statistic, p-value, and effect size for each comparison
-4. Provide detailed interpretation for each test
-5. Include visualizations that help understand the relationships
-6. Run post-hoc tests for any significant results
+1. For each numerical variable, create appropriate control charts (X-bar, R, S, Individual, Moving Range, etc.)
+2. Calculate control limits using ±3 standard deviations
+3. Identify out-of-control points and their specific values
+4. Group out-of-control points by their standard deviation ranges (e.g., > 3σ, < -3σ, etc.)
+5. Provide interpretation for each control chart
+6. Include visualization data for plotting
 
 Return ONLY valid JSON matching this structure:
 {
-  "anova": {
-    "results": [
-      {
-        "variable": "string",
-        "comparedWith": "string",
-        "fStatistic": number,
-        "pValue": number,
-        "effectSize": number,
-        "interpretation": "string",
-        "significanceLevel": "string",
-        "postHocResults": [
+  "controlCharts": [
+    {
+      "variable": "string",
+      "chartType": "string",
+      "centerLine": number,
+      "upperControlLimit": number,
+      "lowerControlLimit": number,
+      "data": [
+        {
+          "index": number,
+          "value": number,
+          "isOutOfControl": boolean,
+          "deviationLevel": number
+        }
+      ],
+      "outOfControlPoints": {
+        "ranges": [
           {
-            "group1": "string",
-            "group2": "string",
-            "meanDifference": number,
-            "pValue": number,
-            "significant": boolean,
-            "interpretation": "string"
-          }
-        ],
-        "visualizations": [
-          {
-            "type": "string",
-            "title": "string",
-            "data": [],
-            "xKey": "string",
-            "yKeys": ["string"],
-            "description": "string"
+            "min": number,
+            "max": number,
+            "volume": number,
+            "values": number[]
           }
         ]
-      }
-    ],
-    "summary": "string"
-  }
+      },
+      "interpretation": "string"
+    }
+  ],
+  "summary": "string"
 }
 
 Dataset: ${JSON.stringify(dataSummary)}`;
 
-    console.log(`Analyzing chunk with ${dataSummary.sampleSize} samples and ${variablePairs.length} variable pairs`);
+    console.log(`Analyzing control charts for ${dataSummary.sampleSize} samples`);
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -103,7 +94,7 @@ Dataset: ${JSON.stringify(dataSummary)}`;
       if (errorText.includes('rate_limit_error') && retryCount < MAX_RETRIES) {
         console.log(`Rate limit hit, retry ${retryCount + 1}/${MAX_RETRIES} after ${RETRY_DELAY}ms`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        return analyzeChunk(chunk, variablePairs, retryCount + 1);
+        return analyzeControlCharts(chunk, retryCount + 1);
       }
       
       throw new Error(`Failed to get Claude analysis: ${errorText}`);
@@ -120,8 +111,8 @@ Dataset: ${JSON.stringify(dataSummary)}`;
       
       const parsedResponse = JSON.parse(jsonMatch[0]);
       
-      if (!parsedResponse.anova || !Array.isArray(parsedResponse.anova.results)) {
-        throw new Error('Invalid analysis structure in response');
+      if (!parsedResponse.controlCharts || !Array.isArray(parsedResponse.controlCharts)) {
+        throw new Error('Invalid control charts structure in response');
       }
       
       return parsedResponse;
@@ -133,7 +124,7 @@ Dataset: ${JSON.stringify(dataSummary)}`;
     if (retryCount < MAX_RETRIES) {
       console.log(`Error occurred, retry ${retryCount + 1}/${MAX_RETRIES} after delay`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      return analyzeChunk(chunk, variablePairs, retryCount + 1);
+      return analyzeControlCharts(chunk, retryCount + 1);
     }
     throw error;
   }
@@ -143,25 +134,20 @@ export async function getClaudeAnalysis(
   descriptiveStats: Record<string, DescriptiveStats>,
   numericalData: Record<string, number[]>
 ): Promise<any> {
-  console.log('Starting comprehensive ANOVA analysis of dataset');
-  
-  const variables = Object.keys(numericalData);
-  const variablePairs = generateAllPossiblePairs(variables);
-  
-  console.log(`Generated ${variablePairs.length} variable pairs for analysis`);
+  console.log('Starting comprehensive analysis of dataset');
   
   const chunks = chunkData(numericalData);
-  const analyses: any[] = [];
+  const controlChartAnalyses: any[] = [];
   
   console.log(`Processing ${chunks.length} chunks of data`);
 
   for (let i = 0; i < chunks.length; i++) {
     try {
       console.log(`Analyzing chunk ${i + 1}/${chunks.length}`);
-      const analysis = await analyzeChunk(chunks[i], variablePairs);
+      const analysis = await analyzeControlCharts(chunks[i]);
       
-      if (analysis && analysis.anova) {
-        analyses.push(analysis);
+      if (analysis && analysis.controlCharts) {
+        controlChartAnalyses.push(analysis);
         console.log(`Successfully analyzed chunk ${i + 1}`);
       }
       
@@ -173,10 +159,17 @@ export async function getClaudeAnalysis(
     }
   }
 
-  if (analyses.length === 0) {
+  if (controlChartAnalyses.length === 0) {
     throw new Error('Failed to analyze any chunks of the dataset');
   }
 
-  console.log(`Successfully analyzed ${analyses.length}/${chunks.length} chunks`);
-  return mergeAnalyses(analyses);
+  console.log(`Successfully analyzed ${controlChartAnalyses.length}/${chunks.length} chunks`);
+  
+  // Merge all control chart analyses
+  const mergedAnalysis = {
+    controlCharts: controlChartAnalyses.flatMap(analysis => analysis.controlCharts),
+    summary: controlChartAnalyses[0].summary
+  };
+
+  return mergedAnalysis;
 }

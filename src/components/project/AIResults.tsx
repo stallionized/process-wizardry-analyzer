@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -7,6 +8,7 @@ import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
 import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
+import { ControlCharts } from './control/ControlCharts';
 
 interface AIResultsProps {
   projectId: string;
@@ -53,7 +55,8 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           'mappings' in candidate &&
           'descriptiveStats' in candidate &&
           'statsAnalysis' in candidate &&
-          'advancedAnalysis' in candidate
+          'advancedAnalysis' in candidate &&
+          'controlCharts' in candidate
         );
       };
 
@@ -61,22 +64,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         throw new Error('Invalid analysis results structure');
       }
 
-      // Transform the ANOVA results to include isSignificant property
-      const transformedResults = {
-        ...typedResults,
-        advancedAnalysis: {
-          ...typedResults.advancedAnalysis,
-          anova: {
-            ...typedResults.advancedAnalysis.anova,
-            results: typedResults.advancedAnalysis.anova.results.map(result => ({
-              ...result,
-              isSignificant: parseFloat(result.pValue.toString()) < 0.05
-            }))
-          }
-        }
-      };
-
-      return transformedResults;
+      return typedResults;
     },
     refetchInterval: (data) => (!data ? 5000 : false),
   });
@@ -114,59 +102,70 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = analysisResults;
+  const { 
+    correlationMatrix, 
+    mappings, 
+    descriptiveStats, 
+    statsAnalysis, 
+    advancedAnalysis,
+    controlCharts 
+  } = analysisResults;
 
   return (
     <Card className="p-6 animate-fade-in">
       <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
       
-      <div className="space-y-8">
-        {/* Descriptive Statistics Section */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Descriptive Statistics</h3>
+      <Tabs defaultValue="descriptive" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="descriptive">Descriptive Statistics</TabsTrigger>
+          <TabsTrigger value="correlation">Correlation Analysis</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced Analysis</TabsTrigger>
+          <TabsTrigger value="control">Control Results</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="descriptive" className="space-y-8">
           <div className="p-4 bg-muted/50 rounded-lg">
             <h4 className="font-medium mb-2">AI Analysis Summary</h4>
             <p className="text-sm text-muted-foreground">{statsAnalysis}</p>
           </div>
           <DescriptiveStats stats={descriptiveStats} />
-        </div>
+        </TabsContent>
 
-        {/* Correlation Matrix Section */}
-        <div className="space-y-4">
+        <TabsContent value="correlation">
           <CorrelationMatrix correlationMatrix={correlationMatrix} />
-        </div>
+        </TabsContent>
 
-        {/* Advanced Analysis Section (Claude) */}
-        {advancedAnalysis && (
-          <div className="space-y-4">
-            <AdvancedAnalysis analysis={advancedAnalysis} />
+        <TabsContent value="advanced">
+          <AdvancedAnalysis analysis={advancedAnalysis} />
+        </TabsContent>
+
+        <TabsContent value="control">
+          <ControlCharts charts={controlCharts} />
+        </TabsContent>
+      </Tabs>
+
+      {Object.keys(mappings).length > 0 && (
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium">Variable Mappings</h3>
           </div>
-        )}
-
-        {/* Variable Mappings Section */}
-        {Object.keys(mappings).length > 0 && (
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-medium">Variable Mappings</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(mappings).map(([column, mapping]) => (
-                <div key={column} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <h4 className="font-medium mb-2">{column}</h4>
-                  <div className="space-y-1">
-                    {Object.entries(mapping).map(([text, value]) => (
-                      <div key={text} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{text}:</span>
-                        <span>{value}</span>
-                      </div>
-                    ))}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(mappings).map(([column, mapping]) => (
+              <div key={column} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                <h4 className="font-medium mb-2">{column}</h4>
+                <div className="space-y-1">
+                  {Object.entries(mapping).map(([text, value]) => (
+                    <div key={text} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{text}:</span>
+                      <span>{value}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </Card>
   );
 };

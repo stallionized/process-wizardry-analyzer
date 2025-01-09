@@ -26,6 +26,29 @@ interface ChartData {
   description?: string;
 }
 
+interface ControlChartData {
+  variable: string;
+  chartType: string;
+  centerLine: number;
+  upperControlLimit: number;
+  lowerControlLimit: number;
+  data: {
+    index: number;
+    value: number;
+    isOutOfControl: boolean;
+    deviationLevel: number;
+  }[];
+  outOfControlPoints: {
+    ranges: {
+      min: number;
+      max: number;
+      volume: number;
+      values: number[];
+    }[];
+  };
+  interpretation: string;
+}
+
 export interface AnalysisResults {
   correlationMatrix: Record<string, Record<string, number>>;
   mappings: Record<string, Record<string, number>>;
@@ -47,4 +70,5 @@ export interface AnalysisResults {
     };
     timestamp: string;
   };
+  controlCharts: ControlChartData[];
 }
