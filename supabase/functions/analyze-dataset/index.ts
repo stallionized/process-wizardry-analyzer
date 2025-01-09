@@ -30,17 +30,18 @@ serve(async (req) => {
       url: req.url
     });
 
-    // Safely parse the JSON body
+    // Get the request body as text first for logging
+    const bodyText = await req.text();
+    console.log('Raw request body:', bodyText);
+
+    if (!bodyText) {
+      throw new Error('Request body is empty');
+    }
+
+    // Parse the JSON body
     let input: AnalysisInput;
     try {
-      const body = await req.text();
-      console.log('Received request body:', body);
-      
-      if (!body) {
-        throw new Error('Request body is empty');
-      }
-      
-      input = JSON.parse(body);
+      input = JSON.parse(bodyText);
       console.log('Parsed input:', input);
     } catch (error) {
       console.error('Error parsing request body:', error);
@@ -60,7 +61,7 @@ serve(async (req) => {
     }
 
     // Validate required fields
-    if (!input.files?.length && !input.fileUrl) {
+    if (!input.files?.length) {
       throw new Error('No files provided for analysis');
     }
 
