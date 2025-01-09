@@ -23,6 +23,13 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
+    // Log the raw request for debugging
+    console.log('Received request:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries()),
+      url: req.url
+    });
+
     // Safely parse the JSON body
     let input: AnalysisInput;
     try {
@@ -34,6 +41,7 @@ serve(async (req) => {
       }
       
       input = JSON.parse(body);
+      console.log('Parsed input:', input);
     } catch (error) {
       console.error('Error parsing request body:', error);
       return new Response(
@@ -69,7 +77,8 @@ serve(async (req) => {
       categoricalMappings,
       descriptiveStats,
       correlationMatrix,
-      statsAnalysis
+      statsAnalysis,
+      controlCharts
     } = await processExcelData(input);
 
     // Get Claude analysis
@@ -82,10 +91,7 @@ serve(async (req) => {
       mappings: categoricalMappings,
       descriptiveStats,
       statsAnalysis,
-      advancedAnalysis: {
-        ...advancedAnalysis,
-        timestamp: new Date().toISOString()
-      }
+      controlCharts
     };
 
     // Save to Supabase
@@ -109,7 +115,8 @@ serve(async (req) => {
       body: JSON.stringify({
         project_id: input.projectId,
         results: analysis,
-        descriptive_stats: descriptiveStats
+        descriptive_stats: descriptiveStats,
+        control_charts: controlCharts
       }),
     });
 
