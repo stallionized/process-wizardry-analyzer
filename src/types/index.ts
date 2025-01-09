@@ -2,6 +2,7 @@ export interface FileData {
   id: string;
   name: string;
   url: string;
+  type?: string; // Added type property as optional to maintain compatibility
 }
 
 interface DescriptiveStats {
