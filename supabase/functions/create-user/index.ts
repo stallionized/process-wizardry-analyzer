@@ -27,12 +27,28 @@ serve(async (req) => {
     })
 
     if (existingUsers?.users?.length > 0) {
+      const existingUser = existingUsers.users[0]
+      
+      // Update password for existing user
+      const { data: updateData, error: updateError } = await supabaseClient.auth.admin.updateUserById(
+        existingUser.id,
+        { password: password }
+      )
+
+      if (updateError) {
+        console.error('Error updating user password:', updateError)
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400 
+          }
+        )
+      }
+
       return new Response(
-        JSON.stringify({ error: 'A user with this email address has already been registered' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
+        JSON.stringify({ data: updateData, message: 'User password updated successfully' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -55,7 +71,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ data }),
+      JSON.stringify({ data, message: 'User created successfully' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

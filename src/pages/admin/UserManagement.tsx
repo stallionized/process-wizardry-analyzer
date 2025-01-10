@@ -117,7 +117,9 @@ const UserManagement = () => {
         return;
       }
 
-      toast.success('User created successfully');
+      // Handle both new user creation and password update cases
+      const successMessage = data?.message || 'Operation completed successfully';
+      toast.success(successMessage);
       setNewUserEmail('');
       setNewUserPassword('');
       fetchUsers();
