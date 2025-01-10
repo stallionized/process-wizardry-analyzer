@@ -10,6 +10,12 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ControlChartData {
   variable: string;
@@ -73,29 +79,54 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     }
   ];
 
-  // Calculate distribution of points across standard deviation ranges
+  // Calculate distribution of points across standard deviation ranges with indices
   const calculateDistribution = () => {
-    const distribution = new Array(7).fill(0); // -3σ to +3σ (7 ranges)
+    const distribution = {
+      beyond3: { count: 0, indices: [] as number[] },
+      between2and3: { count: 0, indices: [] as number[] },
+      between1and2: { count: 0, indices: [] as number[] },
+      within1: { count: 0, indices: [] as number[] }
+    };
     
-    chart.data.values.forEach(value => {
+    chart.data.values.forEach((value, index) => {
       const deviations = Math.abs((value - chart.data.centerLine) / standardDeviation);
       
       if (deviations > 3) {
-        distribution[6]++; // Beyond 3σ (positive)
+        distribution.beyond3.count++;
+        distribution.beyond3.indices.push(index + 1);
       } else if (deviations > 2) {
-        distribution[5]++; // Between 2σ and 3σ
+        distribution.between2and3.count++;
+        distribution.between2and3.indices.push(index + 1);
       } else if (deviations > 1) {
-        distribution[4]++; // Between 1σ and 2σ
+        distribution.between1and2.count++;
+        distribution.between1and2.indices.push(index + 1);
       } else {
-        distribution[3]++; // Within 1σ
+        distribution.within1.count++;
+        distribution.within1.indices.push(index + 1);
       }
     });
 
     return [
-      { range: "Beyond ±3σ", count: distribution[6] },
-      { range: "±2σ to ±3σ", count: distribution[5] },
-      { range: "±1σ to ±2σ", count: distribution[4] },
-      { range: "Within ±1σ", count: distribution[3] }
+      { 
+        range: "Beyond ±3σ", 
+        count: distribution.beyond3.count,
+        indices: distribution.beyond3.indices 
+      },
+      { 
+        range: "±2σ to ±3σ", 
+        count: distribution.between2and3.count,
+        indices: distribution.between2and3.indices 
+      },
+      { 
+        range: "±1σ to ±2σ", 
+        count: distribution.between1and2.count,
+        indices: distribution.between1and2.indices 
+      },
+      { 
+        range: "Within ±1σ", 
+        count: distribution.within1.count,
+        indices: distribution.within1.indices 
+      }
     ];
   };
 
@@ -174,7 +205,18 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             {distribution.map((row, index) => (
               <TableRow key={index}>
                 <TableCell>{row.range}</TableCell>
-                <TableCell>{row.count}</TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">{row.count}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">Data points: {row.indices.join(', ')}</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </TableCell>
                 <TableCell>
                   {((row.count / chart.data.values.length) * 100).toFixed(1)}%
                 </TableCell>
