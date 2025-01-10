@@ -22,18 +22,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface User {
+interface UserProfile {
   id: string;
   email: string;
+  is_admin: boolean;
 }
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
@@ -63,25 +64,29 @@ const UserManagement = () => {
   };
 
   const fetchUsers = async () => {
-    const { data: profiles, error: profilesError } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select(`
         id,
-        auth.users!inner (
-          email,
-          id
+        is_admin,
+        email:auth_users!inner (
+          email
         )
-      `);
+      `)
+      .returns<UserProfile[]>();
     
-    if (profilesError) {
+    if (error) {
       toast.error("Failed to fetch users");
       return;
     }
 
-    setUsers(profiles?.map(profile => ({
+    const formattedUsers = data.map(profile => ({
       id: profile.id,
-      email: profile.auth.users.email
-    })) || []);
+      email: profile.email.email,
+      is_admin: profile.is_admin
+    }));
+
+    setUsers(formattedUsers);
   };
 
   const createUser = async () => {
@@ -171,6 +176,7 @@ const UserManagement = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -178,6 +184,7 @@ const UserManagement = () => {
             {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.email}</TableCell>
+                <TableCell>{user.is_admin ? 'Admin' : 'User'}</TableCell>
                 <TableCell>
                   <Dialog>
                     <DialogTrigger asChild>
