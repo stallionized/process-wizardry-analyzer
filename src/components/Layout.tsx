@@ -33,21 +33,23 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     checkAuth();
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
         setIsAuthenticated(true);
-        checkAdminStatus(session?.user.id);
+        if (session?.user.id) {
+          await checkAdminStatus(session.user.id);
+        }
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setIsAdmin(false);
+        navigate('/auth/login');
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const checkAuth = async () => {
     try {
@@ -56,6 +58,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       
       if (!user) {
         setIsAuthenticated(false);
+        setIsAdmin(false);
         navigate('/auth/login');
         return;
       }
@@ -85,6 +88,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(profile?.is_admin || false);
     } catch (error) {
       console.error('Admin status check error:', error);
+      setIsAdmin(false);
     }
   };
 
