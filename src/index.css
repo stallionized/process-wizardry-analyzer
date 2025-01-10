@@ -49,7 +49,7 @@
 
 @layer components {
   .matrix-container {
-    @apply relative border rounded-lg;
+    @apply relative border rounded-lg bg-white dark:bg-gray-900;
     width: min(1200px, 100%);
     height: min(600px, calc(90vh - 12rem));
     overflow-y: auto;
@@ -57,21 +57,21 @@
   }
 
   .matrix-scroll-area {
-    @apply relative;
+    @apply relative bg-white dark:bg-gray-900;
     width: 100%;
     min-width: max-content;
   }
 
   .matrix-header {
-    @apply bg-background shadow-sm sticky top-0 z-10;
+    @apply bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10;
   }
 
   .matrix-first-column {
-    @apply bg-background shadow-sm;
+    @apply bg-white dark:bg-gray-900 shadow-sm;
   }
 
   [role="dialog"] {
-    @apply bg-white dark:bg-gray-900 rounded-lg;
+    @apply bg-white dark:bg-gray-900 rounded-lg shadow-lg;
     width: 99.5vw;
     height: 99.5vh;
     margin: 0.25rem;
@@ -83,7 +83,7 @@
   }
 
   [role="dialog"] .matrix-container {
-    @apply bg-gray-50 dark:bg-gray-800;
+    @apply bg-white dark:bg-gray-900;
     height: min(800px, calc(99.5vh - 12rem));
     width: min(1600px, calc(99.5vw - 6rem));
   }
@@ -91,5 +91,28 @@
   [role="dialog"] button[aria-label="Close"] {
     @apply absolute right-8 top-8 opacity-70 hover:opacity-100 transition-opacity;
     z-index: 51;
+  }
+
+  /* Dropdown and Menu Styles */
+  [role="menu"],
+  [role="listbox"],
+  [role="dialog"] {
+    @apply bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700;
+  }
+
+  /* Hover States */
+  .hover\:bg-muted:hover {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  /* Popover and Tooltip Styles */
+  [role="tooltip"],
+  [data-popper-placement] {
+    @apply bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700;
+  }
+
+  /* Modal Content */
+  .modal-content {
+    @apply bg-white dark:bg-gray-900 p-6 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700;
   }
 }
