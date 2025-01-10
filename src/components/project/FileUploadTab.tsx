@@ -117,8 +117,7 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading, isSubmi
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction 
                           onClick={() => onDelete(file.id)}
-                          variant="outline"
-                          className="border border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          className="bg-background text-destructive hover:bg-accent border border-destructive"
                         >
                           Delete
                         </AlertDialogAction>
