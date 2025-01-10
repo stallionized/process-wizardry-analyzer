@@ -27,7 +27,7 @@ interface AnalysisResultsData {
 }
 
 const AIResults = ({ projectId }: AIResultsProps) => {
-  const { data: analysisResults, isLoading, status: queryStatus } = useQuery<AnalysisResultsData>({
+  const { data: analysisResults, isLoading, status } = useQuery({
     queryKey: ['analysis', projectId],
     queryFn: async () => {
       console.log('Fetching analysis results for project:', projectId);
@@ -98,7 +98,22 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const results = analysisResults.results as unknown as AnalysisResults;
+  // Only try to parse results if they exist and are not empty
+  const results = (analysisResults.results && Object.keys(analysisResults.results).length > 0) 
+    ? analysisResults.results as unknown as AnalysisResults
+    : null;
+
+  if (!results) {
+    return (
+      <Card className="p-6 animate-fade-in">
+        <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
+        <p className="text-muted-foreground">
+          Analysis in progress. Results will appear here once processing is complete.
+        </p>
+      </Card>
+    );
+  }
+
   const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = results;
 
   // Add timestamp and ensure charts array exists for advancedAnalysis
@@ -139,7 +154,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         )}
 
         {/* Variable Mappings Section */}
-        {Object.keys(mappings).length > 0 && (
+        {mappings && Object.keys(mappings).length > 0 && (
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-medium">Variable Mappings</h3>
