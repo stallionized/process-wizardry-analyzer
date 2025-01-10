@@ -52,9 +52,9 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       console.log('Analysis results found:', data);
       return data;
     },
-    refetchInterval: (data) => {
-      if (!data) return 5000;
-      return data.status === 'completed' || data.status === 'failed' ? false : 5000;
+    refetchInterval: (queryData: AnalysisResultsData | null) => {
+      if (!queryData) return 5000;
+      return queryData.status === 'completed' || queryData.status === 'failed' ? false : 5000;
     },
   });
 
@@ -198,6 +198,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       </div>
     </Card>
   );
-};
+});
 
 export default AIResults;
