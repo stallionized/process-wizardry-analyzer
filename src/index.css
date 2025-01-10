@@ -96,8 +96,20 @@
   /* Dropdown and Menu Styles */
   [role="menu"],
   [role="listbox"],
-  [role="dialog"] {
+  [role="dialog"],
+  [data-radix-popper-content-wrapper] > div {
     @apply bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700;
+  }
+
+  /* Select Content Styles */
+  [role="listbox"] {
+    @apply bg-white dark:bg-gray-900 !important;
+  }
+
+  /* Alert and Toast Styles */
+  [role="alert"],
+  [role="status"] {
+    @apply bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700 !important;
   }
 
   /* Hover States */
@@ -114,5 +126,17 @@
   /* Modal Content */
   .modal-content {
     @apply bg-white dark:bg-gray-900 p-6 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700;
+  }
+
+  /* SelectContent specific styles */
+  .SelectContent {
+    @apply bg-white dark:bg-gray-900 !important;
+    overflow: hidden;
+    z-index: 50;
+  }
+
+  /* SelectItem specific styles */
+  .SelectItem {
+    @apply bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800;
   }
 }
