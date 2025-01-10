@@ -27,7 +27,7 @@ interface AnalysisResultsData {
 }
 
 const AIResults = ({ projectId }: AIResultsProps) => {
-  const { data: analysisResults, isLoading } = useQuery<AnalysisResultsData | null>({
+  const { data: analysisResults, isLoading } = useQuery({
     queryKey: ['analysis', projectId],
     queryFn: async () => {
       console.log('Fetching analysis results for project:', projectId);
@@ -50,11 +50,12 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       }
       
       console.log('Analysis results found:', data);
-      return data;
+      return data as AnalysisResultsData;
     },
-    refetchInterval: (queryData: AnalysisResultsData | null) => {
-      if (!queryData) return 5000;
-      return queryData.status === 'completed' || queryData.status === 'failed' ? false : 5000;
+    refetchInterval: (query) => {
+      const data = query.state.data as AnalysisResultsData | null;
+      if (!data) return 5000;
+      return data.status === 'completed' || data.status === 'failed' ? false : 5000;
     },
   });
 
