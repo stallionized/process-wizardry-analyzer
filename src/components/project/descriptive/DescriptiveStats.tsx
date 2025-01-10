@@ -16,6 +16,16 @@ interface DescriptiveStatsProps {
 }
 
 export const DescriptiveStats: React.FC<DescriptiveStatsProps> = ({ stats }) => {
+  if (!stats) {
+    return (
+      <div>
+        <p className="text-muted-foreground">
+          No statistical data available for analysis.
+        </p>
+      </div>
+    );
+  }
+
   const variables = Object.keys(stats);
 
   if (variables.length === 0) {
