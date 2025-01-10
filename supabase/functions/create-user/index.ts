@@ -7,8 +7,9 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -19,15 +20,37 @@ serve(async (req) => {
 
     const { email, password } = await req.json()
 
-    // First check if user exists
-    const { data: existingUsers } = await supabaseClient.auth.admin.listUsers({
-      filter: {
+    if (!email || !password) {
+      return new Response(
+        JSON.stringify({ error: 'Email and password are required' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Check if user exists
+    const { data: existingUsers, error: searchError } = await supabaseClient.auth.admin.listUsers({
+      filters: {
         email: email
       }
     })
 
+    if (searchError) {
+      console.error('Error searching for user:', searchError)
+      return new Response(
+        JSON.stringify({ error: searchError.message }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
+        }
+      )
+    }
+
     if (existingUsers?.users?.length > 0) {
       const existingUser = existingUsers.users[0]
+      console.log('Updating password for existing user:', existingUser.id)
       
       // Update password for existing user
       const { data: updateData, error: updateError } = await supabaseClient.auth.admin.updateUserById(
@@ -46,23 +69,25 @@ serve(async (req) => {
         )
       }
 
+      console.log('Password updated successfully')
       return new Response(
         JSON.stringify({ data: updateData, message: 'User password updated successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // If no existing user, create new user
-    const { data, error } = await supabaseClient.auth.admin.createUser({
+    console.log('Creating new user with email:', email)
+    // Create new user if they don't exist
+    const { data, error: createError } = await supabaseClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true
     })
 
-    if (error) {
-      console.error('Error creating user:', error)
+    if (createError) {
+      console.error('Error creating user:', createError)
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: createError.message }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -70,17 +95,18 @@ serve(async (req) => {
       )
     }
 
+    console.log('User created successfully')
     return new Response(
       JSON.stringify({ data, message: 'User created successfully' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error in create-user function:', error)
+    console.error('Unexpected error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: 500
       }
     )
   }
