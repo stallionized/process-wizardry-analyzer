@@ -40,9 +40,17 @@ serve(async (req) => {
       }
     );
 
+    if (!response.ok) {
+      throw new Error(`Failed to fetch analysis results: ${response.statusText}`);
+    }
+
     const [results] = await response.json();
     if (!results?.descriptive_stats) {
-      throw new Error('No analysis results found');
+      console.log('No analysis results found for project:', projectId);
+      return new Response(
+        JSON.stringify({ summary: 'Analysis results are not yet available. Please wait for the dataset analysis to complete.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Sending request to Claude API');
