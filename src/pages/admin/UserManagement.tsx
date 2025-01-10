@@ -103,22 +103,28 @@ const UserManagement = () => {
       return;
     }
 
-    const { data, error } = await supabase.functions.invoke('create-user', {
-      body: {
-        email: newUserEmail,
-        password: newUserPassword
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUserEmail,
+          password: newUserPassword
+        }
+      });
+
+      if (error) {
+        const errorMessage = error.message || 'Failed to create user';
+        toast.error(errorMessage);
+        return;
       }
-    });
 
-    if (error) {
-      toast.error(error.message);
-      return;
+      toast.success('User created successfully');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      fetchUsers();
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to create user';
+      toast.error(errorMessage);
     }
-
-    toast.success('User created successfully');
-    setNewUserEmail('');
-    setNewUserPassword('');
-    fetchUsers();
   };
 
   const updateUserPassword = async () => {
