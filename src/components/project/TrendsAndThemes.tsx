@@ -37,9 +37,11 @@ const TrendsAndThemes = ({ projectId }: TrendsAndThemesProps) => {
     },
     refetchInterval: (data) => (!data ? 5000 : false),
     retry: 3,
-    onError: (error) => {
-      console.error('Error in trends analysis:', error);
-      toast.error('Failed to analyze trends. Please try again later.');
+    meta: {
+      onError: (error: Error) => {
+        console.error('Error in trends analysis:', error);
+        toast.error('Failed to analyze trends. Please try again later.');
+      }
     }
   });
 
