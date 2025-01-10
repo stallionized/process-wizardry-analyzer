@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,6 +16,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UploadedFile {
   id: string;
@@ -29,21 +44,45 @@ interface FileUploadTabProps {
   files: UploadedFile[];
   onUpload: (files: File[], fileType: string) => void;
   onDelete: (fileId: string) => void;
-  onSubmit?: () => void;
+  onSubmit?: (selectedIdentifier?: string) => void;
   isLoading?: boolean;
   isSubmitting?: boolean;
+  potentialIdentifiers?: string[];
 }
 
-const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading, isSubmitting }: FileUploadTabProps) => {
+const FileUploadTab = ({ 
+  files, 
+  onUpload, 
+  onDelete, 
+  onSubmit, 
+  isLoading, 
+  isSubmitting,
+  potentialIdentifiers 
+}: FileUploadTabProps) => {
+  const [showIdentifierDialog, setShowIdentifierDialog] = useState(false);
+  const [selectedIdentifier, setSelectedIdentifier] = useState<string>();
+
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
     onUpload(uploadedFiles, fileType);
   };
 
   const handleSubmit = () => {
-    onSubmit?.();
+    if (potentialIdentifiers?.length) {
+      setShowIdentifierDialog(true);
+    } else {
+      const proceed = window.confirm(
+        "No unique identifiers found in the dataset. Would you like to proceed with the submission?"
+      );
+      if (proceed) {
+        onSubmit?.();
+      }
+    }
   };
 
-  const hasNewFiles = files.some(file => file.isNew);
+  const handleIdentifierSubmit = () => {
+    setShowIdentifierDialog(false);
+    onSubmit?.(selectedIdentifier);
+  };
 
   if (isLoading) {
     return (
@@ -128,7 +167,7 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading, isSubmi
               ))}
             </div>
           </ScrollArea>
-          {hasNewFiles && (
+          {files.some(file => file.isNew) && (
             <div className="mt-4">
               <Button 
                 onClick={handleSubmit} 
@@ -148,6 +187,42 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading, isSubmi
           )}
         </Card>
       )}
+
+      <Dialog open={showIdentifierDialog} onOpenChange={setShowIdentifierDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Select Unique Identifier</DialogTitle>
+            <DialogDescription>
+              Please select a unique identifier for your dataset. This will be used to label data points in charts and analyses.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Select
+              value={selectedIdentifier}
+              onValueChange={setSelectedIdentifier}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an identifier" />
+              </SelectTrigger>
+              <SelectContent>
+                {potentialIdentifiers?.map((identifier) => (
+                  <SelectItem key={identifier} value={identifier}>
+                    {identifier}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowIdentifierDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleIdentifierSubmit} disabled={!selectedIdentifier}>
+              Proceed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import * as XLSX from 'https://deno.land/x/sheetjs@v0.18.3/xlsx.mjs';
 import { calculateDescriptiveStats, generateExecutiveSummary } from './statsUtils.ts';
 import { calculateCorrelationMatrix } from './correlationUtils.ts';
+import { findPotentialUniqueIdentifiers } from './uniqueIdentifierUtils.ts';
 import { AnalysisInput } from './types.ts';
 
 function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; } {
@@ -59,18 +60,24 @@ export async function processExcelData(input: AnalysisInput) {
     throw new Error(validation.error);
   }
 
+  // Find potential unique identifiers
+  const potentialIdentifiers = findPotentialUniqueIdentifiers(jsonData);
+  console.log('Potential unique identifiers found:', potentialIdentifiers);
+
+  // If this is the initial submission, return only the potential identifiers
+  if (input.checkIdentifiers) {
+    return {
+      potentialIdentifiers,
+      jsonData // We'll need this later when the user selects an identifier
+    };
+  }
+
   const numericalData: Record<string, number[]> = {};
   const descriptiveStats: Record<string, any> = {};
   const dataIdentifiers: Record<string, string[]> = {};
 
-  // Find potential identifier columns (non-numeric columns)
-  const firstRow = jsonData[0];
-  const potentialIdentifierColumns = Object.keys(firstRow).filter(column => {
-    const value = firstRow[column];
-    return typeof value === 'string' || typeof value === 'number';
-  });
-
-  console.log('Potential identifier columns:', potentialIdentifierColumns);
+  // Use the selected identifier if provided
+  const identifierColumn = input.selectedIdentifier || null;
 
   // Process numeric columns and keep track of identifiers
   Object.keys(jsonData[0]).forEach(column => {
@@ -88,21 +95,17 @@ export async function processExcelData(input: AnalysisInput) {
       numericalData[column] = values;
       descriptiveStats[column] = calculateDescriptiveStats(values);
       
-      // Store identifiers for this column's data points
-      dataIdentifiers[column] = jsonData.map(row => {
-        // Try to find the best identifier from available columns
-        for (const idColumn of potentialIdentifierColumns) {
-          if (idColumn !== column && row[idColumn]) {
-            return String(row[idColumn]);
-          }
+      // Use the selected identifier if available, otherwise use row numbers
+      dataIdentifiers[column] = jsonData.map((row, index) => {
+        if (identifierColumn && row[identifierColumn]) {
+          return String(row[identifierColumn]);
         }
-        return `Row ${jsonData.indexOf(row) + 1}`;
+        return `Row ${index + 1}`;
       });
     }
   });
 
   console.log('Processed numerical data for columns:', Object.keys(numericalData));
-  console.log('Collected identifiers for data points');
 
   const correlationMatrix = calculateCorrelationMatrix(numericalData);
   const statsAnalysis = generateExecutiveSummary(descriptiveStats);
@@ -112,6 +115,7 @@ export async function processExcelData(input: AnalysisInput) {
     descriptiveStats,
     correlationMatrix,
     statsAnalysis,
-    dataIdentifiers
+    dataIdentifiers,
+    selectedIdentifier: identifierColumn
   };
 }
