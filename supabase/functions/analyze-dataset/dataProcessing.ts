@@ -61,8 +61,18 @@ export async function processExcelData(input: AnalysisInput) {
 
   const numericalData: Record<string, number[]> = {};
   const descriptiveStats: Record<string, any> = {};
+  const dataIdentifiers: Record<string, string[]> = {};
 
-  // Process numeric columns
+  // Find potential identifier columns (non-numeric columns)
+  const firstRow = jsonData[0];
+  const potentialIdentifierColumns = Object.keys(firstRow).filter(column => {
+    const value = firstRow[column];
+    return typeof value === 'string' || typeof value === 'number';
+  });
+
+  console.log('Potential identifier columns:', potentialIdentifierColumns);
+
+  // Process numeric columns and keep track of identifiers
   Object.keys(jsonData[0]).forEach(column => {
     const values = jsonData.map(row => {
       const value = row[column];
@@ -77,10 +87,22 @@ export async function processExcelData(input: AnalysisInput) {
     if (values.length > 0) {
       numericalData[column] = values;
       descriptiveStats[column] = calculateDescriptiveStats(values);
+      
+      // Store identifiers for this column's data points
+      dataIdentifiers[column] = jsonData.map(row => {
+        // Try to find the best identifier from available columns
+        for (const idColumn of potentialIdentifierColumns) {
+          if (idColumn !== column && row[idColumn]) {
+            return String(row[idColumn]);
+          }
+        }
+        return `Row ${jsonData.indexOf(row) + 1}`;
+      });
     }
   });
 
   console.log('Processed numerical data for columns:', Object.keys(numericalData));
+  console.log('Collected identifiers for data points');
 
   const correlationMatrix = calculateCorrelationMatrix(numericalData);
   const statsAnalysis = generateExecutiveSummary(descriptiveStats);
@@ -89,6 +111,7 @@ export async function processExcelData(input: AnalysisInput) {
     numericalData,
     descriptiveStats,
     correlationMatrix,
-    statsAnalysis
+    statsAnalysis,
+    dataIdentifiers
   };
 }

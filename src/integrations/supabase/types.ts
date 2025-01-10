@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           control_charts: Json | null
           created_at: string | null
+          data_identifiers: Json | null
           descriptive_stats: Json | null
           error_message: string | null
           estimated_completion_time: string | null
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           control_charts?: Json | null
           created_at?: string | null
+          data_identifiers?: Json | null
           descriptive_stats?: Json | null
           error_message?: string | null
           estimated_completion_time?: string | null
@@ -39,6 +41,7 @@ export type Database = {
         Update: {
           control_charts?: Json | null
           created_at?: string | null
+          data_identifiers?: Json | null
           descriptive_stats?: Json | null
           error_message?: string | null
           estimated_completion_time?: string | null

@@ -26,6 +26,7 @@ interface ControlChartData {
     lcl: number;
     centerLine: number;
     movingRanges?: number[];
+    identifiers?: string[];
   };
   interpretation: string;
   outOfControlPoints: number[];
@@ -39,6 +40,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
   const chartData = chart.data.values.map((value, i) => ({
     index: i + 1,
     value,
+    identifier: chart.data.identifiers?.[i] || `Point ${i + 1}`,
     outOfControl: chart.outOfControlPoints.includes(i)
   }));
 
@@ -50,59 +52,63 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     {
       value: chart.data.centerLine + standardDeviation,
       label: '+1σ',
-      color: '#1E3A8A' // dark blue
+      color: '#1E3A8A'
     },
     {
       value: chart.data.centerLine + 2 * standardDeviation,
       label: '+2σ',
-      color: '#3730A3' // dark indigo
+      color: '#3730A3'
     },
     {
       value: chart.data.centerLine + 3 * standardDeviation,
       label: '+3σ',
-      color: '#1F2937' // dark gray
+      color: '#1F2937'
     },
     {
       value: chart.data.centerLine - standardDeviation,
       label: '-1σ',
-      color: '#1E3A8A' // dark blue
+      color: '#1E3A8A'
     },
     {
       value: chart.data.centerLine - 2 * standardDeviation,
       label: '-2σ',
-      color: '#3730A3' // dark indigo
+      color: '#3730A3'
     },
     {
       value: chart.data.centerLine - 3 * standardDeviation,
       label: '-3σ',
-      color: '#1F2937' // dark gray
+      color: '#1F2937'
     }
   ];
 
   // Calculate distribution of points across standard deviation ranges with indices
   const calculateDistribution = () => {
     const distribution = {
-      beyond3: { count: 0, indices: [] as number[] },
-      between2and3: { count: 0, indices: [] as number[] },
-      between1and2: { count: 0, indices: [] as number[] },
-      within1: { count: 0, indices: [] as number[] }
+      beyond3: { count: 0, points: [] as { value: number; identifier: string }[] },
+      between2and3: { count: 0, points: [] as { value: number; identifier: string }[] },
+      between1and2: { count: 0, points: [] as { value: number; identifier: string }[] },
+      within1: { count: 0, points: [] as { value: number; identifier: string }[] }
     };
     
-    chart.data.values.forEach((value, index) => {
-      const deviations = Math.abs((value - chart.data.centerLine) / standardDeviation);
+    chartData.forEach((point) => {
+      const deviations = Math.abs((point.value - chart.data.centerLine) / standardDeviation);
+      const pointInfo = { 
+        value: point.value, 
+        identifier: point.identifier 
+      };
       
       if (deviations > 3) {
         distribution.beyond3.count++;
-        distribution.beyond3.indices.push(index + 1);
+        distribution.beyond3.points.push(pointInfo);
       } else if (deviations > 2) {
         distribution.between2and3.count++;
-        distribution.between2and3.indices.push(index + 1);
+        distribution.between2and3.points.push(pointInfo);
       } else if (deviations > 1) {
         distribution.between1and2.count++;
-        distribution.between1and2.indices.push(index + 1);
+        distribution.between1and2.points.push(pointInfo);
       } else {
         distribution.within1.count++;
-        distribution.within1.indices.push(index + 1);
+        distribution.within1.points.push(pointInfo);
       }
     });
 
@@ -110,27 +116,43 @@ const ControlChart = ({ chart }: ControlChartProps) => {
       { 
         range: "Beyond ±3σ", 
         count: distribution.beyond3.count,
-        indices: distribution.beyond3.indices 
+        points: distribution.beyond3.points
       },
       { 
         range: "±2σ to ±3σ", 
         count: distribution.between2and3.count,
-        indices: distribution.between2and3.indices 
+        points: distribution.between2and3.points
       },
       { 
         range: "±1σ to ±2σ", 
         count: distribution.between1and2.count,
-        indices: distribution.between1and2.indices 
+        points: distribution.between1and2.points
       },
       { 
         range: "Within ±1σ", 
         count: distribution.within1.count,
-        indices: distribution.within1.indices 
+        points: distribution.within1.points
       }
     ];
   };
 
   const distribution = calculateDistribution();
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background border rounded-lg p-2 shadow-lg">
+          <p className="font-medium">{data.identifier}</p>
+          <p className="text-sm text-muted-foreground">Value: {data.value.toFixed(2)}</p>
+          {data.outOfControl && (
+            <p className="text-sm text-destructive font-medium">Out of Control</p>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-4 border border-border rounded-lg p-4">
@@ -143,9 +165,15 @@ const ControlChart = ({ chart }: ControlChartProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="index" />
+            <XAxis 
+              dataKey="identifier" 
+              interval="preserveStartEnd"
+              angle={-45}
+              textAnchor="end"
+              height={60}
+            />
             <YAxis />
-            <Tooltip />
+            <Tooltip content={<CustomTooltip />} />
             
             {/* Center Line */}
             <ReferenceLine 
@@ -197,7 +225,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
           <TableHeader>
             <TableRow>
               <TableHead>Range</TableHead>
-              <TableHead>Volume</TableHead>
+              <TableHead>Count</TableHead>
               <TableHead>Percentage</TableHead>
             </TableRow>
           </TableHeader>
@@ -215,8 +243,10 @@ const ControlChart = ({ chart }: ControlChartProps) => {
                         <div className="max-h-[200px] overflow-y-auto">
                           <p className="text-sm font-medium mb-1">Data points:</p>
                           <ul className="space-y-1">
-                            {row.indices.map((point) => (
-                              <li key={point} className="text-sm">Point {point}</li>
+                            {row.points.map((point, i) => (
+                              <li key={i} className="text-sm">
+                                {point.identifier}: {point.value.toFixed(2)}
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -239,13 +269,19 @@ const ControlChart = ({ chart }: ControlChartProps) => {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chart.data.movingRanges.map((value, i) => ({
-                index: i + 2,
+                identifier: chartData[i + 1].identifier,
                 value
               }))}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="index" />
+              <XAxis 
+                dataKey="identifier"
+                interval="preserveStartEnd"
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
               <YAxis />
               <Tooltip />
               <Line type="monotone" dataKey="value" stroke="#82ca9d" />
