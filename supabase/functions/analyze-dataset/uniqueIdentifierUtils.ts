@@ -8,7 +8,7 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
 
   // First do basic validation
   const columns = Object.keys(jsonData[0]);
-  const basicUniqueIdentifiers: string[] = [];
+  const basicUniqueIdentifiers = new Set<string>();
 
   // Log the structure of the data
   console.log('Analyzing data structure:', {
@@ -17,18 +17,27 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
     sampleRow: jsonData[0]
   });
 
-  // Basic check for unique values
+  // Enhanced basic check for unique values
   for (const column of columns) {
-    const values = jsonData.map(row => row[column]);
+    const values = jsonData.map(row => {
+      const value = row[column];
+      // Convert to string for consistent comparison
+      return value != null ? String(value).trim() : null;
+    });
+
+    // Check if all values are non-null and unique
     const validValues = values.filter(value => value != null && value !== '');
     const uniqueValues = new Set(validValues);
 
     if (uniqueValues.size === jsonData.length && validValues.length === jsonData.length) {
-      basicUniqueIdentifiers.push(column);
+      console.log(`Found potential unique identifier column: ${column}`);
+      console.log(`Unique values count: ${uniqueValues.size}`);
+      console.log(`Total rows: ${jsonData.length}`);
+      basicUniqueIdentifiers.add(column);
     }
   }
 
-  console.log('Basic unique identifiers found:', basicUniqueIdentifiers);
+  console.log('Basic unique identifiers found:', Array.from(basicUniqueIdentifiers));
 
   try {
     // Initialize ChatGPT API
@@ -40,45 +49,67 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
     // Prepare sample data for GPT (limit to first few rows to avoid token limits)
     const sampleData = jsonData.slice(0, 5);
     
-    // Construct the prompt
-    const prompt = `Given this dataset sample:
+    // Construct a more detailed prompt for GPT-4O
+    const prompt = `Analyze this dataset sample and identify columns that could serve as unique identifiers.
+Sample data (first 5 rows):
 ${JSON.stringify(sampleData, null, 2)}
 
-And these potential unique identifier columns found through basic validation:
-${JSON.stringify(basicUniqueIdentifiers, null, 2)}
+Basic validation found these potential unique identifier columns:
+${JSON.stringify(Array.from(basicUniqueIdentifiers), null, 2)}
 
-Please analyze which columns would make good unique identifiers for this dataset. Consider:
-1. Whether the values are truly unique
-2. Whether the column is meaningful as an identifier (e.g., 'id', 'reference_number', etc.)
-3. The data type and format of the values
+Requirements for a unique identifier:
+1. Values must be unique across all rows
+2. Values must not be null or empty
+3. The column should make logical sense as an identifier (e.g., ID, reference number, serial number)
 
-Return your response as a JSON array of column names that would make good unique identifiers, along with a brief explanation for each.`;
+Please analyze and return a JSON array of objects with this structure:
+{
+  "identifiers": [
+    {
+      "column": "column_name",
+      "confidence": "high|medium|low",
+      "reason": "explanation of why this is a good identifier"
+    }
+  ]
+}`;
 
-    console.log('Sending prompt to GPT-4O');
+    console.log('Sending prompt to GPT-4O for analysis');
     const response = await api.sendMessage(prompt);
     console.log('GPT-4O response:', response.text);
 
-    // Parse GPT's response
     try {
       const gptAnalysis = JSON.parse(response.text);
       console.log('Parsed GPT analysis:', gptAnalysis);
-      
-      // Combine GPT suggestions with basic validation results
+
+      // Extract high and medium confidence identifiers from GPT analysis
+      const aiSuggestedIdentifiers = gptAnalysis.identifiers
+        .filter((item: any) => ['high', 'medium'].includes(item.confidence))
+        .map((item: any) => item.column);
+
+      // Combine basic validation results with AI suggestions
       const finalIdentifiers = Array.from(new Set([
-        ...basicUniqueIdentifiers,
-        ...gptAnalysis.map((item: any) => item.column)
+        ...Array.from(basicUniqueIdentifiers),
+        ...aiSuggestedIdentifiers
       ]));
 
       console.log('Final combined unique identifiers:', finalIdentifiers);
+      
+      if (finalIdentifiers.length === 0) {
+        console.log('No unique identifiers found in the dataset');
+      } else {
+        console.log(`Found ${finalIdentifiers.length} potential unique identifiers:`, finalIdentifiers);
+      }
+
       return finalIdentifiers;
+
     } catch (parseError) {
       console.error('Error parsing GPT response:', parseError);
       // Fall back to basic validation results if GPT response parsing fails
-      return basicUniqueIdentifiers;
+      return Array.from(basicUniqueIdentifiers);
     }
   } catch (error) {
     console.error('Error during GPT analysis:', error);
     // Fall back to basic validation results if GPT call fails
-    return basicUniqueIdentifiers;
+    return Array.from(basicUniqueIdentifiers);
   }
-}
+};
