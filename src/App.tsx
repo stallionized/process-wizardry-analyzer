@@ -9,6 +9,8 @@ import ProjectDashboard from "./pages/ProjectDashboard";
 import RecycleBin from "./pages/RecycleBin";
 import Admin from "./pages/Admin";
 import Client from "./pages/Client";
+import Login from "./pages/auth/Login";
+import UserManagement from "./pages/admin/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +27,8 @@ const App = () => (
             <Route path="/recycle-bin" element={<RecycleBin />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/client" element={<Client />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/admin/users" element={<UserManagement />} />
           </Routes>
         </Layout>
       </BrowserRouter>
