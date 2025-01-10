@@ -34,10 +34,6 @@ serve(async (req) => {
     const bodyText = await req.text();
     console.log('Raw request body:', bodyText);
 
-    if (!bodyText) {
-      throw new Error('Request body is empty');
-    }
-
     // Parse the JSON body
     let input: AnalysisInput;
     try {
