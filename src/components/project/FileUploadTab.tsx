@@ -31,16 +31,16 @@ interface FileUploadTabProps {
   onDelete: (fileId: string) => void;
   onSubmit?: () => void;
   isLoading?: boolean;
+  isSubmitting?: boolean;
 }
 
-const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading }: FileUploadTabProps) => {
+const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading, isSubmitting }: FileUploadTabProps) => {
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
     onUpload(uploadedFiles, fileType);
   };
 
   const handleSubmit = () => {
     onSubmit?.();
-    toast.success('Files submitted successfully');
   };
 
   const hasNewFiles = files.some(file => file.isNew);
@@ -96,7 +96,12 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading }: FileU
                   </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={isSubmitting}
+                      >
                         <Trash2 className="h-5 w-5" />
                       </Button>
                     </AlertDialogTrigger>
@@ -128,12 +133,12 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading }: FileU
               <Button 
                 onClick={handleSubmit} 
                 className="w-full"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    Processing files...
                   </>
                 ) : (
                   'Submit Files'

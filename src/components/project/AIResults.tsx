@@ -59,18 +59,23 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     },
   });
 
+  const getEstimatedTime = (fileSize: number | null) => {
+    if (!fileSize) return 'Calculating...';
+    const baseTime = 30; // Base processing time in seconds
+    const sizeInMB = fileSize / (1024 * 1024);
+    const estimatedSeconds = baseTime + (sizeInMB * 2); // 2 seconds per MB
+    if (estimatedSeconds < 60) {
+      return `${Math.ceil(estimatedSeconds)} seconds`;
+    }
+    return `${Math.ceil(estimatedSeconds / 60)} minutes`;
+  };
+
   if (isLoading) {
     return (
       <Card className="p-6 flex items-center justify-center min-h-[400px] animate-fade-in">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Analyzing data...</p>
-          {analysisResults?.status === 'analyzing' && (
-            <p className="text-sm text-muted-foreground">Processing dataset...</p>
-          )}
-          {analysisResults?.status === 'generating_control_charts' && (
-            <p className="text-sm text-muted-foreground">Generating control charts...</p>
-          )}
+          <p className="text-muted-foreground">Initializing analysis...</p>
         </div>
       </Card>
     );
@@ -94,6 +99,24 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <p className="text-destructive">
           Analysis failed. Please try uploading your files again.
         </p>
+      </Card>
+    );
+  }
+
+  if (analysisResults.status !== 'completed') {
+    return (
+      <Card className="p-6 flex flex-col items-center justify-center min-h-[400px] animate-fade-in">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="space-y-2">
+            <p className="font-medium">
+              {analysisResults.status === 'analyzing' ? 'Processing dataset...' : 'Generating control charts...'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Estimated time remaining: {getEstimatedTime(analysisResults.file_size_bytes)}
+            </p>
+          </div>
+        </div>
       </Card>
     );
   }

@@ -174,17 +174,14 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     },
   });
 
-  if (isLoadingFiles) {
-    return <div>Loading files...</div>;
-  }
-
   return (
     <FileUploadTab
       files={files}
       onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
       onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
       onSubmit={() => submitFilesMutation.mutate()}
-      isLoading={submitFilesMutation.isPending}
+      isLoading={isLoadingFiles}
+      isSubmitting={submitFilesMutation.isPending}
     />
   );
 };
