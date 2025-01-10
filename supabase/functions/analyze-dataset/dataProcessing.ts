@@ -5,15 +5,11 @@ import { findPotentialUniqueIdentifiers } from './uniqueIdentifierUtils.ts';
 import { AnalysisInput } from './types.ts';
 
 function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; } {
-  console.log('Validating dataset...');
-  
   if (!Array.isArray(jsonData) || jsonData.length === 0) {
-    console.error('Dataset validation failed: Empty or invalid dataset');
     return { isValid: false, error: 'Dataset is empty or invalid' };
   }
 
   if (jsonData.length < 2) {
-    console.error('Dataset validation failed: Not enough rows');
     return { isValid: false, error: 'Dataset must contain at least 2 rows for analysis' };
   }
 
@@ -26,10 +22,7 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; }
     );
   });
 
-  console.log('Found numeric columns:', numericColumns);
-
   if (numericColumns.length === 0) {
-    console.error('Dataset validation failed: No numeric columns found');
     return { isValid: false, error: 'Dataset must contain at least one numeric column for analysis' };
   }
 
@@ -37,9 +30,10 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; }
 }
 
 export async function processExcelData(input: AnalysisInput) {
-  console.log('Starting data processing with input:', input);
+  console.log('Processing Excel data for project:', input.projectId);
+  
   const fileUrl = input.files[0].url;
-  console.log('Processing file from:', fileUrl);
+  console.log('Downloading file from:', fileUrl);
 
   const response = await fetch(fileUrl);
   if (!response.ok) {
@@ -47,49 +41,42 @@ export async function processExcelData(input: AnalysisInput) {
   }
 
   const arrayBuffer = await response.arrayBuffer();
-  console.log('File downloaded successfully');
-
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
   const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
   const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-  console.log('Excel data converted to JSON');
-  console.log('Number of rows:', jsonData.length);
-  console.log('Sample row:', jsonData[0]);
-  
+  console.log('Excel data converted to JSON:', {
+    rowCount: jsonData.length,
+    columnCount: Object.keys(jsonData[0] || {}).length
+  });
+
   const validation = validateDataset(jsonData);
   if (!validation.isValid) {
     throw new Error(validation.error);
   }
 
-  // Find potential unique identifiers
-  console.log('\nStarting unique identifier detection...');
-  const potentialIdentifiers = await findPotentialUniqueIdentifiers(jsonData);
-  console.log('Potential unique identifiers found:', potentialIdentifiers);
-
-  // If this is the initial submission and we found identifiers, return them
+  // If this is just checking for identifiers
   if (input.checkIdentifiers) {
+    console.log('Checking for unique identifiers...');
+    const potentialIdentifiers = await findPotentialUniqueIdentifiers(jsonData);
+    
     if (potentialIdentifiers.length > 0) {
-      console.log('Initial submission - returning potential identifiers');
-      return {
-        potentialIdentifiers,
-        jsonData
-      };
-    } else {
-      console.log('No unique identifiers found in initial check');
-      // Continue with processing if no identifiers found
+      console.log('Found potential identifiers:', potentialIdentifiers);
+      return { potentialIdentifiers, jsonData };
     }
+    
+    console.log('No unique identifiers found');
+    return { potentialIdentifiers: [], jsonData };
   }
 
+  // Process the full analysis
   const numericalData: Record<string, number[]> = {};
   const descriptiveStats: Record<string, any> = {};
   const dataIdentifiers: Record<string, string[]> = {};
 
-  // Use the selected identifier if provided
   const identifierColumn = input.selectedIdentifier || null;
   console.log('Using identifier column:', identifierColumn);
 
-  // Process numeric columns and keep track of identifiers
   Object.keys(jsonData[0]).forEach(column => {
     const values = jsonData.map(row => {
       const value = row[column];
@@ -105,7 +92,6 @@ export async function processExcelData(input: AnalysisInput) {
       numericalData[column] = values;
       descriptiveStats[column] = calculateDescriptiveStats(values);
       
-      // Use the selected identifier if available, otherwise use row numbers
       dataIdentifiers[column] = jsonData.map((row, index) => {
         if (identifierColumn && row[identifierColumn] != null) {
           return String(row[identifierColumn]);
@@ -114,8 +100,6 @@ export async function processExcelData(input: AnalysisInput) {
       });
     }
   });
-
-  console.log('Processed numerical data for columns:', Object.keys(numericalData));
 
   const correlationMatrix = calculateCorrelationMatrix(numericalData);
   const statsAnalysis = generateExecutiveSummary(descriptiveStats);

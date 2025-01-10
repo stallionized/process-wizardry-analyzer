@@ -7,20 +7,15 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
   }
 
   const columns = Object.keys(jsonData[0]);
-  const basicUniqueIdentifiers = new Set<string>();
-
-  console.log('Starting unique identifier analysis');
-  console.log('Data structure:', {
+  console.log('\n=== Starting Unique Identifier Analysis ===');
+  console.log('Analyzing dataset with:', {
     totalRows: jsonData.length,
     columns: columns,
-    sampleRow: jsonData[0]
   });
 
-  // Analyze each column's data distribution
+  // Analyze each column's data
   const columnAnalysis = {};
   for (const column of columns) {
-    console.log(`\nAnalyzing column: ${column}`);
-    
     const values = jsonData.map(row => {
       const value = row[column];
       return value != null ? String(value).trim() : null;
@@ -28,100 +23,72 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
 
     const validValues = values.filter(value => value != null && value !== '');
     const uniqueValues = new Set(validValues);
+    const sampleValues = Array.from(uniqueValues).slice(0, 5);
 
     columnAnalysis[column] = {
       totalValues: values.length,
       validValues: validValues.length,
-      uniqueValues: Array.from(uniqueValues).slice(0, 5), // Sample of unique values
       uniqueCount: uniqueValues.size,
-      isUnique: uniqueValues.size === jsonData.length && validValues.length === jsonData.length,
+      sampleValues,
+      isUnique: uniqueValues.size === validValues.length && validValues.length === values.length
     };
 
-    console.log(`Column "${column}" analysis:`, columnAnalysis[column]);
-
-    if (uniqueValues.size === jsonData.length && validValues.length === jsonData.length) {
-      console.log(`✅ Column "${column}" identified as potential unique identifier through basic validation`);
-      basicUniqueIdentifiers.add(column);
-    }
+    console.log(`\nColumn "${column}" analysis:`, columnAnalysis[column]);
   }
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       console.error('OpenAI API key not found');
-      return Array.from(basicUniqueIdentifiers);
+      return [];
     }
 
     const api = new ChatGPTAPI({
       apiKey: openAIApiKey,
       model: 'gpt-4o'
     });
-    
-    const prompt = `You are a data analyst specializing in identifying unique identifiers in datasets. 
-    Analyze this dataset's columns and identify which ones could serve as unique identifiers.
+
+    const prompt = `As a data analyst, examine this dataset's columns and identify which could serve as unique identifiers.
 
 Column Analysis:
 ${JSON.stringify(columnAnalysis, null, 2)}
 
-For each column, determine if it could be a unique identifier by considering:
-1. Are all values unique? (required - check uniqueCount against totalValues)
-2. Are there any null or empty values? (validValues should equal totalValues)
-3. Does the column name or values suggest it's meant to be an identifier? (e.g., ID, reference number, serial number)
-4. Are the values consistent in format and type?
+A column is a good unique identifier if:
+1. It has EXACTLY the same number of unique values as total rows (check uniqueCount equals totalValues)
+2. It has NO null or empty values (check validValues equals totalValues)
+3. The values look like identifiers (e.g., sequential numbers, UUIDs, or meaningful unique codes)
 
-Return a JSON object with this structure:
-{
-  "uniqueIdentifiers": [
-    {
-      "column": "column_name",
-      "confidence": "high|medium|low",
-      "reasoning": "explanation"
-    }
-  ]
-}
+Return ONLY a JSON array of column names that meet ALL these criteria. Example:
+["id", "reference_number"]
 
-Only include columns that you are confident can serve as unique identifiers.`;
+If no columns qualify, return an empty array.`;
 
     console.log('\nSending analysis to GPT-4O with prompt:', prompt);
     const response = await api.sendMessage(prompt);
     console.log('GPT-4O response:', response.text);
 
     try {
-      const gptAnalysis = JSON.parse(response.text);
-      console.log('Parsed GPT analysis:', gptAnalysis);
-
-      if (!gptAnalysis.uniqueIdentifiers || !Array.isArray(gptAnalysis.uniqueIdentifiers)) {
-        console.error('Invalid GPT response format');
-        return Array.from(basicUniqueIdentifiers);
+      const suggestedColumns = JSON.parse(response.text);
+      
+      if (!Array.isArray(suggestedColumns)) {
+        console.error('Invalid GPT response format - expected array');
+        return [];
       }
 
-      // Extract high and medium confidence identifiers from GPT analysis
-      const aiSuggestedIdentifiers = gptAnalysis.uniqueIdentifiers
-        .filter((item: any) => ['high', 'medium'].includes(item.confidence))
-        .map((item: any) => item.column);
-
-      console.log('AI suggested identifiers:', aiSuggestedIdentifiers);
-
-      // Combine basic validation results with AI suggestions
-      const finalIdentifiers = Array.from(new Set([
-        ...Array.from(basicUniqueIdentifiers),
-        ...aiSuggestedIdentifiers
-      ]));
-
-      console.log('\nFinal unique identifiers:', {
-        basicValidation: Array.from(basicUniqueIdentifiers),
-        aiSuggestions: aiSuggestedIdentifiers,
-        combined: finalIdentifiers
-      });
+      console.log('\nGPT suggested columns:', suggestedColumns);
       
-      return finalIdentifiers;
+      // Validate that each suggested column actually exists
+      const validColumns = suggestedColumns.filter(column => columns.includes(column));
+      
+      console.log('Final validated unique identifiers:', validColumns);
+      return validColumns;
 
     } catch (parseError) {
       console.error('Error parsing GPT response:', parseError);
-      return Array.from(basicUniqueIdentifiers);
+      return [];
     }
   } catch (error) {
     console.error('Error during GPT analysis:', error);
-    return Array.from(basicUniqueIdentifiers);
+    return [];
   }
 };
