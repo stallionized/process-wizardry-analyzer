@@ -14,30 +14,32 @@ export const findPotentialUniqueIdentifiers = (jsonData: any[]): string[] => {
     const values = jsonData.map(row => row[column]);
     
     // Filter out null/undefined values
-    const validValues = values.filter(value => value !== null && value !== undefined);
+    const validValues = values.filter(value => value != null && value !== '');
     
     // Create a Set of unique values
     const uniqueValues = new Set(validValues);
     
-    console.log(`Column ${column}:`, {
+    // Log detailed information about the column
+    console.log(`Column ${column} analysis:`, {
       totalRows: jsonData.length,
       validValues: validValues.length,
       uniqueValues: uniqueValues.size,
       hasNulls: values.length !== validValues.length,
-      sample: values.slice(0, 3)
+      sample: values.slice(0, 3),
+      isUnique: uniqueValues.size === jsonData.length && validValues.length === jsonData.length
     });
-    
-    // Check if:
-    // 1. We have the same number of unique values as total rows
-    // 2. We don't have any null/undefined values
-    // 3. The number of valid values equals the total number of rows
-    if (uniqueValues.size === jsonData.length && 
-        validValues.length === jsonData.length) {
-      console.log(`Found unique identifier column: ${column}`);
+
+    // A column is a potential unique identifier if:
+    // 1. All values are unique (uniqueValues.size equals total rows)
+    // 2. No null/empty values (validValues.length equals total rows)
+    if (uniqueValues.size === jsonData.length && validValues.length === jsonData.length) {
+      console.log(`✓ Found unique identifier column: ${column}`);
       uniqueIdentifiers.push(column);
+    } else {
+      console.log(`✗ Column ${column} is not a unique identifier`);
     }
   }
 
-  console.log('Identified potential unique identifiers:', uniqueIdentifiers);
+  console.log('Final unique identifiers found:', uniqueIdentifiers);
   return uniqueIdentifiers;
 }

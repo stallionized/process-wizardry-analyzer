@@ -37,6 +37,7 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; }
 }
 
 export async function processExcelData(input: AnalysisInput) {
+  console.log('Starting data processing with input:', input);
   const fileUrl = input.files[0].url;
   console.log('Processing file from:', fileUrl);
 
@@ -100,7 +101,7 @@ export async function processExcelData(input: AnalysisInput) {
       
       // Use the selected identifier if available, otherwise use row numbers
       dataIdentifiers[column] = jsonData.map((row, index) => {
-        if (identifierColumn && row[identifierColumn] !== undefined) {
+        if (identifierColumn && row[identifierColumn] != null) {
           return String(row[identifierColumn]);
         }
         return `Row ${index + 1}`;
