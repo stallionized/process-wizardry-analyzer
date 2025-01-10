@@ -49,11 +49,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       .single();
 
     setIsAdmin(profile?.is_admin || false);
-
-    // Redirect to projects page if on root
-    if (window.location.pathname === '/') {
-      navigate('/');
-    }
   };
 
   const handleSignOut = async () => {
