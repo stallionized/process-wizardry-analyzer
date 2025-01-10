@@ -30,14 +30,10 @@ serve(async (req) => {
       url: req.url
     });
 
-    // Get the request body as text first for logging
-    const bodyText = await req.text();
-    console.log('Raw request body:', bodyText);
-
-    // Parse the JSON body
+    // Get the request body
     let input: AnalysisInput;
     try {
-      input = JSON.parse(bodyText);
+      input = await req.json();
       console.log('Parsed input:', input);
     } catch (error) {
       console.error('Error parsing request body:', error);
