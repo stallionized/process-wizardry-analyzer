@@ -61,35 +61,35 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             <ReferenceLine y={chart.data.ucl} label="UCL" stroke="red" strokeWidth={2} />
             <ReferenceLine y={chart.data.lcl} label="LCL" stroke="red" strokeWidth={2} />
             
-            {/* 2 sigma lines (dotted) */}
+            {/* 2 sigma lines (solid) */}
             <ReferenceLine 
               y={chart.data.centerLine + (2 * stdDev)} 
               label="2σ" 
               stroke="orange" 
-              strokeDasharray="5 5" 
+              strokeWidth={1}
               strokeOpacity={0.6}
             />
             <ReferenceLine 
               y={chart.data.centerLine - (2 * stdDev)} 
               label="2σ" 
               stroke="orange" 
-              strokeDasharray="5 5" 
+              strokeWidth={1}
               strokeOpacity={0.6}
             />
             
-            {/* 1 sigma lines (dotted) */}
+            {/* 1 sigma lines (solid) */}
             <ReferenceLine 
               y={chart.data.centerLine + stdDev} 
               label="1σ" 
               stroke="yellow" 
-              strokeDasharray="7 7" 
+              strokeWidth={1}
               strokeOpacity={0.4}
             />
             <ReferenceLine 
               y={chart.data.centerLine - stdDev} 
               label="1σ" 
               stroke="yellow" 
-              strokeDasharray="7 7" 
+              strokeWidth={1}
               strokeOpacity={0.4}
             />
             
