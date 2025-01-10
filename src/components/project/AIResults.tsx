@@ -7,7 +7,6 @@ import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
-// import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
 import { ControlCharts } from './control/ControlCharts';
 
 interface AIResultsProps {
@@ -55,7 +54,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           'mappings' in candidate &&
           'descriptiveStats' in candidate &&
           'statsAnalysis' in candidate &&
-          // 'advancedAnalysis' in candidate &&
           'controlCharts' in candidate
         );
       };
@@ -106,8 +104,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     correlationMatrix, 
     mappings, 
     descriptiveStats, 
-    statsAnalysis, 
-    // advancedAnalysis,
+    statsAnalysis,
     controlCharts 
   } = analysisResults;
 
@@ -119,7 +116,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <TabsList>
           <TabsTrigger value="descriptive">Descriptive Statistics</TabsTrigger>
           <TabsTrigger value="correlation">Correlation Analysis</TabsTrigger>
-          {/* <TabsTrigger value="advanced">Advanced Analysis</TabsTrigger> */}
           <TabsTrigger value="control">Control Results</TabsTrigger>
         </TabsList>
 
@@ -134,10 +130,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <TabsContent value="correlation">
           <CorrelationMatrix correlationMatrix={correlationMatrix} />
         </TabsContent>
-
-        {/* <TabsContent value="advanced">
-          <AdvancedAnalysis analysis={advancedAnalysis} />
-        </TabsContent> */}
 
         <TabsContent value="control">
           <ControlCharts charts={controlCharts} />
