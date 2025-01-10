@@ -37,12 +37,13 @@ serve(async (req) => {
     // Process Excel data with validation
     const {
       numericalData,
-      categoricalMappings,
       descriptiveStats,
       correlationMatrix,
       statsAnalysis,
       expectedAnalyses
     } = await processExcelData(input);
+
+    console.log(`Expected ${expectedAnalyses} analyses based on numeric columns`);
 
     // Get Claude analysis for AI results
     console.log('Getting Claude analysis');
@@ -52,6 +53,11 @@ serve(async (req) => {
     if (!advancedAnalysis?.anova?.results || 
         advancedAnalysis.anova.results.length === 0) {
       throw new Error('AI analysis returned no results');
+    }
+
+    // Verify we got the expected number of analyses
+    if (advancedAnalysis.anova.results.length < expectedAnalyses) {
+      throw new Error(`AI analysis returned fewer results than expected (got ${advancedAnalysis.anova.results.length}, expected ${expectedAnalyses})`);
     }
 
     // Generate control charts using Claude
@@ -64,9 +70,13 @@ serve(async (req) => {
       throw new Error('Control chart generation returned no results');
     }
 
+    // Verify we got control charts for all numeric variables
+    if (controlCharts.controlCharts.length < expectedAnalyses) {
+      throw new Error(`Control chart generation returned fewer charts than expected (got ${controlCharts.controlCharts.length}, expected ${expectedAnalyses})`);
+    }
+
     const analysis = {
       correlationMatrix,
-      mappings: categoricalMappings,
       descriptiveStats,
       statsAnalysis,
       advancedAnalysis: {
@@ -117,11 +127,11 @@ serve(async (req) => {
     
     // Update analysis record with error if possible
     try {
+      const input = await req.json() as AnalysisInput;
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
       if (supabaseUrl && supabaseKey) {
-        const input = await req.json() as AnalysisInput;
         await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
           method: 'POST',
           headers: {

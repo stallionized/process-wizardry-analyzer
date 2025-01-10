@@ -14,6 +14,7 @@ export type Database = {
           control_charts: Json | null
           created_at: string | null
           descriptive_stats: Json | null
+          error_message: string | null
           estimated_completion_time: string | null
           file_size_bytes: number | null
           id: string
@@ -26,6 +27,7 @@ export type Database = {
           control_charts?: Json | null
           created_at?: string | null
           descriptive_stats?: Json | null
+          error_message?: string | null
           estimated_completion_time?: string | null
           file_size_bytes?: number | null
           id?: string
@@ -38,6 +40,7 @@ export type Database = {
           control_charts?: Json | null
           created_at?: string | null
           descriptive_stats?: Json | null
+          error_message?: string | null
           estimated_completion_time?: string | null
           file_size_bytes?: number | null
           id?: string

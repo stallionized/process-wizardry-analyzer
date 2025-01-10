@@ -3,9 +3,24 @@ import { calculateDescriptiveStats, generateExecutiveSummary } from './statsUtil
 import { calculateCorrelationMatrix } from './correlationUtils.ts';
 import { AnalysisInput } from './types.ts';
 
-function validateDataset(jsonData: any[]): { isValid: boolean; error?: string } {
+interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+  numericColumns?: string[];
+  expectedAnalyses?: number;
+}
+
+function validateDataset(jsonData: any[]): ValidationResult {
   if (!Array.isArray(jsonData) || jsonData.length === 0) {
     return { isValid: false, error: 'Dataset is empty or invalid' };
+  }
+
+  // Check minimum required rows
+  if (jsonData.length < 10) {
+    return { 
+      isValid: false, 
+      error: 'Dataset must contain at least 10 rows for meaningful analysis' 
+    };
   }
 
   // Check if we have at least 2 numeric columns for correlation analysis
@@ -21,7 +36,8 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string } 
   if (numericColumns.length < 2) {
     return { 
       isValid: false, 
-      error: 'Dataset must contain at least 2 numeric columns for analysis' 
+      error: 'Dataset must contain at least 2 numeric columns for analysis',
+      numericColumns: []
     };
   }
 
@@ -36,20 +52,17 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string } 
     if (hasInconsistentTypes) {
       return { 
         isValid: false, 
-        error: `Column "${column}" contains inconsistent data types` 
+        error: `Column "${column}" contains inconsistent data types`,
+        numericColumns: []
       };
     }
   }
 
-  // Check for minimum required rows
-  if (jsonData.length < 10) {
-    return { 
-      isValid: false, 
-      error: 'Dataset must contain at least 10 rows for meaningful analysis' 
-    };
-  }
-
-  return { isValid: true };
+  return { 
+    isValid: true, 
+    numericColumns,
+    expectedAnalyses: numericColumns.length
+  };
 }
 
 export async function processExcelData(input: AnalysisInput) {
@@ -74,43 +87,23 @@ export async function processExcelData(input: AnalysisInput) {
     throw new Error(validation.error);
   }
 
-  console.log('Processing', jsonData.length, 'rows of data');
+  console.log(`Processing ${jsonData.length} rows of data`);
+  console.log(`Found ${validation.numericColumns?.length} numeric columns for analysis`);
 
-  const columns = Object.keys(jsonData[0] || {});
   const numericalData: Record<string, number[]> = {};
   const categoricalMappings: Record<string, Record<string, number>> = {};
   const descriptiveStats: Record<string, any> = {};
 
-  // Track expected number of analyses
-  let expectedAnalyses = 0;
-
-  columns.forEach(column => {
-    const values = jsonData.map(row => row[column]);
+  // Process only validated numeric columns
+  validation.numericColumns?.forEach(column => {
+    const values = jsonData.map(row => {
+      const value = row[column];
+      return typeof value === 'number' ? value : parseFloat(value.replace(/[^0-9.-]/g, ''));
+    });
     
-    const isNumerical = values.every(value => 
-      typeof value === 'number' || 
-      (typeof value === 'string' && !isNaN(parseFloat(value.replace(/[^0-9.-]/g, ''))))
-    );
-
-    if (isNumerical) {
-      const numericValues = values.map(value => 
-        typeof value === 'number' ? value : parseFloat(value.replace(/[^0-9.-]/g, ''))
-      );
-      numericalData[column] = numericValues;
-      descriptiveStats[column] = calculateDescriptiveStats(numericValues);
-      expectedAnalyses++;
-    } else {
-      const uniqueValues = [...new Set(values)];
-      const mapping: Record<string, number> = {};
-      uniqueValues.forEach((value, index) => {
-        mapping[value] = index;
-      });
-      categoricalMappings[column] = mapping;
-      numericalData[column] = values.map(value => mapping[value]);
-    }
+    numericalData[column] = values;
+    descriptiveStats[column] = calculateDescriptiveStats(values);
   });
-
-  console.log(`Expected ${expectedAnalyses} numerical columns for analysis`);
 
   const correlationMatrix = calculateCorrelationMatrix(numericalData);
   const statsAnalysis = generateExecutiveSummary(descriptiveStats);
@@ -121,6 +114,6 @@ export async function processExcelData(input: AnalysisInput) {
     descriptiveStats,
     correlationMatrix,
     statsAnalysis,
-    expectedAnalyses
+    expectedAnalyses: validation.expectedAnalyses
   };
 }
