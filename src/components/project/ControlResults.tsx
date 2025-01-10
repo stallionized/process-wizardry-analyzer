@@ -61,7 +61,23 @@ const ControlResults = ({ projectId }: ControlResultsProps) => {
       }
 
       console.log('Control chart results found:', data);
-      return data.control_charts as ControlChartResults;
+      
+      // Type guard to ensure the control_charts data matches our expected structure
+      const isControlChartResults = (data: any): data is { control_charts: ControlChartResults } => {
+        return (
+          data.control_charts &&
+          typeof data.control_charts === 'object' &&
+          Array.isArray(data.control_charts.controlCharts) &&
+          typeof data.control_charts.summary === 'string'
+        );
+      };
+
+      if (!isControlChartResults(data)) {
+        console.error('Invalid control chart data structure');
+        return null;
+      }
+
+      return data.control_charts;
     },
     refetchInterval: (data) => (!data ? 5000 : false),
   });
