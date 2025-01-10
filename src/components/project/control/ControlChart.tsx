@@ -35,13 +35,6 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     outOfControl: chart.outOfControlPoints.includes(i)
   }));
 
-  // Calculate standard deviation
-  const stdDev = Math.sqrt(
-    chart.data.values.reduce((acc, val) => 
-      acc + Math.pow(val - chart.data.centerLine, 2), 0
-    ) / chart.data.values.length
-  );
-
   return (
     <div className="space-y-4 border border-border rounded-lg p-4">
       <div className="flex justify-between items-center">
@@ -56,46 +49,9 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             <XAxis dataKey="index" />
             <YAxis />
             <Tooltip />
-            
-            {/* Control limits (solid lines) */}
-            <ReferenceLine y={chart.data.ucl} label="UCL" stroke="red" strokeWidth={2} />
-            <ReferenceLine y={chart.data.lcl} label="LCL" stroke="red" strokeWidth={2} />
-            
-            {/* 2 sigma lines (solid) */}
-            <ReferenceLine 
-              y={chart.data.centerLine + (2 * stdDev)} 
-              label="2σ" 
-              stroke="orange" 
-              strokeWidth={1}
-              strokeOpacity={0.6}
-            />
-            <ReferenceLine 
-              y={chart.data.centerLine - (2 * stdDev)} 
-              label="2σ" 
-              stroke="orange" 
-              strokeWidth={1}
-              strokeOpacity={0.6}
-            />
-            
-            {/* 1 sigma lines (solid) */}
-            <ReferenceLine 
-              y={chart.data.centerLine + stdDev} 
-              label="1σ" 
-              stroke="yellow" 
-              strokeWidth={1}
-              strokeOpacity={0.4}
-            />
-            <ReferenceLine 
-              y={chart.data.centerLine - stdDev} 
-              label="1σ" 
-              stroke="yellow" 
-              strokeWidth={1}
-              strokeOpacity={0.4}
-            />
-            
-            {/* Center line (solid) */}
-            <ReferenceLine y={chart.data.centerLine} label="CL" stroke="green" strokeWidth={2} />
-            
+            <ReferenceLine y={chart.data.ucl} label="UCL" stroke="red" strokeDasharray="3 3" />
+            <ReferenceLine y={chart.data.centerLine} label="CL" stroke="green" />
+            <ReferenceLine y={chart.data.lcl} label="LCL" stroke="red" strokeDasharray="3 3" />
             <Line
               type="monotone"
               dataKey="value"
