@@ -66,17 +66,19 @@ serve(async (req) => {
         max_tokens: 4096,
         messages: [{
           role: 'user',
-          content: `Analyze this dataset and identify key trends and themes. If there are no significant trends or themes, explicitly state that. Here's the statistical information about the dataset:
+          content: `Analyze this dataset and identify key trends and themes. Here's the statistical information about the dataset:
 
           ${JSON.stringify(results.descriptive_stats, null, 2)}
 
-          Provide a concise executive summary that explains:
-          1. Key trends identified (if any)
-          2. Notable patterns or relationships in the data
-          3. Any unusual or significant observations
-          4. Business implications of these findings
+          Please provide a clear analysis that:
+          1. Identifies and explains key trends
+          2. Highlights notable patterns or relationships in the data
+          3. Points out any unusual or significant observations
+          4. Explains the business implications of these findings
 
-          Keep the response focused and avoid technical jargon. If no significant trends are found, clearly state that the data shows no notable patterns.`
+          Keep the response focused and avoid technical jargon. If no significant trends are found, clearly state that the data shows no notable patterns.
+
+          Important: Do not use the phrase "Executive Summary" in your response.`
         }]
       })
     });
