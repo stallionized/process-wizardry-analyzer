@@ -198,6 +198,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       </div>
     </Card>
   );
-});
+};
 
 export default AIResults;
