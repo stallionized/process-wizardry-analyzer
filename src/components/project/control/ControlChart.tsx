@@ -9,6 +9,7 @@ import {
   ReferenceLine,
   ResponsiveContainer
 } from 'recharts';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 interface ControlChartData {
   variable: string;
@@ -72,6 +73,34 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     }
   ];
 
+  // Calculate distribution of points across standard deviation ranges
+  const calculateDistribution = () => {
+    const distribution = new Array(7).fill(0); // -3σ to +3σ (7 ranges)
+    
+    chart.data.values.forEach(value => {
+      const deviations = Math.abs((value - chart.data.centerLine) / standardDeviation);
+      
+      if (deviations > 3) {
+        distribution[6]++; // Beyond 3σ (positive)
+      } else if (deviations > 2) {
+        distribution[5]++; // Between 2σ and 3σ
+      } else if (deviations > 1) {
+        distribution[4]++; // Between 1σ and 2σ
+      } else {
+        distribution[3]++; // Within 1σ
+      }
+    });
+
+    return [
+      { range: "Beyond ±3σ", count: distribution[6] },
+      { range: "±2σ to ±3σ", count: distribution[5] },
+      { range: "±1σ to ±2σ", count: distribution[4] },
+      { range: "Within ±1σ", count: distribution[3] }
+    ];
+  };
+
+  const distribution = calculateDistribution();
+
   return (
     <div className="space-y-4 border border-border rounded-lg p-4">
       <div className="flex justify-between items-center">
@@ -129,6 +158,30 @@ const ControlChart = ({ chart }: ControlChartProps) => {
 
       <div className="bg-muted/50 p-4 rounded-lg">
         <p className="text-sm">{chart.interpretation}</p>
+      </div>
+
+      <div className="mt-4">
+        <h4 className="text-sm font-medium mb-2">Standard Deviation Distribution</h4>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Range</TableHead>
+              <TableHead>Volume</TableHead>
+              <TableHead>Percentage</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {distribution.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell>{row.range}</TableCell>
+                <TableCell>{row.count}</TableCell>
+                <TableCell>
+                  {((row.count / chart.data.values.length) * 100).toFixed(1)}%
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {chart.data.movingRanges && (
