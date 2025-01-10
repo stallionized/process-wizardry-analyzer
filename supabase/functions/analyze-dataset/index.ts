@@ -3,6 +3,7 @@ import { processExcelData } from './dataProcessing.ts';
 import { getClaudeAnalysis } from './claudeService.ts';
 import { generateControlCharts } from './controlChartService.ts';
 import { AnalysisInput } from './types.ts';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,18 +37,66 @@ serve(async (req) => {
       throw new Error('Project ID is required');
     }
 
-    // Process Excel data
-    console.log('Processing Excel data...');
-    const {
-      numericalData,
-      descriptiveStats,
-      correlationMatrix,
-      statsAnalysis,
-      dataIdentifiers
-    } = await processExcelData(input);
+    // If checkOnly is true, we only check for unique identifiers
+    if (input.checkOnly) {
+      console.log('Checking for unique identifiers only');
+      const { numericalData } = await processExcelData(input);
+      
+      // Ask GPT to identify potential unique identifiers
+      const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+      if (!openAIApiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
 
-    console.log('Excel data processed. Number of columns:', Object.keys(numericalData).length);
-    console.log('Numerical columns:', Object.keys(numericalData));
+      const columns = Object.keys(numericalData);
+      const columnData = Object.entries(numericalData).map(([column, values]) => ({
+        column,
+        sample: values.slice(0, 5)
+      }));
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{
+            role: 'system',
+            content: 'You are a data analyst helping identify potential unique identifiers in a dataset.'
+          }, {
+            role: 'user',
+            content: `Analyze these columns and their sample values to identify potential unique identifiers. Return ONLY an array of column names that could serve as unique identifiers. A unique identifier should be unique for each row and meaningful (not just an index).
+            
+            Data: ${JSON.stringify(columnData, null, 2)}
+            
+            Return format example: ["ID", "SerialNumber"]
+            If no suitable unique identifiers are found, return an empty array: []`
+          }]
+        })
+      });
+
+      const gptData = await response.json();
+      console.log('GPT Response:', gptData);
+
+      let uniqueIdentifiers: string[] = [];
+      try {
+        const content = gptData.choices[0].message.content;
+        uniqueIdentifiers = JSON.parse(content);
+        console.log('Parsed unique identifiers:', uniqueIdentifiers);
+      } catch (error) {
+        console.error('Error parsing GPT response:', error);
+        uniqueIdentifiers = [];
+      }
+
+      return new Response(JSON.stringify({ uniqueIdentifiers }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Process the dataset analysis
+    const { numericalData, descriptiveStats, correlationMatrix, statsAnalysis, dataIdentifiers } = await processExcelData(input);
 
     // Get Claude analysis
     console.log('Getting Claude analysis...');

@@ -4,6 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import FileUploadTab from './FileUploadTab';
 import { sendFilesToWebhook } from '@/services/webhookService';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProjectFilesProps {
   projectId: string;
@@ -11,6 +28,10 @@ interface ProjectFilesProps {
 
 const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
   const queryClient = useQueryClient();
+  const [showIdentifierDialog, setShowIdentifierDialog] = React.useState(false);
+  const [uniqueIdentifiers, setUniqueIdentifiers] = React.useState<string[]>([]);
+  const [selectedIdentifier, setSelectedIdentifier] = React.useState<string>('');
+  const [pendingFiles, setPendingFiles] = React.useState<any[]>([]);
 
   const { data: files = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: ['files', projectId],
@@ -70,7 +91,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
               name: file.name,
               type,
               storage_path: filePath,
-              created_at: null, // This will mark the file as new
+              created_at: null,
             });
 
           if (dbError) {
@@ -127,21 +148,35 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     },
   });
 
+  const checkUniqueIdentifiers = async (files: any[]) => {
+    try {
+      const response = await supabase.functions.invoke('analyze-dataset', {
+        body: {
+          projectId,
+          files,
+          checkOnly: true
+        }
+      });
+
+      if (response.error) throw response.error;
+      return response.data.uniqueIdentifiers;
+    } catch (error) {
+      console.error('Error checking unique identifiers:', error);
+      throw error;
+    }
+  };
+
   const submitFilesMutation = useMutation({
     mutationFn: async () => {
-      // Get all new dataset files
       const newDatasetFiles = files.filter(file => file.isNew && file.type === 'dataset');
-      console.log('New dataset files to process:', newDatasetFiles);
       
       if (newDatasetFiles.length === 0) {
         console.log('No new dataset files to process');
         return;
       }
 
-      // Try to send new dataset files to webhook for analysis
       const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
-      console.log('Webhook processing result:', webhookSuccess);
-
+      
       if (!webhookSuccess) {
         console.warn('Webhook processing failed');
         toast.warning('Files submitted. Analysis may be delayed.');
@@ -149,7 +184,6 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         toast.success('Files submitted for analysis');
       }
 
-      // Update all new files to mark them as no longer new
       const { error } = await supabase
         .from('files')
         .update({ created_at: new Date().toISOString() })
@@ -161,12 +195,14 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         throw error;
       }
 
-      // Invalidate both files and analysis queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
       queryClient.invalidateQueries({ queryKey: ['analysis', projectId] });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
+      setShowIdentifierDialog(false);
+      setPendingFiles([]);
+      setSelectedIdentifier('');
     },
     onError: (error) => {
       console.error('Submit mutation error:', error);
@@ -174,15 +210,92 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     },
   });
 
+  const handleSubmit = async () => {
+    const newDatasetFiles = files.filter(file => file.isNew && file.type === 'dataset');
+    if (newDatasetFiles.length === 0) {
+      toast.error('No new dataset files to process');
+      return;
+    }
+
+    try {
+      setPendingFiles(newDatasetFiles);
+      const identifiers = await checkUniqueIdentifiers(newDatasetFiles);
+      setUniqueIdentifiers(identifiers);
+      
+      if (identifiers.length > 0) {
+        setShowIdentifierDialog(true);
+      } else {
+        // Show dialog asking if they want to proceed without unique identifiers
+        setShowIdentifierDialog(true);
+      }
+    } catch (error) {
+      console.error('Error checking unique identifiers:', error);
+      toast.error('Failed to check unique identifiers');
+    }
+  };
+
   return (
-    <FileUploadTab
-      files={files}
-      onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
-      onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
-      onSubmit={() => submitFilesMutation.mutate()}
-      isLoading={isLoadingFiles}
-      isSubmitting={submitFilesMutation.isPending}
-    />
+    <>
+      <FileUploadTab
+        files={files}
+        onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
+        onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
+        onSubmit={handleSubmit}
+        isLoading={isLoadingFiles}
+        isSubmitting={submitFilesMutation.isPending}
+      />
+
+      <AlertDialog open={showIdentifierDialog} onOpenChange={setShowIdentifierDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {uniqueIdentifiers.length > 0 ? 'Select Unique Identifier' : 'No Unique Identifiers Found'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {uniqueIdentifiers.length > 0 ? (
+                <div className="space-y-4">
+                  <p>Please select a unique identifier for your dataset:</p>
+                  <Select value={selectedIdentifier} onValueChange={setSelectedIdentifier}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select identifier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueIdentifiers.map((identifier) => (
+                        <SelectItem key={identifier} value={identifier}>
+                          {identifier}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                'No unique identifiers were found in your dataset. Would you like to proceed anyway?'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowIdentifierDialog(false);
+              setPendingFiles([]);
+              setSelectedIdentifier('');
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (uniqueIdentifiers.length > 0 && !selectedIdentifier) {
+                  toast.error('Please select a unique identifier');
+                  return;
+                }
+                submitFilesMutation.mutate();
+              }}
+            >
+              Proceed
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
