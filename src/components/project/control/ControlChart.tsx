@@ -44,7 +44,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
 
   // Calculate standard deviations
   const standardDeviation = (chart.data.ucl - chart.data.centerLine) / 3;
-  
+
   // Calculate values for each sigma level
   const sigmaLevels = [
     {
@@ -212,7 +212,14 @@ const ControlChart = ({ chart }: ControlChartProps) => {
                         <span className="cursor-help">{row.count}</span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="text-sm">Data points: {row.indices.join(', ')}</p>
+                        <div className="max-h-[200px] overflow-y-auto">
+                          <p className="text-sm font-medium mb-1">Data points:</p>
+                          <ul className="space-y-1">
+                            {row.indices.map((point) => (
+                              <li key={point} className="text-sm">Point {point}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </TooltipContent>
                     </UITooltip>
                   </TooltipProvider>
