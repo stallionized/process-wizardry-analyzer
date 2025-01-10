@@ -108,8 +108,14 @@
 
   /* Alert and Toast Styles */
   [role="alert"],
-  [role="status"] {
+  [role="status"],
+  [role="alertdialog"] {
     @apply bg-white dark:bg-gray-900 shadow-lg border border-gray-200 dark:border-gray-700 !important;
+  }
+
+  /* Alert Dialog Content */
+  .AlertDialogContent {
+    @apply bg-white dark:bg-gray-900 !important;
   }
 
   /* Hover States */
