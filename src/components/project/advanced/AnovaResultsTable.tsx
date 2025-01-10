@@ -14,6 +14,12 @@ interface AnovaResultsTableProps {
 }
 
 export const AnovaResultsTable: React.FC<AnovaResultsTableProps> = ({ results }) => {
+  // Helper function to safely format numbers
+  const formatNumber = (value: number | undefined | null): string => {
+    if (value === undefined || value === null) return 'N/A';
+    return value.toFixed(4);
+  };
+
   return (
     <div>
       <h4 className="text-lg font-medium mb-4">ANOVA</h4>
@@ -30,15 +36,15 @@ export const AnovaResultsTable: React.FC<AnovaResultsTableProps> = ({ results })
           </TableRow>
         </TableHeader>
         <TableBody>
-          {results.map((result, index) => (
+          {results?.map((result, index) => (
             <TableRow key={index}>
-              <TableCell className="font-medium">{result.variable}</TableCell>
-              <TableCell>{result.comparedWith}</TableCell>
-              <TableCell>{result.fStatistic.toFixed(4)}</TableCell>
-              <TableCell>{result.pValue.toFixed(4)}</TableCell>
-              <TableCell>{result.effectSize.toFixed(4)}</TableCell>
-              <TableCell>{result.significanceLevel}</TableCell>
-              <TableCell className="max-w-md">{result.interpretation}</TableCell>
+              <TableCell className="font-medium">{result.variable || 'N/A'}</TableCell>
+              <TableCell>{result.comparedWith || 'N/A'}</TableCell>
+              <TableCell>{formatNumber(result.fStatistic)}</TableCell>
+              <TableCell>{formatNumber(result.pValue)}</TableCell>
+              <TableCell>{formatNumber(result.effectSize)}</TableCell>
+              <TableCell>{result.significanceLevel || 'N/A'}</TableCell>
+              <TableCell className="max-w-md">{result.interpretation || 'N/A'}</TableCell>
             </TableRow>
           ))}
         </TableBody>
