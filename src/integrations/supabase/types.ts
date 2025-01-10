@@ -11,7 +11,6 @@ export type Database = {
     Tables: {
       analysis_results: {
         Row: {
-          control_charts: Json | null
           created_at: string | null
           descriptive_stats: Json | null
           id: string
@@ -19,7 +18,6 @@ export type Database = {
           results: Json
         }
         Insert: {
-          control_charts?: Json | null
           created_at?: string | null
           descriptive_stats?: Json | null
           id?: string
@@ -27,7 +25,6 @@ export type Database = {
           results: Json
         }
         Update: {
-          control_charts?: Json | null
           created_at?: string | null
           descriptive_stats?: Json | null
           id?: string

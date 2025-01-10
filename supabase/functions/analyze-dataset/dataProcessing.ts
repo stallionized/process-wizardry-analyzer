@@ -1,6 +1,9 @@
 import * as XLSX from 'https://deno.land/x/sheetjs@v0.18.3/xlsx.mjs';
+import { calculateDescriptiveStats, generateExecutiveSummary } from './statsUtils.ts';
+import { calculateCorrelationMatrix } from './correlationUtils.ts';
+import { AnalysisInput } from './types.ts';
 
-export async function processExcelData(input: { files: Array<{ url: string }> }) {
+export async function processExcelData(input: AnalysisInput) {
   const fileUrl = input.files[0].url;
   console.log('Downloading file from:', fileUrl);
 
@@ -25,6 +28,7 @@ export async function processExcelData(input: { files: Array<{ url: string }> })
   const columns = Object.keys(jsonData[0] || {});
   const numericalData: Record<string, number[]> = {};
   const categoricalMappings: Record<string, Record<string, number>> = {};
+  const descriptiveStats: Record<string, any> = {};
 
   columns.forEach(column => {
     const values = jsonData.map(row => row[column]);
@@ -39,6 +43,7 @@ export async function processExcelData(input: { files: Array<{ url: string }> })
         typeof value === 'number' ? value : parseFloat(value.replace(/[^0-9.-]/g, ''))
       );
       numericalData[column] = numericValues;
+      descriptiveStats[column] = calculateDescriptiveStats(numericValues);
     } else {
       const uniqueValues = [...new Set(values)];
       const mapping: Record<string, number> = {};
@@ -50,8 +55,14 @@ export async function processExcelData(input: { files: Array<{ url: string }> })
     }
   });
 
+  const correlationMatrix = calculateCorrelationMatrix(numericalData);
+  const statsAnalysis = generateExecutiveSummary(descriptiveStats);
+
   return {
     numericalData,
-    categoricalMappings
+    categoricalMappings,
+    descriptiveStats,
+    correlationMatrix,
+    statsAnalysis
   };
 }

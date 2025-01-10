@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { processExcelData } from './dataProcessing.ts';
 import { getClaudeAnalysis } from './claudeService.ts';
-import { getGPTAnalysis } from './gptService.ts';
+import { AnalysisInput } from './types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,131 +9,90 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validate request method
-    if (req.method !== 'POST') {
-      throw new Error('Method not allowed');
+    const input = await req.json() as AnalysisInput;
+    console.log('Processing files:', input.files);
+    console.log('Project ID:', input.projectId);
+
+    if (!input.files?.length) {
+      throw new Error('No files provided for analysis');
     }
 
-    // Parse and validate request body
-    let payload;
-    try {
-      payload = await req.json();
-      console.log('Received payload:', JSON.stringify(payload));
-    } catch (error) {
-      console.error('Error parsing request body:', error);
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid JSON in request body',
-          details: error.message
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
+    if (!input.projectId) {
+      throw new Error('Project ID is required');
     }
 
-    // Validate required fields
-    if (!payload.projectId || !payload.files || !Array.isArray(payload.files)) {
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid request format',
-          details: 'Request must include projectId and files array'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
-    }
+    // Process Excel data
+    const {
+      numericalData,
+      categoricalMappings,
+      descriptiveStats,
+      correlationMatrix,
+      statsAnalysis
+    } = await processExcelData(input);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Get Claude analysis
+    console.log('Getting Claude analysis');
+    const advancedAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
 
-    // Process dataset files
-    console.log('Starting dataset analysis');
-    
-    try {
-      // Process Excel data
-      const { numericalData, categoricalMappings } = await processExcelData({ files: payload.files });
-      console.log('Excel data processed successfully');
-
-      // Get statistical analysis from GPT-4o
-      console.log('Starting GPT-4o statistical analysis');
-      const gptAnalysis = await getGPTAnalysis(numericalData);
-      console.log('GPT-4o analysis completed');
-
-      // Get control charts analysis using Claude
-      console.log('Starting Claude control charts analysis');
-      const controlChartsAnalysis = await getClaudeAnalysis(gptAnalysis.descriptiveStats, numericalData);
-      console.log('Claude control charts analysis completed');
-
-      // Store analysis results
-      const { error: insertError } = await supabase
-        .from('analysis_results')
-        .insert({
-          project_id: payload.projectId,
-          results: {
-            correlationMatrix: gptAnalysis.correlationMatrix,
-            mappings: categoricalMappings,
-            descriptiveStats: gptAnalysis.descriptiveStats,
-            statsAnalysis: gptAnalysis.statsAnalysis,
-            controlCharts: controlChartsAnalysis.controlCharts
-          }
-        });
-
-      if (insertError) {
-        console.error('Error inserting analysis results:', insertError);
-        throw insertError;
+    const analysis = {
+      correlationMatrix,
+      mappings: categoricalMappings,
+      descriptiveStats,
+      statsAnalysis,
+      advancedAnalysis: {
+        ...advancedAnalysis,
+        timestamp: new Date().toISOString()
       }
+    };
 
-      console.log('Analysis results stored successfully');
+    // Save to Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: 'Analysis completed successfully'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      );
-
-    } catch (analysisError) {
-      console.error('Error during analysis:', analysisError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Analysis failed',
-          details: analysisError.message 
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
-        }
-      );
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration');
     }
 
-  } catch (error) {
-    console.error('Error processing request:', error);
-    
-    return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message 
+    console.log('Saving analysis results for project:', input.projectId);
+
+    const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        project_id: input.projectId,
+        results: analysis,
+        descriptive_stats: descriptiveStats
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
+    });
+
+    if (!supabaseResponse.ok) {
+      const errorText = await supabaseResponse.text();
+      throw new Error(`Failed to save analysis results: ${errorText}`);
+    }
+
+    console.log('Analysis results saved successfully');
+
+    return new Response(JSON.stringify({ success: true, analysis }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in analyze-dataset function:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack 
+    }), { 
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

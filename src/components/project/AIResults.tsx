@@ -1,13 +1,12 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
-import { ControlCharts } from './control/ControlCharts';
+import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
 
 interface AIResultsProps {
   projectId: string;
@@ -54,7 +53,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
           'mappings' in candidate &&
           'descriptiveStats' in candidate &&
           'statsAnalysis' in candidate &&
-          'controlCharts' in candidate
+          'advancedAnalysis' in candidate
         );
       };
 
@@ -73,7 +72,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Analyzing data...</p>
-          <p className="text-sm text-muted-foreground">This may take 2-3 minutes depending on the file size</p>
         </div>
       </Card>
     );
@@ -94,91 +92,66 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     return (
       <Card className="p-6 animate-fade-in">
         <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
-        <div className="flex flex-col items-center gap-4 py-8">
-          <p className="text-muted-foreground text-center">
-            Analysis results will appear here after processing your uploaded files.
-          </p>
-          <p className="text-sm text-muted-foreground text-center">
-            Estimated processing time: 2-3 minutes
-          </p>
-        </div>
+        <p className="text-muted-foreground">
+          Analysis results will appear here after processing your uploaded files.
+        </p>
       </Card>
     );
   }
 
-  const { 
-    correlationMatrix, 
-    mappings, 
-    descriptiveStats, 
-    statsAnalysis,
-    controlCharts 
-  } = analysisResults;
+  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = analysisResults;
 
   return (
     <Card className="p-6 animate-fade-in">
       <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
       
-      <Tabs defaultValue="descriptive" className="space-y-4">
-        <TabsList className="w-full flex flex-wrap gap-2 h-auto">
-          <TabsTrigger 
-            value="descriptive" 
-            className="flex-1 min-w-[150px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Descriptive Statistics
-          </TabsTrigger>
-          <TabsTrigger 
-            value="correlation" 
-            className="flex-1 min-w-[150px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Correlation Analysis
-          </TabsTrigger>
-          <TabsTrigger 
-            value="control" 
-            className="flex-1 min-w-[150px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Control Results
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="descriptive" className="space-y-8">
+      <div className="space-y-8">
+        {/* Descriptive Statistics Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Descriptive Statistics</h3>
           <div className="p-4 bg-muted/50 rounded-lg">
             <h4 className="font-medium mb-2">AI Analysis Summary</h4>
             <p className="text-sm text-muted-foreground">{statsAnalysis}</p>
           </div>
           <DescriptiveStats stats={descriptiveStats} />
-        </TabsContent>
-
-        <TabsContent value="correlation">
-          <CorrelationMatrix correlationMatrix={correlationMatrix} />
-        </TabsContent>
-
-        <TabsContent value="control">
-          <ControlCharts charts={controlCharts} />
-        </TabsContent>
-      </Tabs>
-
-      {Object.keys(mappings).length > 0 && (
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-medium">Variable Mappings</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(mappings).map(([column, mapping]) => (
-              <div key={column} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                <h4 className="font-medium mb-2">{column}</h4>
-                <div className="space-y-1">
-                  {Object.entries(mapping).map(([text, value]) => (
-                    <div key={text} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{text}:</span>
-                      <span>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
-      )}
+
+        {/* Correlation Matrix Section */}
+        <div className="space-y-4">
+          <CorrelationMatrix correlationMatrix={correlationMatrix} />
+        </div>
+
+        {/* Advanced Analysis Section (Claude) */}
+        {advancedAnalysis && (
+          <div className="space-y-4">
+            <AdvancedAnalysis analysis={advancedAnalysis} />
+          </div>
+        )}
+
+        {/* Variable Mappings Section */}
+        {Object.keys(mappings).length > 0 && (
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-medium">Variable Mappings</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(mappings).map(([column, mapping]) => (
+                <div key={column} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                  <h4 className="font-medium mb-2">{column}</h4>
+                  <div className="space-y-1">
+                    {Object.entries(mapping).map(([text, value]) => (
+                      <div key={text} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{text}:</span>
+                        <span>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </Card>
   );
 };

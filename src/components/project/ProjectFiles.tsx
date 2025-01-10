@@ -135,7 +135,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       
       if (newDatasetFiles.length === 0) {
         console.log('No new dataset files to process');
-        return Promise.resolve();
+        return;
       }
 
       // Try to send new dataset files to webhook for analysis
@@ -145,6 +145,8 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       if (!webhookSuccess) {
         console.warn('Webhook processing failed');
         toast.warning('Files submitted. Analysis may be delayed.');
+      } else {
+        toast.success('Files submitted for analysis');
       }
 
       // Update all new files to mark them as no longer new
@@ -162,8 +164,9 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       // Invalidate both files and analysis queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
       queryClient.invalidateQueries({ queryKey: ['analysis', projectId] });
-      
-      return Promise.resolve();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files', projectId] });
     },
     onError: (error) => {
       console.error('Submit mutation error:', error);
@@ -180,7 +183,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       files={files}
       onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
       onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
-      onSubmit={() => submitFilesMutation.mutateAsync()}
+      onSubmit={() => submitFilesMutation.mutate()}
       isLoading={submitFilesMutation.isPending}
     />
   );

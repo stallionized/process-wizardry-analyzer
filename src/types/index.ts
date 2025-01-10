@@ -2,7 +2,6 @@ export interface FileData {
   id: string;
   name: string;
   url: string;
-  type?: string; // Added type property as optional to maintain compatibility
 }
 
 interface DescriptiveStats {
@@ -27,36 +26,11 @@ interface ChartData {
   description?: string;
 }
 
-interface ControlChartData {
-  variable: string;
-  chartType: string;
-  centerLine: number;
-  upperControlLimit: number;
-  lowerControlLimit: number;
-  data: {
-    index: number;
-    value: number;
-    isOutOfControl: boolean;
-    deviationLevel: number;
-  }[];
-  outOfControlPoints: {
-    ranges: {
-      min: number;
-      max: number;
-      volume: number;
-      values: number[];
-    }[];
-  };
-  interpretation: string;
-}
-
 export interface AnalysisResults {
   correlationMatrix: Record<string, Record<string, number>>;
   mappings: Record<string, Record<string, number>>;
   descriptiveStats: Record<string, DescriptiveStats>;
   statsAnalysis: string;
-  // Commenting out ANOVA related types
-  /*
   advancedAnalysis: {
     anova: {
       results: Array<{
@@ -73,6 +47,4 @@ export interface AnalysisResults {
     };
     timestamp: string;
   };
-  */
-  controlCharts: ControlChartData[];
 }
