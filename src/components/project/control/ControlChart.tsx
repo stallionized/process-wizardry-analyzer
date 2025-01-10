@@ -49,39 +49,15 @@ const ControlChart = ({ chart }: ControlChartProps) => {
 
   // Calculate values for each sigma level
   const sigmaLevels = [
-    {
-      value: chart.data.centerLine + standardDeviation,
-      label: '+1σ',
-      color: '#1E3A8A'
-    },
-    {
-      value: chart.data.centerLine + 2 * standardDeviation,
-      label: '+2σ',
-      color: '#3730A3'
-    },
-    {
-      value: chart.data.centerLine + 3 * standardDeviation,
-      label: '+3σ',
-      color: '#1F2937'
-    },
-    {
-      value: chart.data.centerLine - standardDeviation,
-      label: '-1σ',
-      color: '#1E3A8A'
-    },
-    {
-      value: chart.data.centerLine - 2 * standardDeviation,
-      label: '-2σ',
-      color: '#3730A3'
-    },
-    {
-      value: chart.data.centerLine - 3 * standardDeviation,
-      label: '-3σ',
-      color: '#1F2937'
-    }
+    { value: chart.data.centerLine + standardDeviation, label: '+1σ', color: '#1E3A8A' },
+    { value: chart.data.centerLine + 2 * standardDeviation, label: '+2σ', color: '#3730A3' },
+    { value: chart.data.centerLine + 3 * standardDeviation, label: '+3σ', color: '#1F2937' },
+    { value: chart.data.centerLine - standardDeviation, label: '-1σ', color: '#1E3A8A' },
+    { value: chart.data.centerLine - 2 * standardDeviation, label: '-2σ', color: '#3730A3' },
+    { value: chart.data.centerLine - 3 * standardDeviation, label: '-3σ', color: '#1F2937' }
   ];
 
-  // Calculate distribution of points across standard deviation ranges with indices
+  // Calculate distribution of points across standard deviation ranges
   const calculateDistribution = () => {
     const distribution = {
       beyond3: { count: 0, points: [] as { value: number; identifier: string }[] },
@@ -92,10 +68,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     
     chartData.forEach((point) => {
       const deviations = Math.abs((point.value - chart.data.centerLine) / standardDeviation);
-      const pointInfo = { 
-        value: point.value, 
-        identifier: point.identifier 
-      };
+      const pointInfo = { value: point.value, identifier: point.identifier };
       
       if (deviations > 3) {
         distribution.beyond3.count++;
@@ -113,26 +86,10 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     });
 
     return [
-      { 
-        range: "Beyond ±3σ", 
-        count: distribution.beyond3.count,
-        points: distribution.beyond3.points
-      },
-      { 
-        range: "±2σ to ±3σ", 
-        count: distribution.between2and3.count,
-        points: distribution.between2and3.points
-      },
-      { 
-        range: "±1σ to ±2σ", 
-        count: distribution.between1and2.count,
-        points: distribution.between1and2.points
-      },
-      { 
-        range: "Within ±1σ", 
-        count: distribution.within1.count,
-        points: distribution.within1.points
-      }
+      { range: "Beyond ±3σ", count: distribution.beyond3.count, points: distribution.beyond3.points },
+      { range: "±2σ to ±3σ", count: distribution.between2and3.count, points: distribution.between2and3.points },
+      { range: "±1σ to ±2σ", count: distribution.between1and2.count, points: distribution.between1and2.points },
+      { range: "Within ±1σ", count: distribution.within1.count, points: distribution.within1.points }
     ];
   };
 
@@ -166,7 +123,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
           <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
-              dataKey="identifier" 
+              dataKey="identifier"
               interval="preserveStartEnd"
               angle={-45}
               textAnchor="end"
