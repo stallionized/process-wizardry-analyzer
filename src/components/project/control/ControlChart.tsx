@@ -5,12 +5,17 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
   ReferenceLine,
   ResponsiveContainer
 } from 'recharts';
-import { ChartTooltip } from './ChartTooltip';
-import { DistributionTable } from './DistributionTable';
-import { MovingRangeChart } from './MovingRangeChart';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ControlChartData {
   variable: string;
@@ -90,6 +95,22 @@ const ControlChart = ({ chart }: ControlChartProps) => {
 
   const distribution = calculateDistribution();
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white border rounded-lg p-2 shadow-lg">
+          <p className="font-medium">{data.identifier}</p>
+          <p className="text-sm text-muted-foreground">Value: {data.value.toFixed(2)}</p>
+          {data.outOfControl && (
+            <p className="text-sm text-destructive font-medium">Out of Control</p>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-4 border border-border rounded-lg p-4">
       <div className="flex justify-between items-center">
@@ -109,7 +130,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
               height={60}
             />
             <YAxis />
-            <ChartTooltip />
+            <Tooltip content={<CustomTooltip />} />
             
             {/* Center Line */}
             <ReferenceLine 
@@ -155,16 +176,75 @@ const ControlChart = ({ chart }: ControlChartProps) => {
         <p className="text-sm">{chart.interpretation}</p>
       </div>
 
-      <DistributionTable 
-        distribution={distribution}
-        totalPoints={chart.data.values.length}
-      />
+      <div className="mt-4">
+        <h4 className="text-sm font-medium mb-2">Standard Deviation Distribution</h4>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Range</TableHead>
+              <TableHead>Count</TableHead>
+              <TableHead>Percentage</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {distribution.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell>{row.range}</TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">{row.count}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="max-h-[200px] overflow-y-auto">
+                          <p className="text-sm font-medium mb-1">Data points:</p>
+                          <ul className="space-y-1">
+                            {row.points.map((point, i) => (
+                              <li key={i} className="text-sm">
+                                {point.identifier}: {point.value.toFixed(2)}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                  {((row.count / chart.data.values.length) * 100).toFixed(1)}%
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-      {chart.data.movingRanges && chart.data.identifiers && (
-        <MovingRangeChart 
-          movingRanges={chart.data.movingRanges}
-          identifiers={chart.data.identifiers}
-        />
+      {chart.data.movingRanges && (
+        <div className="h-[200px] mt-4">
+          <h4 className="text-sm font-medium mb-2">Moving Range Chart</h4>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={chart.data.movingRanges.map((value, i) => ({
+                identifier: chartData[i + 1].identifier,
+                value
+              }))}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="identifier"
+                interval="preserveStartEnd"
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="value" stroke="#82ca9d" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   );

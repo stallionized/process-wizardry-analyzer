@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,7 +11,6 @@ interface ProjectFilesProps {
 
 const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
   const queryClient = useQueryClient();
-  const [potentialIdentifiers, setPotentialIdentifiers] = useState<string[]>([]);
 
   const { data: files = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: ['files', projectId],
@@ -129,7 +128,7 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
   });
 
   const submitFilesMutation = useMutation({
-    mutationFn: async (selectedIdentifier?: string) => {
+    mutationFn: async () => {
       // Get all new dataset files
       const newDatasetFiles = files.filter(file => file.isNew && file.type === 'dataset');
       console.log('New dataset files to process:', newDatasetFiles);
@@ -139,26 +138,8 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         return;
       }
 
-      // First, check for unique identifiers if not already done
-      if (!selectedIdentifier && !potentialIdentifiers.length) {
-        const response = await supabase.functions.invoke('analyze-dataset', {
-          body: {
-            projectId,
-            files: newDatasetFiles,
-            checkIdentifiers: true
-          }
-        });
-
-        if (response.error) throw response.error;
-        
-        if (response.data?.potentialIdentifiers) {
-          setPotentialIdentifiers(response.data.potentialIdentifiers);
-          return response.data.potentialIdentifiers;
-        }
-      }
-
-      // If we have a selected identifier or no identifiers were found, proceed with analysis
-      const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles, selectedIdentifier);
+      // Try to send new dataset files to webhook for analysis
+      const webhookSuccess = await sendFilesToWebhook(projectId, newDatasetFiles);
       console.log('Webhook processing result:', webhookSuccess);
 
       if (!webhookSuccess) {
@@ -180,9 +161,6 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         throw error;
       }
 
-      // Clear potential identifiers after successful submission
-      setPotentialIdentifiers([]);
-
       // Invalidate both files and analysis queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['files', projectId] });
       queryClient.invalidateQueries({ queryKey: ['analysis', projectId] });
@@ -201,10 +179,9 @@ const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       files={files}
       onUpload={(files, type) => uploadFileMutation.mutate({ files, type })}
       onDelete={(fileId) => deleteFileMutation.mutate(fileId)}
-      onSubmit={(selectedIdentifier) => submitFilesMutation.mutate(selectedIdentifier)}
+      onSubmit={() => submitFilesMutation.mutate()}
       isLoading={isLoadingFiles}
       isSubmitting={submitFilesMutation.isPending}
-      potentialIdentifiers={potentialIdentifiers}
     />
   );
 };

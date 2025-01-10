@@ -1,7 +1,7 @@
 import { FileData } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
-export const sendFilesToWebhook = async (projectId: string, files: FileData[], selectedIdentifier?: string) => {
+export const sendFilesToWebhook = async (projectId: string, files: FileData[]) => {
   console.log('Attempting to analyze files:', files);
   
   try {
@@ -29,8 +29,7 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[], s
           name: file.name,
           url: file.url,
           size: file.size
-        })),
-        selectedIdentifier
+        }))
       }
     });
 

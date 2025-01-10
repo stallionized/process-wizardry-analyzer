@@ -1,20 +1,19 @@
 import * as XLSX from 'https://deno.land/x/sheetjs@v0.18.3/xlsx.mjs';
 import { calculateDescriptiveStats, generateExecutiveSummary } from './statsUtils.ts';
 import { calculateCorrelationMatrix } from './correlationUtils.ts';
-import { findPotentialUniqueIdentifiers } from './uniqueIdentifierUtils.ts';
 import { AnalysisInput } from './types.ts';
 
 function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; } {
+  console.log('Validating dataset...');
+  
   if (!Array.isArray(jsonData) || jsonData.length === 0) {
+    console.error('Dataset validation failed: Empty or invalid dataset');
     return { isValid: false, error: 'Dataset is empty or invalid' };
   }
 
   if (jsonData.length < 2) {
+    console.error('Dataset validation failed: Not enough rows');
     return { isValid: false, error: 'Dataset must contain at least 2 rows for analysis' };
-  }
-
-  if (!jsonData[0] || typeof jsonData[0] !== 'object') {
-    return { isValid: false, error: 'Invalid data format: First row is not an object' };
   }
 
   const firstRow = jsonData[0];
@@ -26,7 +25,10 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; }
     );
   });
 
+  console.log('Found numeric columns:', numericColumns);
+
   if (numericColumns.length === 0) {
+    console.error('Dataset validation failed: No numeric columns found');
     return { isValid: false, error: 'Dataset must contain at least one numeric column for analysis' };
   }
 
@@ -34,8 +36,6 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; }
 }
 
 export async function processExcelData(input: AnalysisInput) {
-  console.log('Processing Excel data for project:', input.projectId);
-  
   const fileUrl = input.files[0].url;
   console.log('Downloading file from:', fileUrl);
 
@@ -45,43 +45,34 @@ export async function processExcelData(input: AnalysisInput) {
   }
 
   const arrayBuffer = await response.arrayBuffer();
+  console.log('File downloaded successfully');
+
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-  
-  if (!workbook.SheetNames.length) {
-    throw new Error('Excel file contains no sheets');
-  }
-
   const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-  if (!firstSheet) {
-    throw new Error('First sheet is empty');
-  }
-
   const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-  console.log('Excel data converted to JSON:', {
-    rowCount: jsonData.length,
-    columnCount: Object.keys(jsonData[0] || {}).length
-  });
 
+  console.log('Excel data converted to JSON');
+  console.log('Number of rows:', jsonData.length);
+  
   const validation = validateDataset(jsonData);
   if (!validation.isValid) {
     throw new Error(validation.error);
   }
 
-  // If this is just checking for identifiers
-  if (input.checkIdentifiers) {
-    console.log('Checking for unique identifiers...');
-    const potentialIdentifiers = await findPotentialUniqueIdentifiers(jsonData);
-    return { potentialIdentifiers, jsonData };
-  }
-
-  // Process the full analysis
   const numericalData: Record<string, number[]> = {};
   const descriptiveStats: Record<string, any> = {};
   const dataIdentifiers: Record<string, string[]> = {};
 
-  const identifierColumn = input.selectedIdentifier || null;
-  console.log('Using identifier column:', identifierColumn);
+  // Find potential identifier columns (non-numeric columns)
+  const firstRow = jsonData[0];
+  const potentialIdentifierColumns = Object.keys(firstRow).filter(column => {
+    const value = firstRow[column];
+    return typeof value === 'string' || typeof value === 'number';
+  });
 
+  console.log('Potential identifier columns:', potentialIdentifierColumns);
+
+  // Process numeric columns and keep track of identifiers
   Object.keys(jsonData[0]).forEach(column => {
     const values = jsonData.map(row => {
       const value = row[column];
@@ -97,14 +88,21 @@ export async function processExcelData(input: AnalysisInput) {
       numericalData[column] = values;
       descriptiveStats[column] = calculateDescriptiveStats(values);
       
-      dataIdentifiers[column] = jsonData.map((row, index) => {
-        if (identifierColumn && row[identifierColumn] != null) {
-          return String(row[identifierColumn]);
+      // Store identifiers for this column's data points
+      dataIdentifiers[column] = jsonData.map(row => {
+        // Try to find the best identifier from available columns
+        for (const idColumn of potentialIdentifierColumns) {
+          if (idColumn !== column && row[idColumn]) {
+            return String(row[idColumn]);
+          }
         }
-        return `Row ${index + 1}`;
+        return `Row ${jsonData.indexOf(row) + 1}`;
       });
     }
   });
+
+  console.log('Processed numerical data for columns:', Object.keys(numericalData));
+  console.log('Collected identifiers for data points');
 
   const correlationMatrix = calculateCorrelationMatrix(numericalData);
   const statsAnalysis = generateExecutiveSummary(descriptiveStats);
@@ -114,7 +112,6 @@ export async function processExcelData(input: AnalysisInput) {
     descriptiveStats,
     correlationMatrix,
     statsAnalysis,
-    dataIdentifiers,
-    selectedIdentifier: identifierColumn
+    dataIdentifiers
   };
 }
