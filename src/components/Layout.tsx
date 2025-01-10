@@ -49,6 +49,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       .single();
 
     setIsAdmin(profile?.is_admin || false);
+
+    // Redirect to projects page if on root
+    if (window.location.pathname === '/') {
+      navigate('/');
+    }
   };
 
   const handleSignOut = async () => {
@@ -62,19 +67,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <div className="container flex h-14 items-center">
           <Link to="/" className="font-bold text-xl">ProcessAI</Link>
           <div className="ml-auto flex items-center space-x-4">
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <>
-                <NavLink to="/">Admin</NavLink>
-                <NavLink to="/client">Client Portal</NavLink>
+                <NavLink to="/">Projects</NavLink>
                 {isAdmin && (
-                  <NavLink to="/admin/users">User Management</NavLink>
+                  <>
+                    <NavLink to="/admin/users">User Management</NavLink>
+                  </>
                 )}
                 <Button variant="outline" onClick={handleSignOut}>
                   Sign Out
                 </Button>
               </>
-            ) : (
-              <NavLink to="/auth/login">Sign In</NavLink>
             )}
           </div>
         </div>
