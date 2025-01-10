@@ -35,6 +35,7 @@ serve(async (req) => {
     }
 
     // Process Excel data with validation
+    console.log('Starting Excel data processing');
     const {
       numericalData,
       descriptiveStats,
@@ -43,15 +44,18 @@ serve(async (req) => {
       expectedAnalyses
     } = await processExcelData(input);
 
+    console.log('Excel data processed successfully');
+    console.log('Numerical columns:', Object.keys(numericalData));
     console.log(`Expected ${expectedAnalyses} analyses based on numeric column pairs`);
 
     // Get Claude analysis for AI results
     console.log('Getting Claude analysis');
-    const advancedAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
+    const advancedAnalysis = await getClaudeAnalysis(JSON.stringify(numericalData));
 
-    // Validate AI results match expectations
+    // Validate AI results
     if (!advancedAnalysis?.anova?.results || 
         advancedAnalysis.anova.results.length === 0) {
+      console.error('AI analysis returned no results:', advancedAnalysis);
       throw new Error('AI analysis returned no results');
     }
 
@@ -62,6 +66,7 @@ serve(async (req) => {
     // Validate control charts
     if (!controlCharts?.controlCharts || 
         controlCharts.controlCharts.length === 0) {
+      console.error('Control chart generation returned no results:', controlCharts);
       throw new Error('Control chart generation returned no results');
     }
 
