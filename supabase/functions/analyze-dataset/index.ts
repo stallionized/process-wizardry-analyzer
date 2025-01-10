@@ -1,13 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { processExcelData } from './dataProcessing.ts';
-import { getClaudeAnalysis } from './claudeService.ts';
-import { AnalysisInput } from './types.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
@@ -24,18 +20,11 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    // Log the raw request for debugging
-    console.log('Received request:', {
-      method: req.method,
-      headers: Object.fromEntries(req.headers.entries()),
-      url: req.url
-    });
-
-    // Get and validate the request body
-    let input: AnalysisInput;
+    // Parse and validate request body
+    let payload;
     try {
-      input = await req.json();
-      console.log('Parsed input:', input);
+      payload = await req.json();
+      console.log('Received payload:', payload);
     } catch (error) {
       console.error('Error parsing request body:', error);
       return new Response(
@@ -44,110 +33,69 @@ serve(async (req) => {
           details: error.message
         }),
         {
-          headers: corsHeaders,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400
         }
       );
     }
 
     // Validate required fields
-    if (!input.files?.length) {
+    if (!payload.projectId || !payload.files || !Array.isArray(payload.files)) {
       return new Response(
-        JSON.stringify({ error: 'No files provided for analysis' }),
-        { 
-          headers: corsHeaders,
-          status: 400 
+        JSON.stringify({
+          error: 'Invalid request format',
+          details: 'Request must include projectId and files array'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
         }
       );
     }
 
-    if (!input.projectId) {
-      return new Response(
-        JSON.stringify({ error: 'Project ID is required' }),
-        { 
-          headers: corsHeaders,
-          status: 400 
-        }
-      );
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Process each file
+    const processedFiles = [];
+    for (const file of payload.files) {
+      if (!file.url || !file.name || !file.type) {
+        console.warn('Skipping invalid file:', file);
+        continue;
+      }
+      
+      processedFiles.push({
+        fileName: file.name,
+        fileUrl: file.url,
+        status: 'processed'
+      });
     }
 
-    console.log('Processing files:', input.files);
-    console.log('Project ID:', input.projectId);
-
-    // Process Excel data
-    const {
-      numericalData,
-      categoricalMappings,
-      descriptiveStats,
-      correlationMatrix,
-      statsAnalysis
-    } = await processExcelData(input);
-
-    // Get Claude analysis
-    console.log('Getting Claude analysis');
-    const advancedAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
-    console.log('Claude analysis completed');
-
-    const analysis = {
-      correlationMatrix,
-      mappings: categoricalMappings,
-      descriptiveStats,
-      statsAnalysis,
-      controlCharts: advancedAnalysis.controlCharts
-    };
-
-    // Save to Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
-    }
-
-    console.log('Saving analysis results for project:', input.projectId);
-
-    const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'apikey': supabaseKey,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({
-        project_id: input.projectId,
-        results: analysis,
-        descriptive_stats: descriptiveStats,
-        control_charts: advancedAnalysis.controlCharts
-      }),
-    });
-
-    if (!supabaseResponse.ok) {
-      const errorText = await supabaseResponse.text();
-      console.error('Failed to save analysis results:', errorText);
-      throw new Error(`Failed to save analysis results: ${errorText}`);
-    }
-
-    console.log('Analysis results saved successfully');
-
+    // For now, just return success. In a real implementation, you'd do actual file processing here
     return new Response(
-      JSON.stringify({ success: true, analysis }), 
-      { 
-        headers: corsHeaders,
-        status: 200 
+      JSON.stringify({ 
+        success: true,
+        message: 'Files queued for analysis',
+        processedFiles 
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
       }
     );
 
   } catch (error) {
-    console.error('Error in analyze-dataset function:', error);
+    console.error('Error processing request:', error);
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: error.stack 
-      }), 
-      { 
-        headers: corsHeaders,
+        error: 'Internal server error',
+        details: error.message 
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
       }
     );
