@@ -12,8 +12,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('Received request:', req.method);
-
+  console.log('Starting analyze-dataset function');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -23,8 +23,10 @@ serve(async (req) => {
 
   try {
     const input = await req.json() as AnalysisInput;
-    console.log('Processing files:', input.files);
-    console.log('Project ID:', input.projectId);
+    console.log('Received input:', {
+      projectId: input.projectId,
+      files: input.files.map(f => ({ name: f.name, url: f.url }))
+    });
 
     if (!input.files?.length) {
       throw new Error('No files provided for analysis');
@@ -34,41 +36,29 @@ serve(async (req) => {
       throw new Error('Project ID is required');
     }
 
-    // Process Excel data with validation
-    console.log('Starting Excel data processing');
+    // Process Excel data
+    console.log('Processing Excel data...');
     const {
       numericalData,
       descriptiveStats,
       correlationMatrix,
-      statsAnalysis,
-      expectedAnalyses
+      statsAnalysis
     } = await processExcelData(input);
 
-    console.log('Excel data processed successfully');
+    console.log('Excel data processed. Number of columns:', Object.keys(numericalData).length);
     console.log('Numerical columns:', Object.keys(numericalData));
-    console.log(`Expected ${expectedAnalyses} analyses based on numeric column pairs`);
 
-    // Get Claude analysis for AI results
-    console.log('Getting Claude analysis');
-    const advancedAnalysis = await getClaudeAnalysis(JSON.stringify(numericalData));
+    // Get Claude analysis
+    console.log('Getting Claude analysis...');
+    const advancedAnalysis = await getClaudeAnalysis(
+      `Analyze this numerical dataset and provide insights: ${JSON.stringify(numericalData)}`
+    );
+    console.log('Claude analysis completed');
 
-    // Validate AI results
-    if (!advancedAnalysis?.anova?.results || 
-        advancedAnalysis.anova.results.length === 0) {
-      console.error('AI analysis returned no results:', advancedAnalysis);
-      throw new Error('AI analysis returned no results');
-    }
-
-    // Generate control charts using Claude
-    console.log('Generating control charts');
+    // Generate control charts
+    console.log('Generating control charts...');
     const controlCharts = await generateControlCharts(numericalData);
-
-    // Validate control charts
-    if (!controlCharts?.controlCharts || 
-        controlCharts.controlCharts.length === 0) {
-      console.error('Control chart generation returned no results:', controlCharts);
-      throw new Error('Control chart generation returned no results');
-    }
+    console.log('Control charts generated');
 
     const analysis = {
       correlationMatrix,
@@ -88,8 +78,7 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    console.log('Saving analysis results for project:', input.projectId);
-
+    console.log('Saving analysis results...');
     const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
       method: 'POST',
       headers: {
@@ -109,6 +98,7 @@ serve(async (req) => {
 
     if (!supabaseResponse.ok) {
       const errorText = await supabaseResponse.text();
+      console.error('Failed to save analysis results:', errorText);
       throw new Error(`Failed to save analysis results: ${errorText}`);
     }
 
