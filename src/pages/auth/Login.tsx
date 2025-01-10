@@ -11,18 +11,35 @@ const Login = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    // Check current session on component mount
+    const checkSession = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (session) {
         navigate('/');
       }
+      if (sessionError) {
+        setError(getErrorMessage(sessionError));
+      }
+    };
+    
+    checkSession();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Ensure we have a valid session before redirecting
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        if (currentSession) {
+          navigate('/');
+        } else if (sessionError) {
+          setError(getErrorMessage(sessionError));
+        }
+      }
       if (event === 'USER_UPDATED' || event === 'PASSWORD_RECOVERY') {
-        const checkError = async () => {
-          const { error } = await supabase.auth.getSession();
-          if (error) {
-            setError(getErrorMessage(error));
-          }
-        };
-        checkError();
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          setError(getErrorMessage(error));
+        }
       }
       if (event === 'SIGNED_OUT') {
         setError(''); // Clear errors on sign out
@@ -40,6 +57,10 @@ const Login = () => {
         return 'Invalid email or password. Please check your credentials and try again.';
       case 'Email not confirmed':
         return 'Please verify your email address before signing in.';
+      case 'User not found':
+        return 'No user found with these credentials.';
+      case 'Session not found':
+        return 'Your session has expired. Please sign in again.';
       default:
         return error.message;
     }
