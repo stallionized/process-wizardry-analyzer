@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface User {
   id: string;
@@ -55,50 +63,46 @@ const UserManagement = () => {
   };
 
   const fetchUsers = async () => {
-    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        auth.users!inner (
+          email,
+          id
+        )
+      `);
     
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch users"
-      });
+    if (profilesError) {
+      toast.error("Failed to fetch users");
       return;
     }
 
-    setUsers(users || []);
+    setUsers(profiles?.map(profile => ({
+      id: profile.id,
+      email: profile.auth.users.email
+    })) || []);
   };
 
   const createUser = async () => {
     if (!newUserEmail || !newUserPassword) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please provide both email and password"
-      });
+      toast.error('Please provide both email and password');
       return;
     }
 
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: newUserEmail,
-      password: newUserPassword,
-      email_confirm: true
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: {
+        email: newUserEmail,
+        password: newUserPassword
+      }
     });
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message
-      });
+      toast.error(error.message);
       return;
     }
 
-    toast({
-      title: "Success",
-      description: "User created successfully"
-    });
-
+    toast.success('User created successfully');
     setNewUserEmail('');
     setNewUserPassword('');
     fetchUsers();
@@ -106,33 +110,23 @@ const UserManagement = () => {
 
   const updateUserPassword = async () => {
     if (!editingUser || !newPassword) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please provide a new password"
-      });
+      toast.error('Please provide a new password');
       return;
     }
 
-    const { error } = await supabase.auth.admin.updateUserById(
-      editingUser.id,
-      { password: newPassword }
-    );
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message
-      });
-      return;
-    }
-
-    toast({
-      title: "Success",
-      description: "Password updated successfully"
+    const { data, error } = await supabase.functions.invoke('update-user-password', {
+      body: {
+        userId: editingUser.id,
+        newPassword: newPassword
+      }
     });
 
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success('Password updated successfully');
     setEditingUser(null);
     setNewPassword('');
   };
@@ -145,7 +139,7 @@ const UserManagement = () => {
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">User Management</h1>
 
-      <div className="mb-8 p-6 bg-white rounded-lg shadow">
+      <div className="mb-8 p-6 bg-card rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Create New User</h2>
         <div className="space-y-4">
           <div>
@@ -172,28 +166,22 @@ const UserManagement = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+      <div className="bg-card rounded-lg shadow">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users.map((user) => (
-              <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {user.email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <TableRow key={user.id}>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="mr-2">
+                      <Button variant="outline" size="sm">
                         Change Password
                       </Button>
                     </DialogTrigger>
@@ -221,11 +209,11 @@ const UserManagement = () => {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
