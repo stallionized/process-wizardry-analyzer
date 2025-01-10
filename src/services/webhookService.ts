@@ -1,7 +1,7 @@
 import { FileData } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
-export const sendFilesToWebhook = async (projectId: string, files: FileData[]) => {
+export const sendFilesToWebhook = async (projectId: string, files: FileData[]): Promise<boolean> => {
   console.log('Attempting to analyze files:', files);
   
   try {
@@ -18,7 +18,10 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
     console.log('Sending payload to analyze-dataset:', payload);
 
     const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: payload
+      body: payload,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (error) {
@@ -31,25 +34,5 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
   } catch (error) {
     console.error('Error calling analysis function:', error);
     return false;
-  }
-};
-
-export const analyzeDataset = async (fileUrl: string, projectId: string) => {
-  try {
-    const payload = { fileUrl, projectId };
-    console.log('Sending single file analysis payload:', payload);
-
-    const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: payload
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error analyzing dataset:', error);
-    throw error;
   }
 };
