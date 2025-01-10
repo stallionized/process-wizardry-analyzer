@@ -43,10 +43,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         throw new Error('Invalid analysis results format');
       }
 
-      return {
-        ...data,
-        results,
-      };
+      return data;
     },
     refetchInterval: (data) => {
       if (!data) return 5000;
@@ -94,12 +91,17 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { results: { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } } = analysisResults;
+  const { results } = analysisResults;
+  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = results;
 
-  // Add timestamp to advancedAnalysis if it exists
+  // Add timestamp and ensure charts array exists for advancedAnalysis
   const processedAdvancedAnalysis = advancedAnalysis ? {
     ...advancedAnalysis,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    anova: {
+      ...advancedAnalysis.anova,
+      charts: advancedAnalysis.anova.charts || []
+    }
   } : undefined;
 
   return (
