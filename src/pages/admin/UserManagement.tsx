@@ -28,6 +28,14 @@ interface UserProfile {
   is_admin: boolean;
 }
 
+type ProfileResponse = {
+  id: string;
+  is_admin: boolean;
+  auth_users: {
+    email: string;
+  };
+}
+
 const UserManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -69,11 +77,11 @@ const UserManagement = () => {
       .select(`
         id,
         is_admin,
-        email:auth_users!inner (
+        auth_users (
           email
         )
       `)
-      .returns<UserProfile[]>();
+      .returns<ProfileResponse[]>();
     
     if (error) {
       toast.error("Failed to fetch users");
@@ -82,7 +90,7 @@ const UserManagement = () => {
 
     const formattedUsers = data.map(profile => ({
       id: profile.id,
-      email: profile.email.email,
+      email: profile.auth_users.email,
       is_admin: profile.is_admin
     }));
 
