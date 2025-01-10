@@ -27,7 +27,7 @@ interface AnalysisResultsData {
 }
 
 const AIResults = ({ projectId }: AIResultsProps) => {
-  const { data: analysisResults, isLoading } = useQuery<AnalysisResultsData>({
+  const { data: analysisResults, isLoading } = useQuery<AnalysisResultsData | null>({
     queryKey: ['analysis', projectId],
     queryFn: async () => {
       console.log('Fetching analysis results for project:', projectId);
