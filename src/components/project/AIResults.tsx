@@ -54,8 +54,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     },
     refetchInterval: (data) => {
       if (!data) return 5000;
-      if (data.status === 'completed' || data.status === 'failed') return false;
-      return 5000;
+      return data.status === 'completed' || data.status === 'failed' ? false : 5000;
     },
   });
 
