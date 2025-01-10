@@ -147,6 +147,27 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_admin?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           client_id: string | null
@@ -196,7 +217,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_cache: {
+        Row: {
+          id: string | null
+          is_admin: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
