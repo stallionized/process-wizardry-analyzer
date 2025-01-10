@@ -153,6 +153,29 @@ serve(async (req) => {
       throw new Error(`Failed to save analysis results: ${errorText}`);
     }
 
+    // Reset the dataset by updating the files table
+    console.log('Resetting dataset status...');
+    const resetResponse = await fetch(
+      `${supabaseUrl}/rest/v1/files`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          created_at: new Date().toISOString()
+        }),
+        
+      }
+    );
+
+    if (!resetResponse.ok) {
+      console.error('Failed to reset dataset status');
+    }
+
     console.log('Analysis results saved successfully');
 
     return new Response(JSON.stringify({ success: true, analysis }), {
