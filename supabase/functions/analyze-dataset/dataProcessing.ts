@@ -63,6 +63,7 @@ export async function processExcelData(input: AnalysisInput) {
   }
 
   // Find potential unique identifiers using GPT-4O enhanced detection
+  console.log('\nStarting unique identifier detection...');
   const potentialIdentifiers = await findPotentialUniqueIdentifiers(jsonData);
   console.log('Potential unique identifiers found:', potentialIdentifiers);
 
