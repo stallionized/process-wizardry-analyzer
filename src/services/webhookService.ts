@@ -15,10 +15,10 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
       }))
     };
 
-    console.log('Sending payload to analyze-dataset:', JSON.stringify(payload));
+    console.log('Sending payload to analyze-dataset:', payload);
 
     const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: payload // Supabase client will handle JSON stringification
+      body: payload
     });
 
     if (error) {
@@ -37,10 +37,10 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
 export const analyzeDataset = async (fileUrl: string, projectId: string) => {
   try {
     const payload = { fileUrl, projectId };
-    console.log('Sending single file analysis payload:', JSON.stringify(payload));
+    console.log('Sending single file analysis payload:', payload);
 
     const { data, error } = await supabase.functions.invoke('analyze-dataset', {
-      body: payload // Supabase client will handle JSON stringification
+      body: payload
     });
 
     if (error) {

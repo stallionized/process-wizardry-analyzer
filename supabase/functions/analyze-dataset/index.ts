@@ -7,6 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
@@ -30,13 +31,10 @@ serve(async (req) => {
       url: req.url
     });
 
-    // Get the request body
+    // Get and validate the request body
     let input: AnalysisInput;
     try {
-      const text = await req.text();
-      console.log('Raw request body:', text);
-      
-      input = JSON.parse(text);
+      input = await req.json();
       console.log('Parsed input:', input);
     } catch (error) {
       console.error('Error parsing request body:', error);
@@ -46,10 +44,7 @@ serve(async (req) => {
           details: error.message
         }),
         {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          },
+          headers: corsHeaders,
           status: 400
         }
       );
@@ -57,11 +52,23 @@ serve(async (req) => {
 
     // Validate required fields
     if (!input.files?.length) {
-      throw new Error('No files provided for analysis');
+      return new Response(
+        JSON.stringify({ error: 'No files provided for analysis' }),
+        { 
+          headers: corsHeaders,
+          status: 400 
+        }
+      );
     }
 
     if (!input.projectId) {
-      throw new Error('Project ID is required');
+      return new Response(
+        JSON.stringify({ error: 'Project ID is required' }),
+        { 
+          headers: corsHeaders,
+          status: 400 
+        }
+      );
     }
 
     console.log('Processing files:', input.files);
@@ -126,10 +133,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ success: true, analysis }), 
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json'
-        },
+        headers: corsHeaders,
         status: 200 
       }
     );
@@ -143,10 +147,7 @@ serve(async (req) => {
         details: error.stack 
       }), 
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json'
-        },
+        headers: corsHeaders,
         status: 500
       }
     );
