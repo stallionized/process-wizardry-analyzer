@@ -18,7 +18,8 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
     sampleRow: jsonData[0]
   });
 
-  // Enhanced basic check for unique values with detailed logging
+  // Analyze each column's data distribution
+  const columnAnalysis = {};
   for (const column of columns) {
     console.log(`\nAnalyzing column: ${column}`);
     
@@ -30,21 +31,20 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
     const validValues = values.filter(value => value != null && value !== '');
     const uniqueValues = new Set(validValues);
 
-    console.log(`Column "${column}" analysis:`, {
+    columnAnalysis[column] = {
       totalValues: values.length,
       validValues: validValues.length,
-      uniqueValues: uniqueValues.size,
+      uniqueValues: Array.from(uniqueValues).slice(0, 5), // Sample of unique values
       isUnique: uniqueValues.size === jsonData.length && validValues.length === jsonData.length,
-      sampleValues: values.slice(0, 3)
-    });
+    };
+
+    console.log(`Column "${column}" analysis:`, columnAnalysis[column]);
 
     if (uniqueValues.size === jsonData.length && validValues.length === jsonData.length) {
-      console.log(`✅ Column "${column}" identified as potential unique identifier`);
+      console.log(`✅ Column "${column}" identified as potential unique identifier through basic validation`);
       basicUniqueIdentifiers.add(column);
     }
   }
-
-  console.log('\nBasic validation results:', Array.from(basicUniqueIdentifiers));
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -58,36 +58,32 @@ export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<s
       apiKey: openAIApiKey,
       model: 'gpt-4o'
     });
-
-    // Prepare sample data for GPT
-    const sampleData = jsonData.slice(0, 5);
     
     // Construct a detailed prompt for GPT-4O
-    const prompt = `Analyze this dataset sample and identify columns that could serve as unique identifiers.
-Sample data (first 5 rows):
-${JSON.stringify(sampleData, null, 2)}
+    const prompt = `Analyze this dataset and identify which columns could serve as unique identifiers.
 
-Basic validation found these potential unique identifier columns:
-${JSON.stringify(Array.from(basicUniqueIdentifiers), null, 2)}
+Column Analysis:
+${JSON.stringify(columnAnalysis, null, 2)}
 
-Requirements for a unique identifier:
-1. Values must be unique across all rows (no duplicates)
-2. Values must not be null or empty
-3. The column should make logical sense as an identifier (e.g., ID, reference number, serial number, timestamp with sufficient precision)
-4. Consider both numeric and string-based identifiers
+For each column, determine if it could be a unique identifier by considering:
+1. Are all values unique? (required)
+2. Are there any null or empty values? (should be none)
+3. Does the column name or values suggest it's meant to be an identifier? (e.g., ID, reference number, serial number)
+4. Are the values consistent in format and type?
 
-Please analyze and return a JSON array of objects with this structure:
+Please analyze each column individually and return a JSON object with this structure:
 {
-  "identifiers": [
+  "columnAnalysis": [
     {
       "column": "column_name",
+      "isUniqueIdentifier": true/false,
       "confidence": "high|medium|low",
-      "reason": "explanation of why this is a good identifier"
+      "reasoning": "detailed explanation of why this column is or isn't a good unique identifier"
     }
   ]
 }`;
 
-    console.log('\nSending data to GPT-4O for analysis');
+    console.log('\nSending analysis to GPT-4O with prompt:', prompt);
     const response = await api.sendMessage(prompt);
     console.log('GPT-4O response:', response.text);
 
@@ -95,10 +91,15 @@ Please analyze and return a JSON array of objects with this structure:
       const gptAnalysis = JSON.parse(response.text);
       console.log('Parsed GPT analysis:', gptAnalysis);
 
-      // Extract high and medium confidence identifiers from GPT analysis
-      const aiSuggestedIdentifiers = gptAnalysis.identifiers
-        .filter((item: any) => ['high', 'medium'].includes(item.confidence))
+      // Extract high and medium confidence unique identifiers from GPT analysis
+      const aiSuggestedIdentifiers = gptAnalysis.columnAnalysis
+        .filter((item: any) => 
+          item.isUniqueIdentifier === true && 
+          ['high', 'medium'].includes(item.confidence)
+        )
         .map((item: any) => item.column);
+
+      console.log('AI suggested identifiers:', aiSuggestedIdentifiers);
 
       // Combine basic validation results with AI suggestions
       const finalIdentifiers = Array.from(new Set([
