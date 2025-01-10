@@ -24,6 +24,7 @@ interface AnalysisResultsData {
   estimated_completion_time: string | null;
   file_size_bytes: number | null;
   started_at: string | null;
+  error_message?: string;
 }
 
 const AIResults = ({ projectId }: AIResultsProps) => {
@@ -93,12 +94,24 @@ const AIResults = ({ projectId }: AIResultsProps) => {
   }
 
   if (analysisResults.status === 'failed') {
+    // Check if the error is related to API token limits
+    const isTokenError = analysisResults.error_message?.toLowerCase().includes('token') || 
+                        analysisResults.error_message?.toLowerCase().includes('rate limit') ||
+                        analysisResults.error_message?.toLowerCase().includes('quota');
+    
     return (
       <Card className="p-6 animate-fade-in">
         <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
         <p className="text-destructive">
-          Analysis failed. Please try uploading your files again.
+          {isTokenError 
+            ? "API token limit reached. Please try again later or contact support."
+            : "Analysis failed. Please try uploading your files again."}
         </p>
+        {analysisResults.error_message && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Error details: {analysisResults.error_message}
+          </p>
+        )}
       </Card>
     );
   }
