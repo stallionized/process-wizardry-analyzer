@@ -61,6 +61,10 @@ const Login = () => {
         return 'No user found with these credentials.';
       case 'Session not found':
         return 'Your session has expired. Please sign in again.';
+      case 'Invalid email':
+        return 'Please enter a valid email address.';
+      case 'Password should be at least 6 characters':
+        return 'Password must be at least 6 characters long.';
       default:
         return error.message;
     }
