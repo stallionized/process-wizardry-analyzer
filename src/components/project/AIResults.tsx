@@ -13,7 +13,7 @@ interface AIResultsProps {
 }
 
 const AIResults = ({ projectId }: AIResultsProps) => {
-  const { data: analysisResults, isLoading, error } = useQuery({
+  const { data: analysisResults, isLoading } = useQuery({
     queryKey: ['analysis', projectId],
     queryFn: async () => {
       console.log('Fetching analysis results for project:', projectId);
@@ -37,14 +37,15 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       
       console.log('Analysis results found:', data);
       
-      const results = data?.results;
+      // Ensure the results match our expected type
+      const results = data.results as unknown as AnalysisResults;
       if (!results || typeof results !== 'object') {
         throw new Error('Invalid analysis results format');
       }
 
       return {
         ...data,
-        results: results as AnalysisResults,
+        results,
       };
     },
     refetchInterval: (data) => {
@@ -67,17 +68,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
             <p className="text-sm text-muted-foreground">Generating control charts...</p>
           )}
         </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="p-6 animate-fade-in">
-        <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
-        <p className="text-destructive">
-          Error loading analysis results. Please try again later.
-        </p>
       </Card>
     );
   }
@@ -106,6 +96,12 @@ const AIResults = ({ projectId }: AIResultsProps) => {
 
   const { results: { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } } = analysisResults;
 
+  // Add timestamp to advancedAnalysis if it exists
+  const processedAdvancedAnalysis = advancedAnalysis ? {
+    ...advancedAnalysis,
+    timestamp: new Date().toISOString()
+  } : undefined;
+
   return (
     <Card className="p-6 animate-fade-in">
       <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
@@ -127,9 +123,9 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         </div>
 
         {/* Advanced Analysis Section (Claude) */}
-        {advancedAnalysis && (
+        {processedAdvancedAnalysis && (
           <div className="space-y-4">
-            <AdvancedAnalysis analysis={advancedAnalysis} />
+            <AdvancedAnalysis analysis={processedAdvancedAnalysis} />
           </div>
         )}
 
