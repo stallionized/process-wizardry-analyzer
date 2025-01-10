@@ -7,13 +7,27 @@ import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
 import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
+import { Json } from '@/integrations/supabase/types';
 
 interface AIResultsProps {
   projectId: string;
 }
 
+interface AnalysisResultsData {
+  id: string;
+  project_id: string;
+  results: Json;
+  status: 'pending' | 'analyzing' | 'generating_control_charts' | 'completed' | 'failed';
+  created_at: string | null;
+  control_charts: Json | null;
+  descriptive_stats: Json | null;
+  estimated_completion_time: string | null;
+  file_size_bytes: number | null;
+  started_at: string | null;
+}
+
 const AIResults = ({ projectId }: AIResultsProps) => {
-  const { data: analysisResults, isLoading } = useQuery({
+  const { data: analysisResults, isLoading } = useQuery<AnalysisResultsData>({
     queryKey: ['analysis', projectId],
     queryFn: async () => {
       console.log('Fetching analysis results for project:', projectId);
@@ -36,13 +50,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       }
       
       console.log('Analysis results found:', data);
-      
-      // Ensure the results match our expected type
-      const results = data.results as unknown as AnalysisResults;
-      if (!results || typeof results !== 'object') {
-        throw new Error('Invalid analysis results format');
-      }
-
       return data;
     },
     refetchInterval: (data) => {
@@ -91,7 +98,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { results } = analysisResults;
+  const results = analysisResults.results as AnalysisResults;
   const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = results;
 
   // Add timestamp and ensure charts array exists for advancedAnalysis
