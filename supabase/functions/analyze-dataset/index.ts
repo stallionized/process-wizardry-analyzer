@@ -25,10 +25,11 @@ serve(async (req) => {
     const input = await req.json() as AnalysisInput;
     console.log('Received input:', {
       projectId: input.projectId,
-      files: input.files.map(f => ({ name: f.name, url: f.url }))
+      files: input.files?.map(f => ({ name: f.name, url: f.url }))
     });
 
-    if (!input.files?.length) {
+    // Validate input
+    if (!input?.files || !Array.isArray(input.files) || input.files.length === 0) {
       throw new Error('No files provided for analysis');
     }
 
@@ -43,11 +44,18 @@ serve(async (req) => {
       descriptiveStats,
       correlationMatrix,
       statsAnalysis,
-      dataIdentifiers
+      dataIdentifiers,
+      potentialIdentifiers
     } = await processExcelData(input);
 
-    console.log('Excel data processed. Number of columns:', Object.keys(numericalData).length);
-    console.log('Numerical columns:', Object.keys(numericalData));
+    // If this is just checking for identifiers
+    if (input.checkIdentifiers) {
+      console.log('Returning potential identifiers:', potentialIdentifiers);
+      return new Response(
+        JSON.stringify({ potentialIdentifiers }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get Claude analysis
     console.log('Getting Claude analysis...');
@@ -106,43 +114,23 @@ serve(async (req) => {
 
     console.log('Analysis results saved successfully');
 
-    return new Response(JSON.stringify({ success: true, analysis }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ success: true, analysis }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
     console.error('Error in analyze-dataset function:', error);
     
-    try {
-      const input = await req.json() as AnalysisInput;
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (supabaseUrl && supabaseKey) {
-        await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'apikey': supabaseKey,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({
-            project_id: input.projectId,
-            status: 'failed',
-            error_message: error.message
-          }),
-        });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }), 
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    } catch (saveError) {
-      console.error('Error saving failure status:', saveError);
-    }
-
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack 
-    }), { 
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    );
   }
 });

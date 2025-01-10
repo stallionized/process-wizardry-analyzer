@@ -13,6 +13,10 @@ function validateDataset(jsonData: any[]): { isValid: boolean; error?: string; }
     return { isValid: false, error: 'Dataset must contain at least 2 rows for analysis' };
   }
 
+  if (!jsonData[0] || typeof jsonData[0] !== 'object') {
+    return { isValid: false, error: 'Invalid data format: First row is not an object' };
+  }
+
   const firstRow = jsonData[0];
   const numericColumns = Object.keys(firstRow).filter(column => {
     const values = jsonData.map(row => row[column]);
@@ -42,9 +46,17 @@ export async function processExcelData(input: AnalysisInput) {
 
   const arrayBuffer = await response.arrayBuffer();
   const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-  const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+  
+  if (!workbook.SheetNames.length) {
+    throw new Error('Excel file contains no sheets');
+  }
 
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!firstSheet) {
+    throw new Error('First sheet is empty');
+  }
+
+  const jsonData = XLSX.utils.sheet_to_json(firstSheet);
   console.log('Excel data converted to JSON:', {
     rowCount: jsonData.length,
     columnCount: Object.keys(jsonData[0] || {}).length
@@ -59,14 +71,7 @@ export async function processExcelData(input: AnalysisInput) {
   if (input.checkIdentifiers) {
     console.log('Checking for unique identifiers...');
     const potentialIdentifiers = await findPotentialUniqueIdentifiers(jsonData);
-    
-    if (potentialIdentifiers.length > 0) {
-      console.log('Found potential identifiers:', potentialIdentifiers);
-      return { potentialIdentifiers, jsonData };
-    }
-    
-    console.log('No unique identifiers found');
-    return { potentialIdentifiers: [], jsonData };
+    return { potentialIdentifiers, jsonData };
   }
 
   // Process the full analysis
