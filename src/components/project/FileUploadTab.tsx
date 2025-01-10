@@ -29,7 +29,7 @@ interface FileUploadTabProps {
   files: UploadedFile[];
   onUpload: (files: File[], fileType: string) => void;
   onDelete: (fileId: string) => void;
-  onSubmit?: () => void;
+  onSubmit?: () => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -38,9 +38,14 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading }: FileU
     onUpload(uploadedFiles, fileType);
   };
 
-  const handleSubmit = () => {
-    onSubmit?.();
-    toast.success('Files submitted successfully');
+  const handleSubmit = async () => {
+    try {
+      await onSubmit?.();
+      toast.success('Files submitted for analysis. You can view the progress in the AI Results tab.');
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast.error('Failed to submit files for analysis');
+    }
   };
 
   const hasNewFiles = files.some(file => file.isNew);
@@ -50,7 +55,7 @@ const FileUploadTab = ({ files, onUpload, onDelete, onSubmit, isLoading }: FileU
       <Card className="p-6 flex items-center justify-center min-h-[200px]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading files...</p>
+          <p className="text-muted-foreground">Processing files...</p>
         </div>
       </Card>
     );

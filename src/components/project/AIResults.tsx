@@ -8,8 +8,6 @@ import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
 import { ControlCharts } from './control/ControlCharts';
-// Commenting out advanced analysis imports
-// import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
 
 interface AIResultsProps {
   projectId: string;
@@ -75,6 +73,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Analyzing data...</p>
+          <p className="text-sm text-muted-foreground">This may take 2-3 minutes depending on the file size</p>
         </div>
       </Card>
     );
@@ -95,9 +94,14 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     return (
       <Card className="p-6 animate-fade-in">
         <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
-        <p className="text-muted-foreground">
-          Analysis results will appear here after processing your uploaded files.
-        </p>
+        <div className="flex flex-col items-center gap-4 py-8">
+          <p className="text-muted-foreground text-center">
+            Analysis results will appear here after processing your uploaded files.
+          </p>
+          <p className="text-sm text-muted-foreground text-center">
+            Estimated processing time: 2-3 minutes
+          </p>
+        </div>
       </Card>
     );
   }
@@ -108,8 +112,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     descriptiveStats, 
     statsAnalysis,
     controlCharts 
-    // Commenting out advanced analysis destructuring
-    // advancedAnalysis 
   } = analysisResults;
 
   return (
@@ -153,14 +155,6 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <TabsContent value="control">
           <ControlCharts charts={controlCharts} />
         </TabsContent>
-
-        {/* Commenting out advanced analysis tab
-        <TabsContent value="advanced">
-          {advancedAnalysis && (
-            <AdvancedAnalysis analysis={advancedAnalysis} />
-          )}
-        </TabsContent>
-        */}
       </Tabs>
 
       {Object.keys(mappings).length > 0 && (
