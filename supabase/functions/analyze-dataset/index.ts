@@ -33,7 +33,10 @@ serve(async (req) => {
     // Get the request body
     let input: AnalysisInput;
     try {
-      input = await req.json();
+      const text = await req.text();
+      console.log('Raw request body:', text);
+      
+      input = JSON.parse(text);
       console.log('Parsed input:', input);
     } catch (error) {
       console.error('Error parsing request body:', error);
@@ -70,8 +73,7 @@ serve(async (req) => {
       categoricalMappings,
       descriptiveStats,
       correlationMatrix,
-      statsAnalysis,
-      controlCharts
+      statsAnalysis
     } = await processExcelData(input);
 
     // Get Claude analysis
