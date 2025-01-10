@@ -98,7 +98,7 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const results = analysisResults.results as AnalysisResults;
+  const results = analysisResults.results as unknown as AnalysisResults;
   const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = results;
 
   // Add timestamp and ensure charts array exists for advancedAnalysis
