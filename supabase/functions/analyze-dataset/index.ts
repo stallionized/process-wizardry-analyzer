@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { processExcelData } from './dataProcessing.ts';
 import { getClaudeAnalysis } from './claudeService.ts';
+import { generateControlCharts } from './controlChartService.ts';
 import { AnalysisInput } from './types.ts';
 
 const corsHeaders = {
@@ -35,9 +36,13 @@ serve(async (req) => {
       statsAnalysis
     } = await processExcelData(input);
 
-    // Get Claude analysis
+    // Get Claude analysis for AI results
     console.log('Getting Claude analysis');
     const advancedAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
+
+    // Generate control charts using Claude
+    console.log('Generating control charts');
+    const controlCharts = await generateControlCharts(numericalData);
 
     const analysis = {
       correlationMatrix,
@@ -71,7 +76,8 @@ serve(async (req) => {
       body: JSON.stringify({
         project_id: input.projectId,
         results: analysis,
-        descriptive_stats: descriptiveStats
+        descriptive_stats: descriptiveStats,
+        control_charts: controlCharts
       }),
     });
 
