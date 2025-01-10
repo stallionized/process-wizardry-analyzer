@@ -1,10 +1,11 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Grid } from 'lucide-react';
+import { Grid, ChartBar } from 'lucide-react';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
+import ControlResults from '@/components/project/ControlResults';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 
 const ProjectDashboard = () => {
@@ -31,7 +32,7 @@ const ProjectDashboard = () => {
       </div>
 
       <Tabs defaultValue="project" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="project" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Grid className="mr-2 h-4 w-4" />
             Project Details
@@ -43,6 +44,10 @@ const ProjectDashboard = () => {
           <TabsTrigger value="results" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Grid className="mr-2 h-4 w-4" />
             AI Results
+          </TabsTrigger>
+          <TabsTrigger value="control" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <ChartBar className="mr-2 h-4 w-4" />
+            Control Results
           </TabsTrigger>
         </TabsList>
 
@@ -63,6 +68,10 @@ const ProjectDashboard = () => {
 
         <TabsContent value="results">
           <AIResults projectId={id} />
+        </TabsContent>
+
+        <TabsContent value="control">
+          <ControlResults projectId={id} />
         </TabsContent>
       </Tabs>
     </div>
