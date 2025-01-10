@@ -99,7 +99,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-background border rounded-lg p-2 shadow-lg">
+        <div className="bg-white border rounded-lg p-2 shadow-lg">
           <p className="font-medium">{data.identifier}</p>
           <p className="text-sm text-muted-foreground">Value: {data.value.toFixed(2)}</p>
           {data.outOfControl && (
