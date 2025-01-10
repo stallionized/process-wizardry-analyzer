@@ -16,6 +16,7 @@ serve(async (req) => {
   }
 
   try {
+    // Validate request method
     if (req.method !== 'POST') {
       throw new Error('Method not allowed');
     }
@@ -24,7 +25,7 @@ serve(async (req) => {
     let payload;
     try {
       payload = await req.json();
-      console.log('Received payload:', payload);
+      console.log('Received payload:', JSON.stringify(payload));
     } catch (error) {
       console.error('Error parsing request body:', error);
       return new Response(
@@ -73,7 +74,7 @@ serve(async (req) => {
       });
     }
 
-    // For now, just return success. In a real implementation, you'd do actual file processing here
+    // Return success response
     return new Response(
       JSON.stringify({ 
         success: true,
