@@ -57,11 +57,11 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             <YAxis />
             <Tooltip />
             
-            {/* 3 sigma lines (UCL/LCL) */}
-            <ReferenceLine y={chart.data.ucl} label="UCL (3σ)" stroke="red" strokeDasharray="3 3" />
-            <ReferenceLine y={chart.data.lcl} label="LCL (3σ)" stroke="red" strokeDasharray="3 3" />
+            {/* Control limits (solid lines) */}
+            <ReferenceLine y={chart.data.ucl} label="UCL (3σ)" stroke="red" />
+            <ReferenceLine y={chart.data.lcl} label="LCL (3σ)" stroke="red" />
             
-            {/* 2 sigma lines */}
+            {/* 2 sigma lines (dotted) */}
             <ReferenceLine 
               y={chart.data.centerLine + (2 * stdDev)} 
               label="2σ" 
@@ -77,7 +77,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
               strokeOpacity={0.6}
             />
             
-            {/* 1 sigma lines */}
+            {/* 1 sigma lines (dotted) */}
             <ReferenceLine 
               y={chart.data.centerLine + stdDev} 
               label="1σ" 
@@ -93,7 +93,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
               strokeOpacity={0.4}
             />
             
-            {/* Center line */}
+            {/* Center line (solid) */}
             <ReferenceLine y={chart.data.centerLine} label="CL" stroke="green" />
             
             <Line
