@@ -83,7 +83,6 @@ const TrendsAndThemes = ({ projectId }: TrendsAndThemesProps) => {
       <h2 className="text-2xl font-semibold mb-6">Trends & Themes Analysis</h2>
       <div className="prose prose-gray max-w-none">
         <div className="bg-muted/30 p-6 rounded-lg">
-          <h3 className="text-lg font-medium mb-4">Executive Summary</h3>
           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
             {trendsAnalysis.summary}
           </p>
