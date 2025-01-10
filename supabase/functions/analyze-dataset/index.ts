@@ -4,15 +4,21 @@ import { getClaudeAnalysis } from './claudeService.ts';
 import { generateControlCharts } from './controlChartService.ts';
 import { AnalysisInput } from './types.ts';
 
+// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 serve(async (req) => {
+  console.log('Received request:', req.method);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
+    return new Response(null, {
+      status: 204,
       headers: corsHeaders
     });
   }
