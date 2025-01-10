@@ -88,7 +88,7 @@ serve(async (req) => {
       mappings: categoricalMappings,
       descriptiveStats,
       statsAnalysis,
-      controlCharts
+      controlCharts: advancedAnalysis.controlCharts
     };
 
     // Save to Supabase
@@ -113,7 +113,7 @@ serve(async (req) => {
         project_id: input.projectId,
         results: analysis,
         descriptive_stats: descriptiveStats,
-        control_charts: controlCharts
+        control_charts: advancedAnalysis.controlCharts
       }),
     });
 
