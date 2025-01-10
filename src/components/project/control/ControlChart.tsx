@@ -58,8 +58,8 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             <Tooltip />
             
             {/* Control limits (solid lines) */}
-            <ReferenceLine y={chart.data.ucl} label="UCL (3σ)" stroke="red" />
-            <ReferenceLine y={chart.data.lcl} label="LCL (3σ)" stroke="red" />
+            <ReferenceLine y={chart.data.ucl} label="UCL" stroke="red" strokeWidth={2} />
+            <ReferenceLine y={chart.data.lcl} label="LCL" stroke="red" strokeWidth={2} />
             
             {/* 2 sigma lines (dotted) */}
             <ReferenceLine 
@@ -94,7 +94,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             />
             
             {/* Center line (solid) */}
-            <ReferenceLine y={chart.data.centerLine} label="CL" stroke="green" />
+            <ReferenceLine y={chart.data.centerLine} label="CL" stroke="green" strokeWidth={2} />
             
             <Line
               type="monotone"
