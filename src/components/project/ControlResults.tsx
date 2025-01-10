@@ -125,7 +125,7 @@ const ControlResults = ({ projectId }: ControlResultsProps) => {
           </div>
         )}
         
-        {analysisResults.controlCharts.map((chart, index) => {
+        {analysisResults.controlCharts?.map((chart, index) => {
           const chartData = chart.data.values.map((value, i) => ({
             index: i + 1,
             value,
