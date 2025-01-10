@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { processExcelData } from './dataProcessing.ts';
 import { getClaudeAnalysis } from './claudeService.ts';
+import { getGPTAnalysis } from './gptService.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,20 +64,18 @@ serve(async (req) => {
     
     try {
       // Process Excel data
-      const {
-        numericalData,
-        categoricalMappings,
-        descriptiveStats,
-        correlationMatrix,
-        statsAnalysis
-      } = await processExcelData({ files: payload.files });
-
+      const { numericalData, categoricalMappings } = await processExcelData({ files: payload.files });
       console.log('Excel data processed successfully');
 
+      // Get statistical analysis from GPT-4o
+      console.log('Starting GPT-4o statistical analysis');
+      const gptAnalysis = await getGPTAnalysis(numericalData);
+      console.log('GPT-4o analysis completed');
+
       // Get control charts analysis using Claude
-      console.log('Starting control charts analysis');
-      const controlChartsAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
-      console.log('Control charts analysis completed');
+      console.log('Starting Claude control charts analysis');
+      const controlChartsAnalysis = await getClaudeAnalysis(gptAnalysis.descriptiveStats, numericalData);
+      console.log('Claude control charts analysis completed');
 
       // Store analysis results
       const { error: insertError } = await supabase
@@ -84,10 +83,10 @@ serve(async (req) => {
         .insert({
           project_id: payload.projectId,
           results: {
-            correlationMatrix,
+            correlationMatrix: gptAnalysis.correlationMatrix,
             mappings: categoricalMappings,
-            descriptiveStats,
-            statsAnalysis,
+            descriptiveStats: gptAnalysis.descriptiveStats,
+            statsAnalysis: gptAnalysis.statsAnalysis,
             controlCharts: controlChartsAnalysis.controlCharts
           }
         });
