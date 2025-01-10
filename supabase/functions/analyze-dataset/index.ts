@@ -42,7 +42,8 @@ serve(async (req) => {
       numericalData,
       descriptiveStats,
       correlationMatrix,
-      statsAnalysis
+      statsAnalysis,
+      dataIdentifiers
     } = await processExcelData(input);
 
     console.log('Excel data processed. Number of columns:', Object.keys(numericalData).length);
@@ -55,9 +56,9 @@ serve(async (req) => {
     );
     console.log('Claude analysis completed');
 
-    // Generate control charts
+    // Generate control charts with identifiers
     console.log('Generating control charts...');
-    const controlCharts = await generateControlCharts(numericalData);
+    const controlCharts = await generateControlCharts(numericalData, dataIdentifiers);
     console.log('Control charts generated');
 
     const analysis = {
@@ -92,6 +93,7 @@ serve(async (req) => {
         results: analysis,
         descriptive_stats: descriptiveStats,
         control_charts: controlCharts,
+        data_identifiers: dataIdentifiers,
         status: 'completed'
       }),
     });

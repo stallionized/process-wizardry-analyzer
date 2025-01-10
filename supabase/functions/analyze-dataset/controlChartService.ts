@@ -1,4 +1,4 @@
-export async function generateControlCharts(numericalData: Record<string, number[]>) {
+export async function generateControlCharts(numericalData: Record<string, number[]>, dataIdentifiers?: Record<string, string[]>) {
   console.log('Generating control charts for columns:', Object.keys(numericalData));
   
   if (!numericalData || typeof numericalData !== 'object') {
@@ -32,7 +32,8 @@ export async function generateControlCharts(numericalData: Record<string, number
             ucl: mean + 3 * stdDev,
             lcl: mean - 3 * stdDev,
             centerLine: mean,
-            movingRanges: values.slice(1).map((v, i) => Math.abs(v - values[i]))
+            movingRanges: values.slice(1).map((v, i) => Math.abs(v - values[i])),
+            identifiers: dataIdentifiers?.[column] || values.map((_, i) => `Point ${i + 1}`)
           },
           interpretation: `Control chart analysis for ${column}`,
           outOfControlPoints: values.map((v, i) => 
