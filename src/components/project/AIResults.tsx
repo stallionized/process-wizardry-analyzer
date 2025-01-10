@@ -113,10 +113,25 @@ const AIResults = ({ projectId }: AIResultsProps) => {
       <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
       
       <Tabs defaultValue="descriptive" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="descriptive">Descriptive Statistics</TabsTrigger>
-          <TabsTrigger value="correlation">Correlation Analysis</TabsTrigger>
-          <TabsTrigger value="control">Control Results</TabsTrigger>
+        <TabsList className="w-full flex flex-wrap gap-2 h-auto">
+          <TabsTrigger 
+            value="descriptive" 
+            className="flex-1 min-w-[150px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Descriptive Statistics
+          </TabsTrigger>
+          <TabsTrigger 
+            value="correlation" 
+            className="flex-1 min-w-[150px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Correlation Analysis
+          </TabsTrigger>
+          <TabsTrigger 
+            value="control" 
+            className="flex-1 min-w-[150px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Control Results
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="descriptive" className="space-y-8">
