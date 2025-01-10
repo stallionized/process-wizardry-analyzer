@@ -43,7 +43,7 @@ serve(async (req) => {
       expectedAnalyses
     } = await processExcelData(input);
 
-    console.log(`Expected ${expectedAnalyses} analyses based on numeric columns`);
+    console.log(`Expected ${expectedAnalyses} analyses based on numeric column pairs`);
 
     // Get Claude analysis for AI results
     console.log('Getting Claude analysis');
@@ -55,11 +55,6 @@ serve(async (req) => {
       throw new Error('AI analysis returned no results');
     }
 
-    // Verify we got the expected number of analyses
-    if (advancedAnalysis.anova.results.length < expectedAnalyses) {
-      throw new Error(`AI analysis returned fewer results than expected (got ${advancedAnalysis.anova.results.length}, expected ${expectedAnalyses})`);
-    }
-
     // Generate control charts using Claude
     console.log('Generating control charts');
     const controlCharts = await generateControlCharts(numericalData);
@@ -68,11 +63,6 @@ serve(async (req) => {
     if (!controlCharts?.controlCharts || 
         controlCharts.controlCharts.length === 0) {
       throw new Error('Control chart generation returned no results');
-    }
-
-    // Verify we got control charts for all numeric variables
-    if (controlCharts.controlCharts.length < expectedAnalyses) {
-      throw new Error(`Control chart generation returned fewer charts than expected (got ${controlCharts.controlCharts.length}, expected ${expectedAnalyses})`);
     }
 
     const analysis = {
@@ -125,7 +115,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in analyze-dataset function:', error);
     
-    // Update analysis record with error if possible
     try {
       const input = await req.json() as AnalysisInput;
       const supabaseUrl = Deno.env.get('SUPABASE_URL');

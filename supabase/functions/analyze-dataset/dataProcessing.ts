@@ -58,10 +58,15 @@ function validateDataset(jsonData: any[]): ValidationResult {
     }
   }
 
+  // Calculate expected analyses based on meaningful numeric column pairs
+  // We only want to analyze relationships between different columns
+  const expectedAnalyses = numericColumns.length > 1 ? 
+    numericColumns.length * (numericColumns.length - 1) / 2 : 0;
+
   return { 
     isValid: true, 
     numericColumns,
-    expectedAnalyses: numericColumns.length
+    expectedAnalyses
   };
 }
 
@@ -89,6 +94,7 @@ export async function processExcelData(input: AnalysisInput) {
 
   console.log(`Processing ${jsonData.length} rows of data`);
   console.log(`Found ${validation.numericColumns?.length} numeric columns for analysis`);
+  console.log(`Expecting ${validation.expectedAnalyses} analyses`);
 
   const numericalData: Record<string, number[]> = {};
   const categoricalMappings: Record<string, Record<string, number>> = {};
