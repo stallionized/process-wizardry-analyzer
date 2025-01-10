@@ -1,45 +1,84 @@
-export const findPotentialUniqueIdentifiers = (jsonData: any[]): string[] => {
+import { ChatGPTAPI } from 'npm:chatgpt';
+
+export const findPotentialUniqueIdentifiers = async (jsonData: any[]): Promise<string[]> => {
   if (!Array.isArray(jsonData) || jsonData.length === 0) {
     console.log('No data to analyze for unique identifiers');
     return [];
   }
 
+  // First do basic validation
   const columns = Object.keys(jsonData[0]);
-  const uniqueIdentifiers: string[] = [];
+  const basicUniqueIdentifiers: string[] = [];
 
-  console.log('Analyzing columns for unique identifiers:', columns);
+  // Log the structure of the data
+  console.log('Analyzing data structure:', {
+    totalRows: jsonData.length,
+    columns: columns,
+    sampleRow: jsonData[0]
+  });
 
+  // Basic check for unique values
   for (const column of columns) {
-    // Get all values for this column
     const values = jsonData.map(row => row[column]);
-    
-    // Filter out null/undefined values
     const validValues = values.filter(value => value != null && value !== '');
-    
-    // Create a Set of unique values
     const uniqueValues = new Set(validValues);
-    
-    // Log detailed information about the column
-    console.log(`Column ${column} analysis:`, {
-      totalRows: jsonData.length,
-      validValues: validValues.length,
-      uniqueValues: uniqueValues.size,
-      hasNulls: values.length !== validValues.length,
-      sample: values.slice(0, 3),
-      isUnique: uniqueValues.size === jsonData.length && validValues.length === jsonData.length
-    });
 
-    // A column is a potential unique identifier if:
-    // 1. All values are unique (uniqueValues.size equals total rows)
-    // 2. No null/empty values (validValues.length equals total rows)
     if (uniqueValues.size === jsonData.length && validValues.length === jsonData.length) {
-      console.log(`✓ Found unique identifier column: ${column}`);
-      uniqueIdentifiers.push(column);
-    } else {
-      console.log(`✗ Column ${column} is not a unique identifier`);
+      basicUniqueIdentifiers.push(column);
     }
   }
 
-  console.log('Final unique identifiers found:', uniqueIdentifiers);
-  return uniqueIdentifiers;
+  console.log('Basic unique identifiers found:', basicUniqueIdentifiers);
+
+  try {
+    // Initialize ChatGPT API
+    const api = new ChatGPTAPI({
+      apiKey: Deno.env.get('OPENAI_API_KEY') || '',
+      model: 'gpt-4o'
+    });
+
+    // Prepare sample data for GPT (limit to first few rows to avoid token limits)
+    const sampleData = jsonData.slice(0, 5);
+    
+    // Construct the prompt
+    const prompt = `Given this dataset sample:
+${JSON.stringify(sampleData, null, 2)}
+
+And these potential unique identifier columns found through basic validation:
+${JSON.stringify(basicUniqueIdentifiers, null, 2)}
+
+Please analyze which columns would make good unique identifiers for this dataset. Consider:
+1. Whether the values are truly unique
+2. Whether the column is meaningful as an identifier (e.g., 'id', 'reference_number', etc.)
+3. The data type and format of the values
+
+Return your response as a JSON array of column names that would make good unique identifiers, along with a brief explanation for each.`;
+
+    console.log('Sending prompt to GPT-4O');
+    const response = await api.sendMessage(prompt);
+    console.log('GPT-4O response:', response.text);
+
+    // Parse GPT's response
+    try {
+      const gptAnalysis = JSON.parse(response.text);
+      console.log('Parsed GPT analysis:', gptAnalysis);
+      
+      // Combine GPT suggestions with basic validation results
+      const finalIdentifiers = Array.from(new Set([
+        ...basicUniqueIdentifiers,
+        ...gptAnalysis.map((item: any) => item.column)
+      ]));
+
+      console.log('Final combined unique identifiers:', finalIdentifiers);
+      return finalIdentifiers;
+    } catch (parseError) {
+      console.error('Error parsing GPT response:', parseError);
+      // Fall back to basic validation results if GPT response parsing fails
+      return basicUniqueIdentifiers;
+    }
+  } catch (error) {
+    console.error('Error during GPT analysis:', error);
+    // Fall back to basic validation results if GPT call fails
+    return basicUniqueIdentifiers;
+  }
 }
