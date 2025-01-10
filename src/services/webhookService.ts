@@ -44,9 +44,10 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
         .from('analysis_results')
         .update({ 
           status: 'failed',
+          error_message: response.error.message || 'Unknown error occurred'
         })
         .eq('project_id', projectId)
-        .is('completed_at', null);
+        .is('created_at', null);
         
       return false;
     }

@@ -6,6 +6,12 @@ const corsHeaders = {
 };
 
 function chunkData(data: Record<string, number[]>, chunkSize: number = 500) {
+  // Guard against null or undefined data
+  if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+    console.error('Invalid or empty data provided to chunkData');
+    return [];
+  }
+
   const totalLength = Object.values(data)[0]?.length || 0;
   const chunks: Array<Record<string, number[]>> = [];
   
@@ -208,7 +214,18 @@ export async function getClaudeAnalysis(
 ): Promise<any> {
   console.log('Starting analysis of dataset');
   
+  // Validate input data
+  if (!numericalData || typeof numericalData !== 'object' || Object.keys(numericalData).length === 0) {
+    console.error('Invalid or empty numerical data provided');
+    throw new Error('Invalid dataset provided for analysis');
+  }
+  
   const chunks = chunkData(numericalData);
+  if (chunks.length === 0) {
+    console.error('No valid data chunks generated');
+    throw new Error('No valid data available for analysis');
+  }
+
   const variables = Object.keys(numericalData);
   const analyses: any[] = [];
   
