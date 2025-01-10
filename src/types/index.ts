@@ -55,21 +55,24 @@ export interface AnalysisResults {
   mappings: Record<string, Record<string, number>>;
   descriptiveStats: Record<string, DescriptiveStats>;
   statsAnalysis: string;
-  // advancedAnalysis: {
-  //   anova: {
-  //     results: Array<{
-  //       variable: string;
-  //       comparedWith: string;
-  //       fStatistic: number;
-  //       pValue: number;
-  //       effectSize: number;
-  //       interpretation: string;
-  //       significanceLevel: string;
-  //     }>;
-  //     summary: string;
-  //     charts: ChartData[];
-  //   };
-  //   timestamp: string;
-  // };
+  // Commenting out ANOVA related types
+  /*
+  advancedAnalysis: {
+    anova: {
+      results: Array<{
+        variable: string;
+        comparedWith: string;
+        fStatistic: number;
+        pValue: number;
+        effectSize: number;
+        interpretation: string;
+        significanceLevel: string;
+      }>;
+      summary: string;
+      charts: ChartData[];
+    };
+    timestamp: string;
+  };
+  */
   controlCharts: ControlChartData[];
 }

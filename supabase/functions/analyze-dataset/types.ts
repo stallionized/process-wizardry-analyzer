@@ -34,6 +34,8 @@ export interface AnalysisResults {
   mappings: Record<string, Record<string, number>>;
   descriptiveStats: Record<string, DescriptiveStats>;
   statsAnalysis: string;
+  // Commenting out ANOVA related types
+  /*
   advancedAnalysis: {
     anova: {
       results: Array<{
@@ -47,4 +49,5 @@ export interface AnalysisResults {
     };
     timestamp: string;
   };
+  */
 }

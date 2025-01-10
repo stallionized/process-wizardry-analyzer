@@ -8,6 +8,8 @@ import { AnalysisResults } from '@/types';
 import { CorrelationMatrix } from './correlation/CorrelationMatrix';
 import { DescriptiveStats } from './descriptive/DescriptiveStats';
 import { ControlCharts } from './control/ControlCharts';
+// Commenting out advanced analysis imports
+// import { AdvancedAnalysis } from './advanced/AdvancedAnalysis';
 
 interface AIResultsProps {
   projectId: string;
@@ -106,6 +108,8 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     descriptiveStats, 
     statsAnalysis,
     controlCharts 
+    // Commenting out advanced analysis destructuring
+    // advancedAnalysis 
   } = analysisResults;
 
   return (
@@ -149,6 +153,14 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <TabsContent value="control">
           <ControlCharts charts={controlCharts} />
         </TabsContent>
+
+        {/* Commenting out advanced analysis tab
+        <TabsContent value="advanced">
+          {advancedAnalysis && (
+            <AdvancedAnalysis analysis={advancedAnalysis} />
+          )}
+        </TabsContent>
+        */}
       </Tabs>
 
       {Object.keys(mappings).length > 0 && (
