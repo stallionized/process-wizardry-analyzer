@@ -35,6 +35,43 @@ const ControlChart = ({ chart }: ControlChartProps) => {
     outOfControl: chart.outOfControlPoints.includes(i)
   }));
 
+  // Calculate standard deviations
+  const standardDeviation = (chart.data.ucl - chart.data.centerLine) / 3;
+  
+  // Calculate values for each sigma level
+  const sigmaLevels = [
+    {
+      value: chart.data.centerLine + standardDeviation,
+      label: '+1σ',
+      color: '#1E3A8A' // dark blue
+    },
+    {
+      value: chart.data.centerLine + 2 * standardDeviation,
+      label: '+2σ',
+      color: '#3730A3' // dark indigo
+    },
+    {
+      value: chart.data.centerLine + 3 * standardDeviation,
+      label: '+3σ',
+      color: '#1F2937' // dark gray
+    },
+    {
+      value: chart.data.centerLine - standardDeviation,
+      label: '-1σ',
+      color: '#1E3A8A' // dark blue
+    },
+    {
+      value: chart.data.centerLine - 2 * standardDeviation,
+      label: '-2σ',
+      color: '#3730A3' // dark indigo
+    },
+    {
+      value: chart.data.centerLine - 3 * standardDeviation,
+      label: '-3σ',
+      color: '#1F2937' // dark gray
+    }
+  ];
+
   return (
     <div className="space-y-4 border border-border rounded-lg p-4">
       <div className="flex justify-between items-center">
@@ -49,9 +86,26 @@ const ControlChart = ({ chart }: ControlChartProps) => {
             <XAxis dataKey="index" />
             <YAxis />
             <Tooltip />
-            <ReferenceLine y={chart.data.ucl} label="UCL" stroke="red" strokeDasharray="3 3" />
-            <ReferenceLine y={chart.data.centerLine} label="CL" stroke="green" />
-            <ReferenceLine y={chart.data.lcl} label="LCL" stroke="red" strokeDasharray="3 3" />
+            
+            {/* Center Line */}
+            <ReferenceLine 
+              y={chart.data.centerLine} 
+              label="CL" 
+              stroke="#059669" 
+              strokeWidth={2}
+            />
+
+            {/* Standard Deviation Lines */}
+            {sigmaLevels.map((level, index) => (
+              <ReferenceLine
+                key={index}
+                y={level.value}
+                label={level.label}
+                stroke={level.color}
+                strokeWidth={1}
+              />
+            ))}
+
             <Line
               type="monotone"
               dataKey="value"
