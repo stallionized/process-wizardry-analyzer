@@ -42,28 +42,16 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         throw new Error('Invalid analysis results format');
       }
 
-      const typedResults = results as unknown;
-      
-      const isAnalysisResults = (value: unknown): value is AnalysisResults => {
-        const candidate = value as Partial<AnalysisResults>;
-        return (
-          typeof candidate === 'object' &&
-          candidate !== null &&
-          'correlationMatrix' in candidate &&
-          'mappings' in candidate &&
-          'descriptiveStats' in candidate &&
-          'statsAnalysis' in candidate &&
-          'advancedAnalysis' in candidate
-        );
+      return {
+        ...data,
+        results: results as AnalysisResults,
       };
-
-      if (!isAnalysisResults(typedResults)) {
-        throw new Error('Invalid analysis results structure');
-      }
-
-      return typedResults;
     },
-    refetchInterval: (data) => (!data ? 5000 : false),
+    refetchInterval: (data) => {
+      if (!data) return 5000;
+      if (data.status === 'completed' || data.status === 'failed') return false;
+      return 5000;
+    },
   });
 
   if (isLoading) {
@@ -72,6 +60,12 @@ const AIResults = ({ projectId }: AIResultsProps) => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Analyzing data...</p>
+          {analysisResults?.status === 'analyzing' && (
+            <p className="text-sm text-muted-foreground">Processing dataset...</p>
+          )}
+          {analysisResults?.status === 'generating_control_charts' && (
+            <p className="text-sm text-muted-foreground">Generating control charts...</p>
+          )}
         </div>
       </Card>
     );
@@ -99,7 +93,18 @@ const AIResults = ({ projectId }: AIResultsProps) => {
     );
   }
 
-  const { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } = analysisResults;
+  if (analysisResults.status === 'failed') {
+    return (
+      <Card className="p-6 animate-fade-in">
+        <h2 className="text-xl font-semibold mb-4">AI Process Engineer Results</h2>
+        <p className="text-destructive">
+          Analysis failed. Please try uploading your files again.
+        </p>
+      </Card>
+    );
+  }
+
+  const { results: { correlationMatrix, mappings, descriptiveStats, statsAnalysis, advancedAnalysis } } = analysisResults;
 
   return (
     <Card className="p-6 animate-fade-in">

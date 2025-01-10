@@ -14,25 +14,37 @@ export type Database = {
           control_charts: Json | null
           created_at: string | null
           descriptive_stats: Json | null
+          estimated_completion_time: string | null
+          file_size_bytes: number | null
           id: string
           project_id: string
           results: Json
+          started_at: string | null
+          status: Database["public"]["Enums"]["analysis_status"] | null
         }
         Insert: {
           control_charts?: Json | null
           created_at?: string | null
           descriptive_stats?: Json | null
+          estimated_completion_time?: string | null
+          file_size_bytes?: number | null
           id?: string
           project_id: string
           results: Json
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["analysis_status"] | null
         }
         Update: {
           control_charts?: Json | null
           created_at?: string | null
           descriptive_stats?: Json | null
+          estimated_completion_time?: string | null
+          file_size_bytes?: number | null
           id?: string
           project_id?: string
           results?: Json
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["analysis_status"] | null
         }
         Relationships: [
           {
@@ -184,6 +196,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      analysis_status:
+        | "pending"
+        | "analyzing"
+        | "generating_control_charts"
+        | "completed"
+        | "failed"
       project_status: "Not Started" | "In Progress" | "Completed" | "Suspended"
     }
     CompositeTypes: {

@@ -5,13 +5,30 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
   console.log('Attempting to analyze files:', files);
   
   try {
+    // Create initial analysis record
+    const { error: insertError } = await supabase
+      .from('analysis_results')
+      .insert({
+        project_id: projectId,
+        status: 'pending',
+        results: {},
+        started_at: new Date().toISOString(),
+        file_size_bytes: files.reduce((acc, file) => acc + (file.size || 0), 0),
+      });
+
+    if (insertError) {
+      console.error('Error creating analysis record:', insertError);
+      return false;
+    }
+
     const response = await supabase.functions.invoke('analyze-dataset', {
       body: {
         projectId,
         files: files.map(file => ({
           id: file.id,
           name: file.name,
-          url: file.url
+          url: file.url,
+          size: file.size
         }))
       }
     });
@@ -21,6 +38,16 @@ export const sendFilesToWebhook = async (projectId: string, files: FileData[]) =
       return true;
     } else {
       console.error('Error starting analysis:', response.error);
+      
+      // Update analysis record to failed state
+      await supabase
+        .from('analysis_results')
+        .update({ 
+          status: 'failed',
+        })
+        .eq('project_id', projectId)
+        .is('completed_at', null);
+        
       return false;
     }
   } catch (error) {

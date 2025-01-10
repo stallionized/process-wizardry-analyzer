@@ -1,37 +1,29 @@
 export interface FileData {
   id: string;
   name: string;
-  url: string;
-}
-
-interface DescriptiveStats {
-  count: number;
-  mean: number;
-  median: number;
-  stdDev: number;
-  variance: number;
-  min: number;
-  max: number;
-  range: number;
-  q1: number;
-  q3: number;
-}
-
-interface ChartData {
   type: string;
-  title: string;
-  data: Array<Record<string, any>>;
-  xKey: string;
-  yKeys: string[];
-  description?: string;
+  url: string;
+  size?: number;
+  isNew?: boolean;
 }
 
 export interface AnalysisResults {
   correlationMatrix: Record<string, Record<string, number>>;
-  mappings: Record<string, Record<string, number>>;
-  descriptiveStats: Record<string, DescriptiveStats>;
+  mappings: Record<string, Record<string, string | number>>;
+  descriptiveStats: Record<string, {
+    count: number;
+    mean: number;
+    median: number;
+    stdDev: number;
+    variance: number;
+    min: number;
+    max: number;
+    range: number;
+    q1: number;
+    q3: number;
+  }>;
   statsAnalysis: string;
-  advancedAnalysis: {
+  advancedAnalysis?: {
     anova: {
       results: Array<{
         variable: string;
@@ -39,12 +31,20 @@ export interface AnalysisResults {
         fStatistic: number;
         pValue: number;
         effectSize: number;
-        interpretation: string;
         significanceLevel: string;
+        interpretation: string;
       }>;
       summary: string;
-      charts: ChartData[];
+      charts?: Array<{
+        type: string;
+        data: Array<Record<string, any>>;
+        xKey: string;
+        yKeys: string[];
+        title: string;
+        description?: string;
+      }>;
     };
-    timestamp: string;
   };
 }
+
+export type AnalysisStatus = 'pending' | 'analyzing' | 'generating_control_charts' | 'completed' | 'failed';
