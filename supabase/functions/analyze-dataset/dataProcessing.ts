@@ -66,6 +66,7 @@ export async function processExcelData(input: AnalysisInput) {
 
   // If this is the initial submission, return only the potential identifiers
   if (input.checkIdentifiers) {
+    console.log('Initial submission - returning potential identifiers');
     return {
       potentialIdentifiers,
       jsonData // We'll need this later when the user selects an identifier
@@ -78,6 +79,7 @@ export async function processExcelData(input: AnalysisInput) {
 
   // Use the selected identifier if provided
   const identifierColumn = input.selectedIdentifier || null;
+  console.log('Using identifier column:', identifierColumn);
 
   // Process numeric columns and keep track of identifiers
   Object.keys(jsonData[0]).forEach(column => {
