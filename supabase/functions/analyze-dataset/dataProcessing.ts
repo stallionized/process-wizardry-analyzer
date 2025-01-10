@@ -62,18 +62,23 @@ export async function processExcelData(input: AnalysisInput) {
     throw new Error(validation.error);
   }
 
-  // Find potential unique identifiers using GPT-4O enhanced detection
+  // Find potential unique identifiers
   console.log('\nStarting unique identifier detection...');
   const potentialIdentifiers = await findPotentialUniqueIdentifiers(jsonData);
   console.log('Potential unique identifiers found:', potentialIdentifiers);
 
-  // If this is the initial submission, return only the potential identifiers
+  // If this is the initial submission and we found identifiers, return them
   if (input.checkIdentifiers) {
-    console.log('Initial submission - returning potential identifiers');
-    return {
-      potentialIdentifiers,
-      jsonData // We'll need this later when the user selects an identifier
-    };
+    if (potentialIdentifiers.length > 0) {
+      console.log('Initial submission - returning potential identifiers');
+      return {
+        potentialIdentifiers,
+        jsonData
+      };
+    } else {
+      console.log('No unique identifiers found in initial check');
+      // Continue with processing if no identifiers found
+    }
   }
 
   const numericalData: Record<string, number[]> = {};
