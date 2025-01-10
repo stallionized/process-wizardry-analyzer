@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Grid, ChartBar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Grid, ChartBar, TrendingUp, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
 import ControlResults from '@/components/project/ControlResults';
 import TrendsAndThemes from '@/components/project/TrendsAndThemes';
+import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 
 const ProjectDashboard = () => {
@@ -65,6 +66,12 @@ const ProjectDashboard = () => {
       label: "Trends & Themes",
       icon: <TrendingUp className="mr-2 h-4 w-4" />,
       content: <TrendsAndThemes projectId={id} />
+    },
+    {
+      value: "complaints",
+      label: "External Complaints",
+      icon: <AlertTriangle className="mr-2 h-4 w-4" />,
+      content: <ExternalComplaints projectId={id} />
     }
   ];
 
