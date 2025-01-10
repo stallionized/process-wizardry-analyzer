@@ -100,22 +100,26 @@ const ControlResults = ({ projectId }: ControlResultsProps) => {
   }
 
   return (
-    <Card className="p-6 animate-fade-in">
-      <h2 className="text-xl font-semibold mb-4">Control Chart Results</h2>
+    <Card className="p-8 animate-fade-in">
+      <h2 className="text-2xl font-semibold mb-6">Control Chart Results</h2>
       
       {analysisResults.controlCharts && (
-        <AISummary controlCharts={analysisResults.controlCharts} />
+        <div className="mb-8">
+          <AISummary controlCharts={analysisResults.controlCharts} />
+        </div>
       )}
 
       {analysisResults.summary && (
-        <div className="bg-muted/50 p-4 rounded-lg mb-8">
-          <p className="text-sm text-muted-foreground">{analysisResults.summary}</p>
+        <div className="bg-muted/30 p-6 rounded-lg mb-8">
+          <p className="text-sm text-muted-foreground leading-relaxed">{analysisResults.summary}</p>
         </div>
       )}
       
-      {analysisResults.controlCharts?.map((chart, index) => (
-        <ControlChart key={index} chart={chart} />
-      ))}
+      <div className="space-y-8">
+        {analysisResults.controlCharts?.map((chart, index) => (
+          <ControlChart key={index} chart={chart} />
+        ))}
+      </div>
     </Card>
   );
 };

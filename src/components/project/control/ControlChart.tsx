@@ -112,16 +112,16 @@ const ControlChart = ({ chart }: ControlChartProps) => {
   };
 
   return (
-    <div className="space-y-4 border border-border rounded-lg p-4">
+    <div className="space-y-8 border border-border/50 rounded-lg p-6 mb-8 bg-background/50 shadow-sm">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">{chart.variable}</h3>
         <span className="text-sm text-muted-foreground">{chart.type}</span>
       </div>
       
-      <div className="h-[300px]">
+      <div className="h-[300px] mt-6">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
             <XAxis 
               dataKey="identifier"
               interval="preserveStartEnd"
@@ -148,6 +148,7 @@ const ControlChart = ({ chart }: ControlChartProps) => {
                 label={level.label}
                 stroke={level.color}
                 strokeWidth={1}
+                strokeOpacity={0.7}
               />
             ))}
 
@@ -172,16 +173,16 @@ const ControlChart = ({ chart }: ControlChartProps) => {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-muted/50 p-4 rounded-lg">
-        <p className="text-sm">{chart.interpretation}</p>
+      <div className="bg-muted/30 p-6 rounded-lg mt-6">
+        <p className="text-sm leading-relaxed">{chart.interpretation}</p>
       </div>
 
-      <div className="mt-4">
-        <h4 className="text-sm font-medium mb-2">Standard Deviation Distribution</h4>
+      <div className="mt-8">
+        <h4 className="text-sm font-medium mb-4">Standard Deviation Distribution</h4>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Range</TableHead>
+              <TableHead className="w-[200px]">Range</TableHead>
               <TableHead>Count</TableHead>
               <TableHead>Percentage</TableHead>
             </TableRow>
@@ -198,8 +199,8 @@ const ControlChart = ({ chart }: ControlChartProps) => {
                       </TooltipTrigger>
                       <TooltipContent>
                         <div className="max-h-[200px] overflow-y-auto">
-                          <p className="text-sm font-medium mb-1">Data points:</p>
-                          <ul className="space-y-1">
+                          <p className="text-sm font-medium mb-2">Data points:</p>
+                          <ul className="space-y-1.5">
                             {row.points.map((point, i) => (
                               <li key={i} className="text-sm">
                                 {point.identifier}: {point.value.toFixed(2)}
@@ -221,29 +222,31 @@ const ControlChart = ({ chart }: ControlChartProps) => {
       </div>
 
       {chart.data.movingRanges && (
-        <div className="h-[200px] mt-4">
-          <h4 className="text-sm font-medium mb-2">Moving Range Chart</h4>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={chart.data.movingRanges.map((value, i) => ({
-                identifier: chartData[i + 1].identifier,
-                value
-              }))}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="identifier"
-                interval="preserveStartEnd"
-                angle={-45}
-                textAnchor="end"
-                height={60}
-              />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#82ca9d" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="mt-8">
+          <h4 className="text-sm font-medium mb-4">Moving Range Chart</h4>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chart.data.movingRanges.map((value, i) => ({
+                  identifier: chartData[i + 1].identifier,
+                  value
+                }))}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
+                <XAxis 
+                  dataKey="identifier"
+                  interval="preserveStartEnd"
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#82ca9d" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>
