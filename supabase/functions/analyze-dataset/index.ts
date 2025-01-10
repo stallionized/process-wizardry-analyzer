@@ -4,7 +4,6 @@ import { getClaudeAnalysis } from './claudeService.ts';
 import { generateControlCharts } from './controlChartService.ts';
 import { AnalysisInput } from './types.ts';
 
-// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,7 +14,6 @@ const corsHeaders = {
 serve(async (req) => {
   console.log('Received request:', req.method);
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -36,22 +34,35 @@ serve(async (req) => {
       throw new Error('Project ID is required');
     }
 
-    // Process Excel data
+    // Process Excel data with validation
     const {
       numericalData,
       categoricalMappings,
       descriptiveStats,
       correlationMatrix,
-      statsAnalysis
+      statsAnalysis,
+      expectedAnalyses
     } = await processExcelData(input);
 
     // Get Claude analysis for AI results
     console.log('Getting Claude analysis');
     const advancedAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
 
+    // Validate AI results match expectations
+    if (!advancedAnalysis?.anova?.results || 
+        advancedAnalysis.anova.results.length === 0) {
+      throw new Error('AI analysis returned no results');
+    }
+
     // Generate control charts using Claude
     console.log('Generating control charts');
     const controlCharts = await generateControlCharts(numericalData);
+
+    // Validate control charts
+    if (!controlCharts?.controlCharts || 
+        controlCharts.controlCharts.length === 0) {
+      throw new Error('Control chart generation returned no results');
+    }
 
     const analysis = {
       correlationMatrix,
@@ -86,7 +97,8 @@ serve(async (req) => {
         project_id: input.projectId,
         results: analysis,
         descriptive_stats: descriptiveStats,
-        control_charts: controlCharts
+        control_charts: controlCharts,
+        status: 'completed'
       }),
     });
 
@@ -102,6 +114,33 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in analyze-dataset function:', error);
+    
+    // Update analysis record with error if possible
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && supabaseKey) {
+        const input = await req.json() as AnalysisInput;
+        await fetch(`${supabaseUrl}/rest/v1/analysis_results`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'apikey': supabaseKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            project_id: input.projectId,
+            status: 'failed',
+            error_message: error.message
+          }),
+        });
+      }
+    } catch (saveError) {
+      console.error('Error saving failure status:', saveError);
+    }
+
     return new Response(JSON.stringify({ 
       error: error.message,
       details: error.stack 
