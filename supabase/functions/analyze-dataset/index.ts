@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { processExcelData } from './dataProcessing.ts';
+import { getClaudeAnalysis } from './claudeService.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,10 +11,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: corsHeaders,
-      status: 204
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -59,33 +58,71 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Process each file
-    const processedFiles = [];
-    for (const file of payload.files) {
-      if (!file.url || !file.name || !file.type) {
-        console.warn('Skipping invalid file:', file);
-        continue;
-      }
-      
-      processedFiles.push({
-        fileName: file.name,
-        fileUrl: file.url,
-        status: 'processed'
-      });
-    }
+    // Process dataset files
+    console.log('Starting dataset analysis');
+    
+    try {
+      // Process Excel data
+      const {
+        numericalData,
+        categoricalMappings,
+        descriptiveStats,
+        correlationMatrix,
+        statsAnalysis
+      } = await processExcelData({ files: payload.files });
 
-    // Return success response
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Files queued for analysis',
-        processedFiles 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
+      console.log('Excel data processed successfully');
+
+      // Get control charts analysis using Claude
+      console.log('Starting control charts analysis');
+      const controlChartsAnalysis = await getClaudeAnalysis(descriptiveStats, numericalData);
+      console.log('Control charts analysis completed');
+
+      // Store analysis results
+      const { error: insertError } = await supabase
+        .from('analysis_results')
+        .insert({
+          project_id: payload.projectId,
+          results: {
+            correlationMatrix,
+            mappings: categoricalMappings,
+            descriptiveStats,
+            statsAnalysis,
+            controlCharts: controlChartsAnalysis.controlCharts
+          }
+        });
+
+      if (insertError) {
+        console.error('Error inserting analysis results:', insertError);
+        throw insertError;
       }
-    );
+
+      console.log('Analysis results stored successfully');
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Analysis completed successfully'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+
+    } catch (analysisError) {
+      console.error('Error during analysis:', analysisError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Analysis failed',
+          details: analysisError.message 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
+    }
 
   } catch (error) {
     console.error('Error processing request:', error);
