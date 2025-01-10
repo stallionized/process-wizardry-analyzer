@@ -31,8 +31,39 @@ const UserManagement = () => {
 
   useEffect(() => {
     checkAdminStatus();
+    createDefaultAdminUser();
     fetchUsers();
   }, []);
+
+  const createDefaultAdminUser = async () => {
+    try {
+      // Create the user
+      const { data: { user }, error: createError } = await supabase.auth.admin.createUser({
+        email: 'ccacici@wgu.edu',
+        password: '#Thisrulez2',
+        email_confirm: true
+      });
+
+      if (createError) throw createError;
+
+      if (user) {
+        // Set admin status
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ is_admin: true })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+        
+        toast.success('Default admin user created successfully');
+      }
+    } catch (error: any) {
+      // Ignore error if user already exists
+      if (!error.message.includes('User already registered')) {
+        toast.error(error.message);
+      }
+    }
+  };
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
