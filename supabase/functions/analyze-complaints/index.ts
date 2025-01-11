@@ -9,7 +9,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,12 +26,10 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    // Add common variations of the company name
     const companyVariations = [
       companyName,
       companyName.toLowerCase(),
       companyName.toUpperCase(),
-      // Add common abbreviations or alternate names
       ...getCompanyVariations(companyName)
     ].join('", "');
 
@@ -144,14 +141,11 @@ serve(async (req) => {
     try {
       analysisResult = JSON.parse(data.choices[0].message.content);
       
-      // Validate the response format
       if (!Array.isArray(analysisResult)) {
         console.error('Response is not an array:', analysisResult);
         throw new Error('Response is not an array');
       }
       
-      // Ensure each item has the required properties and correct types
-      // Also verify that volume matches the actual number of complaints
       analysisResult = analysisResult.map(item => {
         const complaints = Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
           text: String(complaint.text || ''),
@@ -161,7 +155,7 @@ serve(async (req) => {
 
         return {
           summary: String(item.summary || ''),
-          volume: complaints.length, // Set volume to match actual number of complaints
+          volume: complaints.length,
           complaints
         };
       });
@@ -196,11 +190,9 @@ serve(async (req) => {
   }
 });
 
-// Helper function to generate company name variations
 function getCompanyVariations(companyName: string): string[] {
   const variations = [];
   
-  // Add common variations
   if (companyName.toLowerCase().includes('budweiser')) {
     variations.push(
       'Anheuser-Busch',
@@ -215,7 +207,6 @@ function getCompanyVariations(companyName: string): string[] {
       'Anheuser-Busch Companies'
     );
   }
-  // Add more company-specific variations as needed
   
   return variations;
 }
