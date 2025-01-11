@@ -103,7 +103,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4-1106-preview',
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
@@ -135,8 +135,6 @@ serve(async (req) => {
     console.log('Raw content from OpenAI:', rawContent);
 
     try {
-      // If the content is a string representation of an object with a "data" property,
-      // try to extract the array from it
       const parsedContent = JSON.parse(rawContent);
       const analysisResult = Array.isArray(parsedContent) ? parsedContent : 
                             Array.isArray(parsedContent.data) ? parsedContent.data : 
@@ -147,7 +145,6 @@ serve(async (req) => {
         throw new Error('Response is not a valid array');
       }
 
-      // Validate and transform each item
       const validatedResults = analysisResult.map(item => {
         if (!item.complaints || !Array.isArray(item.complaints)) {
           console.warn(`Invalid complaints array for theme "${item.summary}"`);
