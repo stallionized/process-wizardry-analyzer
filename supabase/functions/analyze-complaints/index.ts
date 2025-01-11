@@ -80,7 +80,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini', // Fixed: Changed from 'gpt-4o' to 'gpt-4o-mini'
         messages: [
           { 
             role: 'system', 
@@ -94,8 +94,9 @@ serve(async (req) => {
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3, // Lower temperature for more consistent results
+        temperature: 0.3,
         max_tokens: 4000,
+        response_format: { type: "json_object" } // Added: Ensure JSON response
       }),
     });
 
@@ -114,9 +115,13 @@ serve(async (req) => {
 
     let analysisResult;
     try {
-      analysisResult = JSON.parse(data.choices[0].message.content);
+      // Parse the content as JSON, handling the case where it might be a string
+      const content = data.choices[0].message.content;
+      const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
       
-      // Validate the response format
+      // Extract the complaints array from the response
+      analysisResult = Array.isArray(parsedContent) ? parsedContent : parsedContent.complaints || [];
+      
       if (!Array.isArray(analysisResult)) {
         console.error('Response is not an array:', analysisResult);
         throw new Error('Response is not an array');
