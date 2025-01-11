@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +24,7 @@ interface ExternalComplaintsProps {
 }
 
 const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
-  const { data: projectDetails } = useQuery({
+  const { data: projectDetails, isLoading: isLoadingProject } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,7 +38,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     },
   });
 
-  const { data: complaints, isLoading, error } = useQuery({
+  const { data: complaints, isLoading, error, refetch } = useQuery({
     queryKey: ['complaints', projectId, projectDetails?.client_name, projectDetails?.topics],
     queryFn: async () => {
       if (!projectDetails?.client_name) {
@@ -59,7 +59,37 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       return response.data as ComplaintTheme[];
     },
     enabled: !!projectDetails?.client_name,
+    retry: false,
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error('Complaints analysis error:', error);
+      toast.error('Failed to analyze complaints. Please try again later.');
+    }
+  }, [error]);
+
+  if (isLoadingProject) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center space-x-2">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <p>Loading project details...</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!projectDetails?.client_name) {
+    return (
+      <Card className="p-6">
+        <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
+        <p className="text-muted-foreground">
+          Please provide a company name in the project details to analyze external complaints.
+        </p>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -72,23 +102,12 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  if (error) {
-    return (
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-        <p className="text-red-500">
-          Failed to analyze complaints. Please ensure a company name is provided in the project details.
-        </p>
-      </Card>
-    );
-  }
-
   if (!complaints || complaints.length === 0) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
         <p className="text-muted-foreground">
-          No complaints data found for {projectDetails?.client_name || 'the specified company'}. 
+          No complaints data found for {projectDetails.client_name}. 
           This could mean either the company has no significant online complaints or the company name needs to be verified.
         </p>
       </Card>
