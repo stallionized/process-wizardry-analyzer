@@ -27,7 +27,7 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `Act as a consumer complaints analyst. Analyze complaints about "${companyName}" from these sources:
+    let prompt = `Act as a consumer complaints analyst. Your task is to perform a comprehensive analysis of complaints about "${companyName}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
@@ -38,23 +38,26 @@ serve(async (req) => {
     - Complaints Board
     - Ripoff Report
     - Pissed Consumer
+    - Consumer Financial Protection Bureau (CFPB)
+    - Social media platforms (Twitter, LinkedIn)
+    - Industry-specific review sites
 
     Follow these STRICT rules:
-    1. Focus ONLY on complaints from the last 2 years
-    2. For each complaint theme:
-       - Verify it's about this specific company (${companyName})
-       - Include ALL verified complaints you find (don't limit the number)
-       - Always include the exact source website and URL when available
-       - Never summarize or combine complaints
+    1. Focus on complaints from the last 2 years
+    2. Verify each complaint is specifically about ${companyName}
+    3. Group complaints into clear, specific themes (maximum 20 themes)
+    4. For each theme:
+       - Include ALL verified complaints you find
+       - Always include the exact source website and URL
        - Keep the original complaint text
-    3. Group complaints into clear themes
-    4. Count complaints accurately - each complaint should be counted exactly once
-    5. Never generate or fabricate complaints
-    6. If a complaint appears on multiple sites, only count it once
-    7. Include EVERY complaint you find in the response, not just examples
-    8. DO NOT LIMIT THE NUMBER OF COMPLAINTS - return ALL verified complaints found
+       - Never summarize or combine complaints
+    5. Count complaints accurately - each unique complaint counts once
+    6. Never generate or fabricate complaints
+    7. If a complaint appears on multiple sites, count it only once
+    8. DO NOT LIMIT the number of complaints per theme
+    9. Return the top 20 themes by complaint volume
 
-    ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
+    ${topics ? `Pay special attention to complaints about: ${topics}. Prioritize these topics when identifying themes.` : ''}
 
     Format the response as a JSON array where each object has:
     {
@@ -69,7 +72,7 @@ serve(async (req) => {
       ]
     }
 
-    Sort themes by volume in descending order. Include ONLY verified complaints about ${companyName}.
+    Sort themes by volume in descending order and return only the top 20 themes.
     If no complaints are found, return an empty array: []`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
@@ -81,22 +84,23 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
             content: `You are an AI trained to analyze customer complaints across multiple platforms. You must:
 1. Always verify complaints are about the correct company
-2. Include ALL complaints found, not just examples
+2. Include ALL complaints found within each theme
 3. Never generate fake complaints
 4. Always provide accurate counts
 5. Include specific sources and URLs when available
-6. Return ALL complaints, do not limit the number
-7. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)`
+6. Return ALL complaints within each theme
+7. Limit response to top 20 themes by volume
+8. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)`
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.1, // Lower temperature for more consistent results
+        temperature: 0.1,
         max_tokens: 4000,
         response_format: { type: "json_object" }
       }),
@@ -120,10 +124,8 @@ serve(async (req) => {
       const content = data.choices[0].message.content;
       console.log('Raw content:', content);
       
-      // Parse the content, handling both string and object formats
       const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
       
-      // Extract the complaints array, ensuring we get all complaints
       analysisResult = Array.isArray(parsedContent) ? parsedContent : 
                       Array.isArray(parsedContent.complaints) ? parsedContent.complaints :
                       parsedContent.data || [];
@@ -142,7 +144,7 @@ serve(async (req) => {
         
         return {
           summary: String(item.summary || ''),
-          volume: item.complaints.length, // Set volume to actual number of complaints
+          volume: item.complaints.length,
           complaints: item.complaints.map(complaint => ({
             text: String(complaint.text || ''),
             source: String(complaint.source || ''),
@@ -151,8 +153,10 @@ serve(async (req) => {
         };
       });
 
-      // Sort by actual volume
-      analysisResult.sort((a, b) => b.volume - a.volume);
+      // Sort by volume and limit to top 20 themes
+      analysisResult = analysisResult
+        .sort((a, b) => b.volume - a.volume)
+        .slice(0, 20);
       
       console.log('Processed analysis result:', analysisResult);
       
