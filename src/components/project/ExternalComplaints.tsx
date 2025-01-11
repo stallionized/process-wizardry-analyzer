@@ -108,7 +108,11 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  const hasComplaints = complaints && complaints.length > 0 && complaints.some(c => c.volume > 0);
+  // Check if we have valid complaints data with actual content
+  const hasComplaints = complaints && 
+    Array.isArray(complaints) && 
+    complaints.length > 0 && 
+    complaints.some(c => c.complaints && c.complaints.length > 0);
 
   if (!hasComplaints) {
     return (
@@ -134,7 +138,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  const selectedComplaint = complaints.find(c => c.summary === selectedTheme);
+  const selectedComplaint = complaints?.find(c => c.summary === selectedTheme);
 
   return (
     <Card className="p-8">
@@ -153,7 +157,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </div>
 
       <div className="overflow-x-auto">
-        {!selectedTheme && (
+        {!selectedTheme && complaints && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -170,7 +174,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                     className="text-right cursor-pointer hover:text-primary hover:underline"
                     onClick={() => setSelectedTheme(complaint.summary)}
                   >
-                    {complaint.volume}
+                    {complaint.complaints.length}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
