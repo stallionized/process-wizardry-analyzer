@@ -33,7 +33,7 @@ serve(async (req) => {
       ...getCompanyVariations(companyName)
     ].join('", "');
 
-    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from ALL of these sources:
+    const prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from ALL of these sources:
 
     Major Review & Complaint Platforms:
     - Better Business Bureau (BBB)
@@ -78,7 +78,7 @@ serve(async (req) => {
     IMPORTANT: You must return ALL complaints found for each theme, with no limit on the number of complaints per theme.
     Make sure the volume number matches exactly the number of complaints provided in the complaints array.
 
-    Respond with a JSON array of objects. Each object MUST have exactly these properties:
+    Return a valid JSON array of objects. Each object MUST have exactly these properties:
     {
       "summary": "Clear description of the complaint theme",
       "volume": number (must exactly match the number of complaints in the complaints array),
@@ -103,24 +103,17 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
-            content: `You are an AI trained to analyze customer complaints across multiple platforms. You must:
-1. Always verify complaints are about the correct company
-2. Include ALL specific examples with sources, do not limit the number of complaints
-3. Ensure the volume number exactly matches the number of complaints in the complaints array
-4. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)
-5. Never include additional properties or formatting
-6. Never return an empty array unless absolutely no complaints exist
-7. Search thoroughly across all provided platforms
-8. Include direct URLs whenever possible`
+            content: 'You are an AI trained to analyze customer complaints across multiple platforms. You must return ONLY valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url). Never include markdown formatting or additional text.'
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
         max_tokens: 4000,
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -141,26 +134,21 @@ serve(async (req) => {
     let rawContent = data.choices[0].message.content;
     console.log('Raw content from OpenAI:', rawContent);
 
-    // Try to clean the response if it's not valid JSON
-    rawContent = rawContent.trim();
-    if (rawContent.startsWith('```json')) {
-      rawContent = rawContent.replace(/```json\n?/, '').replace(/```$/, '');
-    }
-    if (rawContent.startsWith('```')) {
-      rawContent = rawContent.replace(/```\n?/, '').replace(/```$/, '');
-    }
-
-    let analysisResult;
     try {
-      analysisResult = JSON.parse(rawContent);
-      
-      if (!Array.isArray(analysisResult)) {
-        console.error('Response is not an array:', analysisResult);
-        throw new Error('Response is not an array');
+      // If the content is a string representation of an object with a "data" property,
+      // try to extract the array from it
+      const parsedContent = JSON.parse(rawContent);
+      const analysisResult = Array.isArray(parsedContent) ? parsedContent : 
+                            Array.isArray(parsedContent.data) ? parsedContent.data : 
+                            null;
+
+      if (!analysisResult) {
+        console.error('Response is not a valid array:', parsedContent);
+        throw new Error('Response is not a valid array');
       }
-      
-      // Validate and transform the data
-      analysisResult = analysisResult.map(item => {
+
+      // Validate and transform each item
+      const validatedResults = analysisResult.map(item => {
         if (!item.complaints || !Array.isArray(item.complaints)) {
           console.warn(`Invalid complaints array for theme "${item.summary}"`);
           item.complaints = [];
@@ -178,22 +166,22 @@ serve(async (req) => {
           complaints
         };
       });
-      
+
       console.log('Successfully parsed and validated analysis result');
-      console.log('Number of themes:', analysisResult.length);
-      analysisResult.forEach(theme => {
+      console.log('Number of themes:', validatedResults.length);
+      validatedResults.forEach(theme => {
         console.log(`Theme "${theme.summary}": ${theme.complaints.length} complaints`);
       });
-      
+
+      return new Response(JSON.stringify(validatedResults), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
     } catch (error) {
       console.error('Error parsing OpenAI response:', error);
       console.log('Problematic content:', rawContent);
       throw new Error('Failed to parse OpenAI response as JSON');
     }
-
-    return new Response(JSON.stringify(analysisResult), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
     console.error('Error in analyze-complaints function:', error);
     return new Response(
