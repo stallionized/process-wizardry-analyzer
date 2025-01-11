@@ -119,12 +119,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
+      console.error('OpenAI API error response:', errorData);
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response received. Attempting to parse content...');
+    console.log('OpenAI response received:', data);
 
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid response format from OpenAI:', data);
@@ -136,6 +136,9 @@ serve(async (req) => {
 
     try {
       const parsedContent = JSON.parse(rawContent);
+      console.log('Successfully parsed content:', parsedContent);
+      
+      // Extract the array from the response, handling both direct array and nested data property
       const analysisResult = Array.isArray(parsedContent) ? parsedContent : 
                             Array.isArray(parsedContent.data) ? parsedContent.data : 
                             null;
