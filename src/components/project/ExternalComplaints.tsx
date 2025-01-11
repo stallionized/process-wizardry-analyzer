@@ -151,7 +151,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </div>
 
       <div className="overflow-x-auto">
-        {!selectedTheme ? (
+        {!selectedTheme && complaints.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -195,7 +195,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               ))}
             </TableBody>
           </Table>
-        ) : (
+        ) : selectedTheme && selectedComplaint ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -204,7 +204,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedComplaint?.complaints.map((complaint, index) => (
+              {selectedComplaint.complaints.map((complaint, index) => (
                 <TableRow key={index}>
                   <TableCell>{complaint.text}</TableCell>
                   <TableCell>
@@ -225,7 +225,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               ))}
             </TableBody>
           </Table>
-        )}
+        ) : null}
       </div>
     </Card>
   );
