@@ -27,7 +27,7 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about "${companyName}" from these sources:
+    let prompt = `Act as a consumer complaints analyst. Analyze complaints about "${companyName}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
@@ -39,30 +39,37 @@ serve(async (req) => {
     - Ripoff Report
     - Pissed Consumer
 
-    Focus on complaints from the last 2 years. For each major complaint theme:
-    1. Verify the complaint is about this specific company (${companyName})
-    2. Look for patterns across multiple sources
-    3. Count the frequency of similar complaints
-    4. For each complaint theme, provide up to 20 specific examples with their sources
-    5. If available, include direct links to complaint sources
+    Follow these STRICT rules:
+    1. Focus ONLY on complaints from the last 2 years
+    2. For each complaint theme:
+       - Verify it's about this specific company (${companyName})
+       - Include ALL verified complaints you find (don't limit the number)
+       - Always include the exact source website and URL when available
+       - Never summarize or combine complaints
+       - Keep the original complaint text
+    3. Group complaints into clear themes
+    4. Count complaints accurately - each complaint should be counted exactly once
+    5. Never generate or fabricate complaints
+    6. If a complaint appears on multiple sites, only count it once
+    7. Include EVERY complaint you find in the response, not just examples
 
     ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
-    Respond with a JSON array of objects. Each object MUST have exactly these properties:
+    Format the response as a JSON array where each object has:
     {
       "summary": "Clear description of the complaint theme",
-      "volume": number (estimated complaint count),
+      "volume": exact number of verified complaints found,
       "complaints": [
         {
-          "text": "The specific complaint text",
-          "source": "Name of the source website",
+          "text": "The exact complaint text",
+          "source": "Specific source website name",
           "url": "Direct URL to the complaint if available"
         }
       ]
     }
 
-    Sort by volume in descending order. Include ONLY verified complaints about ${companyName}.
-    If truly no complaints are found, return an empty array: []`;
+    Sort themes by volume in descending order. Include ONLY verified complaints about ${companyName}.
+    If no complaints are found, return an empty array: []`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
 
@@ -79,13 +86,15 @@ serve(async (req) => {
             role: 'system', 
             content: `You are an AI trained to analyze customer complaints across multiple platforms. You must:
 1. Always verify complaints are about the correct company
-2. Include specific examples with sources
-3. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)
-4. Never include additional properties or formatting`
+2. Include ALL complaints found, not just examples
+3. Never generate fake complaints
+4. Always provide accurate counts
+5. Include specific sources and URLs when available
+6. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)`
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        temperature: 0.3, // Lower temperature for more consistent results
         max_tokens: 4000,
       }),
     });
@@ -122,6 +131,12 @@ serve(async (req) => {
           source: String(complaint.source || ''),
           url: String(complaint.url || '')
         })) : []
+      }));
+
+      // Verify that complaint counts match the actual number of complaints
+      analysisResult = analysisResult.map(item => ({
+        ...item,
+        volume: item.complaints.length // Ensure volume matches actual number of complaints
       }));
       
     } catch (error) {
