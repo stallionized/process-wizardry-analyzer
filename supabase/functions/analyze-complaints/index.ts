@@ -23,23 +23,35 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `Analyze online complaints about the company "${companyName}" and its common variations (like abbreviations, alternate spellings, or former names). Consider complaints that are clearly about this company based on context, even if the name isn't an exact match.`;
-    
-    if (topics) {
-      prompt += ` Focus specifically on complaints regarding: ${topics}.`;
-    }
-    
-    prompt += `\n\nFor each complaint, verify it's genuinely about this company before including it in the analysis. Then identify the top 20 complaint themes and trends. For each theme:
-    1. Provide a concise summary
-    2. Estimate the volume of verified complaints
-    3. Provide 3 example complaint URLs or summaries that are definitely about this company
-    
-    Format the response as a JSON array of objects with properties:
-    - summary (string): concise theme description
-    - volume (number): estimated complaint volume
-    - examples (array): 3 example complaints or URLs
-    
-    Sort by volume in descending order. If no verified complaints are found, return an empty array.`;
+    let prompt = `Analyze online complaints about "${companyName}" from multiple sources including:
+    - Better Business Bureau (BBB)
+    - Trustpilot
+    - Yelp
+    - Consumer Affairs
+    - Google Reviews
+    - Facebook
+    - Reddit
+    - Complaints Board
+    - Ripoff Report
+    - Pissed Consumer
+    - Social media platforms
+
+    Consider complaints from the last 2 years that are clearly about this specific company. For each complaint theme:
+    1. Verify the complaint is genuinely about this company
+    2. Check if multiple sources report similar issues
+    3. Assess the volume and frequency of complaints
+    4. Look for patterns in customer experiences
+    5. Note any official company responses
+
+    If specific topics were provided (${topics || 'none specified'}), prioritize complaints related to these topics.
+
+    Format the response as a JSON array of objects with these properties:
+    - summary (string): Concise description of the complaint theme
+    - volume (number): Estimated number of similar complaints found
+    - examples (array): Array of 3 specific complaint sources or summaries
+
+    Sort by volume in descending order. Only include verified complaints about this specific company.
+    If no verified complaints are found, return an empty array.`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
 
@@ -54,11 +66,12 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to analyze customer complaints, verify their relevance, and identify patterns. Be precise and thorough in verifying complaints are about the correct company before including them in analysis. Always respond with valid JSON.' 
+            content: 'You are an AI trained to analyze customer complaints across multiple platforms. Be thorough in verifying complaints are about the correct company. Always respond with valid JSON containing only verified complaints.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
 
