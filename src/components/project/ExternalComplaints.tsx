@@ -151,7 +151,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </div>
 
       <div className="overflow-x-auto">
-        {!selectedTheme && complaints.length > 0 ? (
+        {!selectedTheme && complaints && complaints.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -195,7 +195,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               ))}
             </TableBody>
           </Table>
-        ) : selectedTheme && selectedComplaint ? (
+        )}
+        {selectedTheme && selectedComplaint && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -225,7 +226,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               ))}
             </TableBody>
           </Table>
-        ) : null}
+        )}
       </div>
     </Card>
   );
