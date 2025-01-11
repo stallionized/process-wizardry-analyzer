@@ -1,8 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -45,13 +49,15 @@ serve(async (req) => {
 
     If specific topics were provided (${topics || 'none specified'}), prioritize complaints related to these topics.
 
-    Format the response as a JSON array of objects with these properties:
-    - summary (string): Concise description of the complaint theme
-    - volume (number): Estimated number of similar complaints found
-    - examples (array): Array of 3 specific complaint sources or summaries
+    You must respond with a valid JSON array of objects. Each object must have exactly these properties:
+    {
+      "summary": "string describing the complaint theme",
+      "volume": number representing complaint count,
+      "examples": ["string1", "string2", "string3"]
+    }
 
     Sort by volume in descending order. Only include verified complaints about this specific company.
-    If no verified complaints are found, return an empty array.`;
+    If no verified complaints are found, return an empty array: []`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
 
@@ -66,7 +72,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to analyze customer complaints across multiple platforms. Be thorough in verifying complaints are about the correct company. Always respond with valid JSON containing only verified complaints.' 
+            content: 'You are an AI trained to analyze customer complaints across multiple platforms. You must always respond with valid JSON arrays containing objects with exactly these properties: summary (string), volume (number), and examples (array of 3 strings). Never include additional properties or formatting.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -94,10 +100,11 @@ serve(async (req) => {
       
       // Validate the response format
       if (!Array.isArray(analysisResult)) {
+        console.error('Response is not an array:', analysisResult);
         throw new Error('Response is not an array');
       }
       
-      // Ensure each item has the required properties
+      // Ensure each item has the required properties and correct types
       analysisResult = analysisResult.map(item => ({
         summary: String(item.summary || ''),
         volume: Number(item.volume) || 0,
