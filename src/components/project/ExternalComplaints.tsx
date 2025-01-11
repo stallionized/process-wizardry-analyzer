@@ -62,9 +62,6 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       });
 
       if (response.error) throw response.error;
-      if (!response.data || response.data.length === 0) {
-        return null;
-      }
       return response.data as ComplaintTheme[];
     },
     enabled: !!projectDetails?.client_name,
@@ -115,10 +112,22 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-        <p className="text-muted-foreground">
-          No complaints data found for {projectDetails.client_name}. 
-          This could mean either the company has no significant online complaints or the company name needs to be verified.
-        </p>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-2">
+            No complaints data found for {projectDetails.client_name}.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            This could mean either the company has no significant online complaints 
+            or the company name needs to be verified.
+          </p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => refetch()}
+          >
+            Try Again
+          </Button>
+        </div>
       </Card>
     );
   }
