@@ -53,6 +53,9 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       });
 
       if (response.error) throw response.error;
+      if (!response.data || response.data.length === 0) {
+        return null;
+      }
       return response.data as ComplaintTheme[];
     },
     enabled: !!projectDetails?.client_name,
@@ -80,12 +83,13 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  if (!complaints) {
+  if (!complaints || complaints.length === 0) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
         <p className="text-muted-foreground">
-          Analysis will appear here after processing the company's complaint data.
+          No complaints data found for {projectDetails?.client_name || 'the specified company'}. 
+          This could mean either the company has no significant online complaints or the company name needs to be verified.
         </p>
       </Card>
     );
