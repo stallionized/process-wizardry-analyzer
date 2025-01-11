@@ -27,37 +27,40 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `Analyze online complaints about "${companyName}" from multiple sources including:
+    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about "${companyName}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
     - Consumer Affairs
     - Google Reviews
     - Facebook
-    - Reddit
+    - Reddit (especially r/consumer)
     - Complaints Board
     - Ripoff Report
     - Pissed Consumer
-    - Social media platforms
 
-    Consider complaints from the last 2 years that are clearly about this specific company. For each complaint theme:
-    1. Verify the complaint is genuinely about this company
-    2. Check if multiple sources report similar issues
-    3. Assess the volume and frequency of complaints
-    4. Look for patterns in customer experiences
-    5. Note any official company responses
+    Focus on complaints from the last 2 years. For each major complaint theme:
+    1. Verify the complaint is about this specific company (${companyName})
+    2. Look for patterns across multiple sources
+    3. Count the frequency of similar complaints
+    4. Note specific examples with sources when possible
+    5. If available, include direct links to complaint sources
 
-    If specific topics were provided (${topics || 'none specified'}), prioritize complaints related to these topics.
+    ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
-    You must respond with a valid JSON array of objects. Each object must have exactly these properties:
+    Respond with a JSON array of objects. Each object MUST have exactly these properties:
     {
-      "summary": "string describing the complaint theme",
-      "volume": number representing complaint count,
-      "examples": ["string1", "string2", "string3"]
+      "summary": "Clear description of the complaint theme",
+      "volume": number (estimated complaint count),
+      "examples": [
+        "Specific complaint 1 with source",
+        "Specific complaint 2 with source",
+        "Specific complaint 3 with source"
+      ]
     }
 
-    Sort by volume in descending order. Only include verified complaints about this specific company.
-    If no verified complaints are found, return an empty array: []`;
+    Sort by volume in descending order. Include ONLY verified complaints about ${companyName}.
+    If truly no complaints are found, return an empty array: []`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
 
@@ -72,7 +75,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to analyze customer complaints across multiple platforms. You must always respond with valid JSON arrays containing objects with exactly these properties: summary (string), volume (number), and examples (array of 3 strings). Never include additional properties or formatting.' 
+            content: `You are an AI trained to analyze customer complaints across multiple platforms. You must:
+1. Always verify complaints are about the correct company
+2. Include specific examples with sources
+3. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), examples (array of 3 strings)
+4. Never include additional properties or formatting`
           },
           { role: 'user', content: prompt }
         ],
