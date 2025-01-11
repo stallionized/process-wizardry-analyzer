@@ -37,7 +37,7 @@ Return a JSON array of complaint themes, where each theme contains:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
