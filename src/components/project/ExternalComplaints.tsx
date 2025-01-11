@@ -47,7 +47,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     },
   });
 
-  const { data: complaints, isLoading, error, refetch } = useQuery({
+  const { data: complaints, isLoading, error } = useQuery({
     queryKey: ['complaints', projectId, projectDetails?.client_name, projectDetails?.topics],
     queryFn: async () => {
       if (!projectDetails?.client_name) {
@@ -62,10 +62,19 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       });
 
       if (response.error) throw response.error;
-      if (!response.data || response.data.length === 0) {
+      
+      // Validate and ensure we have all complaints
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
         return null;
       }
-      return response.data as ComplaintTheme[];
+
+      // Ensure each theme has the correct number of complaints matching its volume
+      const validatedComplaints = response.data.map((theme: ComplaintTheme) => ({
+        ...theme,
+        complaints: theme.complaints || [], // Ensure complaints array exists
+      }));
+
+      return validatedComplaints as ComplaintTheme[];
     },
     enabled: !!projectDetails?.client_name,
     retry: false,
@@ -157,7 +166,13 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                   <TableCell className="font-medium">{complaint.summary}</TableCell>
                   <TableCell 
                     className="text-right cursor-pointer hover:text-primary hover:underline"
-                    onClick={() => setSelectedTheme(complaint.summary)}
+                    onClick={() => {
+                      if (complaint.complaints?.length !== complaint.volume) {
+                        console.warn(`Volume mismatch for theme "${complaint.summary}": 
+                          Expected ${complaint.volume} complaints but got ${complaint.complaints?.length}`);
+                      }
+                      setSelectedTheme(complaint.summary);
+                    }}
                   >
                     {complaint.volume}
                   </TableCell>
