@@ -19,13 +19,12 @@ serve(async (req) => {
     }
 
     const { companyName, topics } = await req.json();
+    console.log('Analyzing complaints for:', { companyName, topics });
     
     if (!companyName) {
       throw new Error('Company name is required');
     }
 
-    console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
-    
     const companyVariations = [
       companyName,
       companyName.toLowerCase(),
@@ -33,62 +32,36 @@ serve(async (req) => {
       ...getCompanyVariations(companyName)
     ].join('", "');
 
-    const prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from ALL of these sources:
-
-    Major Review & Complaint Platforms:
+    const prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
-    - Yelp
     - Consumer Affairs
     - Google Reviews
-    - ComplaintsBoard
     - Ripoff Report
-    - Pissed Consumer
-    - SiteJabber
-    - Complaints.com
-    - Angie's List
-
-    Government & Consumer Protection:
-    - Consumer Financial Protection Bureau (CFPB)
-    - Federal Trade Commission (FTC)
-    - National Consumer League (NCL)
-
-    Social Media & Forums:
-    - Facebook
-    - Twitter
-    - Instagram
-    - Reddit (especially r/consumer and company-specific subreddits)
-    - LinkedIn
-
-    Industry-Specific:
-    - Amazon Customer Service (if applicable)
-    - TripAdvisor (if applicable)
-    - Skytrax (if applicable)
-    - Hotel Complaint sites (if applicable)
+    - Social media (Twitter, Facebook, Reddit)
 
     Focus on complaints from the last 2 years. For each major complaint theme:
     1. Verify the complaint is about this specific company
     2. Look for patterns across multiple sources
     3. Count the frequency of similar complaints
-    4. For each complaint theme, provide ALL specific examples with their sources (do not limit the number of examples)
-    5. If available, include direct links to complaint sources
+    4. Provide specific examples with their sources
 
     ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
-    IMPORTANT: Return a valid JSON array of objects. Each object MUST have exactly these properties:
+    Return a JSON array where each object has:
     {
-      "summary": "Clear description of the complaint theme",
-      "volume": number (must exactly match the number of complaints in the complaints array),
+      "summary": "Brief description of the complaint theme",
+      "volume": "Number of complaints found (must match complaints array length)",
       "complaints": [
         {
           "text": "The specific complaint text",
-          "source": "Name of the source website",
-          "url": "Direct URL to the complaint if available"
+          "source": "Source website name",
+          "url": "Direct URL to complaint if available"
         }
       ]
     }`;
 
-    console.log('Sending request to OpenAI with prompt:', prompt);
+    console.log('Sending request to OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -101,7 +74,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to analyze customer complaints. You must return a valid JSON array of complaint themes. Each theme must have: summary (string), volume (number), and complaints (array of objects with text, source, and url properties).'
+            content: 'You are a complaints analyst. Return a JSON array of complaint themes. Each theme must have a summary (string), volume (number), and complaints array (objects with text, source, and url).'
           },
           { role: 'user', content: prompt }
         ],
@@ -113,25 +86,25 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error response:', errorText);
+      console.error('OpenAI API error:', { status: response.status, error: errorText });
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('Raw OpenAI response:', data);
+    console.log('OpenAI raw response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid response format from OpenAI:', data);
+      console.error('Invalid OpenAI response format:', data);
       throw new Error('Invalid response format from OpenAI');
     }
 
     let rawContent = data.choices[0].message.content;
-    console.log('Content from OpenAI:', rawContent);
+    console.log('OpenAI content:', rawContent);
 
     try {
       const parsedContent = JSON.parse(rawContent);
-      console.log('Successfully parsed JSON content:', parsedContent);
-      
+      console.log('Parsed JSON content:', parsedContent);
+
       // Extract the array from the response
       const analysisResult = Array.isArray(parsedContent) ? parsedContent : 
                             Array.isArray(parsedContent.data) ? parsedContent.data : 
@@ -142,7 +115,7 @@ serve(async (req) => {
         throw new Error('Response is not a valid array');
       }
 
-      // Validate and format each complaint theme
+      // Validate each complaint theme
       const validatedResults = analysisResult.map(item => {
         if (!item.complaints || !Array.isArray(item.complaints)) {
           console.warn(`Invalid complaints array for theme "${item.summary}"`);
@@ -167,14 +140,33 @@ serve(async (req) => {
       });
 
       console.log('Final validated results:', validatedResults);
+      
+      // Store results in database
+      const { data: storedData, error: dbError } = await supabaseAdmin
+        .from('analysis_results')
+        .insert({
+          project_id: projectId,
+          results: validatedResults,
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw dbError;
+      }
+
+      console.log('Results stored in database:', storedData);
+
       return new Response(JSON.stringify(validatedResults), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } catch (error) {
-      console.error('Error parsing OpenAI response:', error);
+      console.error('Error processing OpenAI response:', error);
       console.log('Problematic content:', rawContent);
-      throw new Error('Failed to parse OpenAI response as JSON');
+      throw new Error('Failed to process OpenAI response');
     }
   } catch (error) {
     console.error('Error in analyze-complaints function:', error);
@@ -200,12 +192,7 @@ function getCompanyVariations(companyName: string): string[] {
       'Anheuser Busch',
       'AB InBev',
       'Bud',
-      'Bud Light',
-      'Budweiser Brewing Company',
-      'Anheuser-Busch InBev',
-      'AB InBev SA/NV',
-      'Busch',
-      'Anheuser-Busch Companies'
+      'Bud Light'
     );
   }
   
