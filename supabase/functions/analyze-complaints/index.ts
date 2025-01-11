@@ -52,6 +52,7 @@ serve(async (req) => {
     5. Never generate or fabricate complaints
     6. If a complaint appears on multiple sites, only count it once
     7. Include EVERY complaint you find in the response, not just examples
+    8. DO NOT LIMIT THE NUMBER OF COMPLAINTS - return ALL verified complaints found
 
     ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
@@ -80,7 +81,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Fixed: Changed from 'gpt-4o' to 'gpt-4o-mini'
+        model: 'gpt-4o-mini',
         messages: [
           { 
             role: 'system', 
@@ -90,13 +91,14 @@ serve(async (req) => {
 3. Never generate fake complaints
 4. Always provide accurate counts
 5. Include specific sources and URLs when available
-6. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)`
+6. Return ALL complaints, do not limit the number
+7. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)`
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3,
+        temperature: 0.1, // Lower temperature for more consistent results
         max_tokens: 4000,
-        response_format: { type: "json_object" } // Added: Ensure JSON response
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -115,42 +117,50 @@ serve(async (req) => {
 
     let analysisResult;
     try {
-      // Parse the content as JSON, handling the case where it might be a string
       const content = data.choices[0].message.content;
+      console.log('Raw content:', content);
+      
+      // Parse the content, handling both string and object formats
       const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
       
-      // Extract the complaints array from the response
-      analysisResult = Array.isArray(parsedContent) ? parsedContent : parsedContent.complaints || [];
+      // Extract the complaints array, ensuring we get all complaints
+      analysisResult = Array.isArray(parsedContent) ? parsedContent : 
+                      Array.isArray(parsedContent.complaints) ? parsedContent.complaints :
+                      parsedContent.data || [];
       
       if (!Array.isArray(analysisResult)) {
         console.error('Response is not an array:', analysisResult);
         throw new Error('Response is not an array');
       }
       
-      // Ensure each item has the required properties and correct types
-      analysisResult = analysisResult.map(item => ({
-        summary: String(item.summary || ''),
-        volume: Number(item.volume) || 0,
-        complaints: Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
-          text: String(complaint.text || ''),
-          source: String(complaint.source || ''),
-          url: String(complaint.url || '')
-        })) : []
-      }));
+      // Validate and normalize each complaint theme
+      analysisResult = analysisResult.map(item => {
+        if (!Array.isArray(item.complaints)) {
+          console.error('Invalid complaints array for theme:', item);
+          item.complaints = [];
+        }
+        
+        return {
+          summary: String(item.summary || ''),
+          volume: item.complaints.length, // Set volume to actual number of complaints
+          complaints: item.complaints.map(complaint => ({
+            text: String(complaint.text || ''),
+            source: String(complaint.source || ''),
+            url: String(complaint.url || '')
+          }))
+        };
+      });
 
-      // Verify that complaint counts match the actual number of complaints
-      analysisResult = analysisResult.map(item => ({
-        ...item,
-        volume: item.complaints.length // Ensure volume matches actual number of complaints
-      }));
+      // Sort by actual volume
+      analysisResult.sort((a, b) => b.volume - a.volume);
+      
+      console.log('Processed analysis result:', analysisResult);
       
     } catch (error) {
       console.error('Error parsing OpenAI response:', error);
       console.log('Raw content:', data.choices[0].message.content);
       throw new Error('Failed to parse OpenAI response as JSON');
     }
-
-    console.log('Final analysis result:', analysisResult);
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
