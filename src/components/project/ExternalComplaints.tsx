@@ -108,7 +108,9 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  if (!complaints || complaints.length === 0) {
+  const hasComplaints = complaints && complaints.length > 0 && complaints.some(c => c.volume > 0);
+
+  if (!hasComplaints) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
@@ -151,7 +153,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </div>
 
       <div className="overflow-x-auto">
-        {!selectedTheme && complaints && complaints.length > 0 && (
+        {!selectedTheme && (
           <Table>
             <TableHeader>
               <TableRow>
