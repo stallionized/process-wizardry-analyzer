@@ -14,15 +14,16 @@ import {
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+interface ComplaintDetail {
+  text: string;
+  source: string;
+  url: string;
+}
+
 interface ComplaintTheme {
   summary: string;
   volume: number;
-  examples: string[];
-}
-
-interface ComplaintDetail {
-  complaint: string;
-  source: string;
+  complaints: ComplaintDetail[];
 }
 
 interface ExternalComplaintsProps {
@@ -162,17 +163,17 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {complaint.examples.map((example, exampleIndex) => (
+                      {complaint.complaints.slice(0, 3).map((example, exampleIndex) => (
                         <a
                           key={exampleIndex}
-                          href={example.startsWith('http') ? example : '#'}
+                          href={example.url || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary hover:underline"
                           onClick={(e) => {
-                            if (!example.startsWith('http')) {
+                            if (!example.url) {
                               e.preventDefault();
-                              toast.info(example);
+                              toast.info(example.text);
                             }
                           }}
                         >
@@ -194,21 +195,21 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedComplaint?.examples.map((example, index) => (
+              {selectedComplaint?.complaints.map((complaint, index) => (
                 <TableRow key={index}>
-                  <TableCell>{example}</TableCell>
+                  <TableCell>{complaint.text}</TableCell>
                   <TableCell>
-                    {example.startsWith('http') ? (
+                    {complaint.url ? (
                       <a
-                        href={example}
+                        href={complaint.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        {new URL(example).hostname}
+                        {complaint.source}
                       </a>
                     ) : (
-                      'Direct Report'
+                      complaint.source
                     )}
                   </TableCell>
                 </TableRow>

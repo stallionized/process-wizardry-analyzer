@@ -43,7 +43,7 @@ serve(async (req) => {
     1. Verify the complaint is about this specific company (${companyName})
     2. Look for patterns across multiple sources
     3. Count the frequency of similar complaints
-    4. Note specific examples with sources when possible
+    4. For each complaint theme, provide up to 20 specific examples with their sources
     5. If available, include direct links to complaint sources
 
     ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
@@ -52,10 +52,12 @@ serve(async (req) => {
     {
       "summary": "Clear description of the complaint theme",
       "volume": number (estimated complaint count),
-      "examples": [
-        "Specific complaint 1 with source",
-        "Specific complaint 2 with source",
-        "Specific complaint 3 with source"
+      "complaints": [
+        {
+          "text": "The specific complaint text",
+          "source": "Name of the source website",
+          "url": "Direct URL to the complaint if available"
+        }
       ]
     }
 
@@ -78,13 +80,13 @@ serve(async (req) => {
             content: `You are an AI trained to analyze customer complaints across multiple platforms. You must:
 1. Always verify complaints are about the correct company
 2. Include specific examples with sources
-3. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), examples (array of 3 strings)
+3. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)
 4. Never include additional properties or formatting`
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     });
 
@@ -115,7 +117,11 @@ serve(async (req) => {
       analysisResult = analysisResult.map(item => ({
         summary: String(item.summary || ''),
         volume: Number(item.volume) || 0,
-        examples: Array.isArray(item.examples) ? item.examples.map(String) : []
+        complaints: Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
+          text: String(complaint.text || ''),
+          source: String(complaint.source || ''),
+          url: String(complaint.url || '')
+        })) : []
       }));
       
     } catch (error) {
