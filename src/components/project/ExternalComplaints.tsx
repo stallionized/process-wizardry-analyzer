@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ComplaintTheme {
   summary: string;
@@ -19,11 +20,18 @@ interface ComplaintTheme {
   examples: string[];
 }
 
+interface ComplaintDetail {
+  complaint: string;
+  source: string;
+}
+
 interface ExternalComplaintsProps {
   projectId: string;
 }
 
 const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+
   const { data: projectDetails, isLoading: isLoadingProject } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
@@ -114,48 +122,100 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
+  const selectedComplaint = complaints.find(c => c.summary === selectedTheme);
+
   return (
     <Card className="p-8">
-      <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-semibold">External Complaints Analysis</h2>
+        {selectedTheme && (
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedTheme(null)}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Summary
+          </Button>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-1/2">Complaint Theme/Trend</TableHead>
-              <TableHead className="w-1/4 text-right">Volume</TableHead>
-              <TableHead className="w-1/4 text-right">Example Links</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {complaints.map((complaint, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{complaint.summary}</TableCell>
-                <TableCell className="text-right">{complaint.volume}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {complaint.examples.map((example, exampleIndex) => (
+        {!selectedTheme ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-1/2">Complaint Theme/Trend</TableHead>
+                <TableHead className="w-1/4 text-right">Volume</TableHead>
+                <TableHead className="w-1/4 text-right">Example Links</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {complaints.map((complaint, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{complaint.summary}</TableCell>
+                  <TableCell 
+                    className="text-right cursor-pointer hover:text-primary hover:underline"
+                    onClick={() => setSelectedTheme(complaint.summary)}
+                  >
+                    {complaint.volume}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {complaint.examples.map((example, exampleIndex) => (
+                        <a
+                          key={exampleIndex}
+                          href={example.startsWith('http') ? example : '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                          onClick={(e) => {
+                            if (!example.startsWith('http')) {
+                              e.preventDefault();
+                              toast.info(example);
+                            }
+                          }}
+                        >
+                          {exampleIndex + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-2/3">Complaint</TableHead>
+                <TableHead className="w-1/3">Source</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {selectedComplaint?.examples.map((example, index) => (
+                <TableRow key={index}>
+                  <TableCell>{example}</TableCell>
+                  <TableCell>
+                    {example.startsWith('http') ? (
                       <a
-                        key={exampleIndex}
-                        href={example.startsWith('http') ? example : '#'}
+                        href={example}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
-                        onClick={(e) => {
-                          if (!example.startsWith('http')) {
-                            e.preventDefault();
-                            toast.info(example);
-                          }
-                        }}
                       >
-                        {exampleIndex + 1}
+                        {new URL(example).hostname}
                       </a>
-                    ))}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    ) : (
+                      'Direct Report'
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </Card>
   );
