@@ -94,7 +94,7 @@ serve(async (req) => {
     Sort by volume in descending order. Include ONLY verified complaints about ${companyName}.
     If truly no complaints are found, return an empty array: []`;
 
-    console.log('Sending request to OpenAI with prompt:', prompt);
+    console.log('Sending request to OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -131,27 +131,46 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('OpenAI response received:', data);
+    console.log('OpenAI response received. Attempting to parse content...');
 
     if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid response format from OpenAI:', data);
       throw new Error('Invalid response format from OpenAI');
+    }
+
+    let rawContent = data.choices[0].message.content;
+    console.log('Raw content from OpenAI:', rawContent);
+
+    // Try to clean the response if it's not valid JSON
+    rawContent = rawContent.trim();
+    if (rawContent.startsWith('```json')) {
+      rawContent = rawContent.replace(/```json\n?/, '').replace(/```$/, '');
+    }
+    if (rawContent.startsWith('```')) {
+      rawContent = rawContent.replace(/```\n?/, '').replace(/```$/, '');
     }
 
     let analysisResult;
     try {
-      analysisResult = JSON.parse(data.choices[0].message.content);
+      analysisResult = JSON.parse(rawContent);
       
       if (!Array.isArray(analysisResult)) {
         console.error('Response is not an array:', analysisResult);
         throw new Error('Response is not an array');
       }
       
+      // Validate and transform the data
       analysisResult = analysisResult.map(item => {
-        const complaints = Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
+        if (!item.complaints || !Array.isArray(item.complaints)) {
+          console.warn(`Invalid complaints array for theme "${item.summary}"`);
+          item.complaints = [];
+        }
+
+        const complaints = item.complaints.map(complaint => ({
           text: String(complaint.text || ''),
           source: String(complaint.source || ''),
           url: String(complaint.url || '')
-        })) : [];
+        }));
 
         return {
           summary: String(item.summary || ''),
@@ -160,7 +179,7 @@ serve(async (req) => {
         };
       });
       
-      console.log('Validated analysis result:', JSON.stringify(analysisResult, null, 2));
+      console.log('Successfully parsed and validated analysis result');
       console.log('Number of themes:', analysisResult.length);
       analysisResult.forEach(theme => {
         console.log(`Theme "${theme.summary}": ${theme.complaints.length} complaints`);
@@ -168,7 +187,7 @@ serve(async (req) => {
       
     } catch (error) {
       console.error('Error parsing OpenAI response:', error);
-      console.log('Raw content:', data.choices[0].message.content);
+      console.log('Problematic content:', rawContent);
       throw new Error('Failed to parse OpenAI response as JSON');
     }
 
