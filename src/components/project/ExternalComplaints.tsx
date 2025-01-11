@@ -62,6 +62,9 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       });
 
       if (response.error) throw response.error;
+      if (!response.data || response.data.length === 0) {
+        return null;
+      }
       return response.data as ComplaintTheme[];
     },
     enabled: !!projectDetails?.client_name,
@@ -108,37 +111,19 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  // Check if we have valid complaints data with actual content
-  const hasComplaints = complaints && 
-    Array.isArray(complaints) && 
-    complaints.length > 0 && 
-    complaints.some(c => c.complaints && c.complaints.length > 0);
-
-  if (!hasComplaints) {
+  if (!complaints || complaints.length === 0) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-        <div className="text-center py-8">
-          <p className="text-muted-foreground mb-2">
-            No complaints data found for {projectDetails.client_name}.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            This could mean either the company has no significant online complaints 
-            or the company name needs to be verified.
-          </p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => refetch()}
-          >
-            Try Again
-          </Button>
-        </div>
+        <p className="text-muted-foreground">
+          No complaints data found for {projectDetails.client_name}. 
+          This could mean either the company has no significant online complaints or the company name needs to be verified.
+        </p>
       </Card>
     );
   }
 
-  const selectedComplaint = complaints?.find(c => c.summary === selectedTheme);
+  const selectedComplaint = complaints.find(c => c.summary === selectedTheme);
 
   return (
     <Card className="p-8">
@@ -157,7 +142,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </div>
 
       <div className="overflow-x-auto">
-        {!selectedTheme && complaints && (
+        {!selectedTheme ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -174,7 +159,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                     className="text-right cursor-pointer hover:text-primary hover:underline"
                     onClick={() => setSelectedTheme(complaint.summary)}
                   >
-                    {complaint.complaints.length}
+                    {complaint.volume}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -201,8 +186,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               ))}
             </TableBody>
           </Table>
-        )}
-        {selectedTheme && selectedComplaint && (
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -211,7 +195,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedComplaint.complaints.map((complaint, index) => (
+              {selectedComplaint?.complaints.map((complaint, index) => (
                 <TableRow key={index}>
                   <TableCell>{complaint.text}</TableCell>
                   <TableCell>

@@ -9,6 +9,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -26,7 +27,7 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `You are a complaints analyst. Your task is to find and analyze REAL complaints about "${companyName}" from these sources:
+    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about "${companyName}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
@@ -37,40 +38,33 @@ serve(async (req) => {
     - Complaints Board
     - Ripoff Report
     - Pissed Consumer
-    - Consumer Financial Protection Bureau (CFPB)
-    - Social media platforms (Twitter, LinkedIn)
-    - Industry-specific review sites
 
-    CRITICAL RULES:
-    1. Focus on complaints from the last 2 years
-    2. Verify each complaint is specifically about ${companyName}
-    3. Group complaints into clear themes
-    4. For each theme:
-       - Include the EXACT complaint text
-       - Always include the source website
-       - Include the URL if available
-       - Never summarize or modify complaints
-    5. Count each unique complaint only once
-    6. Never generate fake complaints
-    7. If you find ANY complaints at all, you MUST include them
-    8. Return ALL complaints you find, grouped by theme
-    9. Sort themes by number of complaints (most to least)
+    Focus on complaints from the last 2 years. For each major complaint theme:
+    1. Verify the complaint is about this specific company (${companyName})
+    2. Look for patterns across multiple sources
+    3. Count the frequency of similar complaints
+    4. For each complaint theme, provide up to 20 specific examples with their sources
+    5. If available, include direct links to complaint sources
 
-    ${topics ? `IMPORTANT: Prioritize finding complaints about: ${topics}` : ''}
+    ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
-    Format your response as a JSON array of objects:
+    Respond with a JSON array of objects. Each object MUST have exactly these properties:
     {
-      "summary": "Theme description",
+      "summary": "Clear description of the complaint theme",
+      "volume": number (estimated complaint count),
       "complaints": [
         {
-          "text": "Exact complaint text",
-          "source": "Source website",
-          "url": "URL if available"
+          "text": "The specific complaint text",
+          "source": "Name of the source website",
+          "url": "Direct URL to the complaint if available"
         }
       ]
-    }`;
+    }
 
-    console.log('Sending request to OpenAI...');
+    Sort by volume in descending order. Include ONLY verified complaints about ${companyName}.
+    If truly no complaints are found, return an empty array: []`;
+
+    console.log('Sending request to OpenAI with prompt:', prompt);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -83,13 +77,16 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to find and analyze real customer complaints. Never generate fake complaints. Always include any complaints you find in your response.'
+            content: `You are an AI trained to analyze customer complaints across multiple platforms. You must:
+1. Always verify complaints are about the correct company
+2. Include specific examples with sources
+3. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)
+4. Never include additional properties or formatting`
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.1,
+        temperature: 0.7,
         max_tokens: 4000,
-        response_format: { type: "json_object" }
       }),
     });
 
@@ -100,7 +97,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('OpenAI response received');
+    console.log('OpenAI response received:', data);
 
     if (!data.choices?.[0]?.message?.content) {
       throw new Error('Invalid response format from OpenAI');
@@ -108,42 +105,32 @@ serve(async (req) => {
 
     let analysisResult;
     try {
-      const content = data.choices[0].message.content;
-      console.log('Raw content:', content);
+      analysisResult = JSON.parse(data.choices[0].message.content);
       
-      const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-      analysisResult = Array.isArray(parsedContent) ? parsedContent : 
-                      Array.isArray(parsedContent.complaints) ? parsedContent.complaints :
-                      parsedContent.data || [];
-      
+      // Validate the response format
       if (!Array.isArray(analysisResult)) {
         console.error('Response is not an array:', analysisResult);
         throw new Error('Response is not an array');
       }
       
-      // Process and validate complaints
-      analysisResult = analysisResult
-        .filter(item => item && item.complaints && Array.isArray(item.complaints) && item.complaints.length > 0)
-        .map(item => ({
-          summary: String(item.summary || '').trim(),
-          complaints: item.complaints
-            .filter(c => c && c.text)
-            .map(complaint => ({
-              text: String(complaint.text || '').trim(),
-              source: String(complaint.source || '').trim(),
-              url: String(complaint.url || '').trim()
-            }))
-        }))
-        .filter(item => item.complaints.length > 0)
-        .sort((a, b) => b.complaints.length - a.complaints.length);
-      
-      console.log('Found complaint themes:', analysisResult.length);
-      console.log('Total complaints:', analysisResult.reduce((sum, item) => sum + item.complaints.length, 0));
+      // Ensure each item has the required properties and correct types
+      analysisResult = analysisResult.map(item => ({
+        summary: String(item.summary || ''),
+        volume: Number(item.volume) || 0,
+        complaints: Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
+          text: String(complaint.text || ''),
+          source: String(complaint.source || ''),
+          url: String(complaint.url || '')
+        })) : []
+      }));
       
     } catch (error) {
-      console.error('Error processing OpenAI response:', error);
-      throw new Error('Failed to process complaints data');
+      console.error('Error parsing OpenAI response:', error);
+      console.log('Raw content:', data.choices[0].message.content);
+      throw new Error('Failed to parse OpenAI response as JSON');
     }
+
+    console.log('Final analysis result:', analysisResult);
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
