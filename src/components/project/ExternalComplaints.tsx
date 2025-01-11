@@ -3,54 +3,67 @@ import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Loader2 } from 'lucide-react';
+
+interface ComplaintTheme {
+  summary: string;
+  volume: number;
+  examples: string[];
+}
 
 interface ExternalComplaintsProps {
   projectId: string;
 }
 
 const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
-  const { data: complaints, isLoading, error } = useQuery({
-    queryKey: ['complaints', projectId],
+  const { data: projectDetails } = useQuery({
+    queryKey: ['project', projectId],
     queryFn: async () => {
-      console.log('Fetching external complaints for project:', projectId);
-      const { data: files } = await supabase
-        .from('files')
-        .select('*')
-        .eq('project_id', projectId)
-        .is('deleted_at', null);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('client_name, topics')
+        .eq('id', projectId)
+        .single();
 
-      if (!files?.length) {
-        console.log('No files found for complaints analysis');
-        return null;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: complaints, isLoading, error } = useQuery({
+    queryKey: ['complaints', projectId, projectDetails?.client_name, projectDetails?.topics],
+    queryFn: async () => {
+      if (!projectDetails?.client_name) {
+        throw new Error('Company name is required');
       }
 
-      const response = await supabase.functions.invoke('analyze-trends', {
-        body: { projectId, files, type: 'complaints' }
+      const response = await supabase.functions.invoke('analyze-complaints', {
+        body: {
+          companyName: projectDetails.client_name,
+          topics: projectDetails.topics,
+        },
       });
 
-      if (response.error) {
-        console.error('Error analyzing complaints:', response.error);
-        throw response.error;
-      }
-
-      return response.data;
+      if (response.error) throw response.error;
+      return response.data as ComplaintTheme[];
     },
-    refetchInterval: (data) => (!data ? 5000 : false),
-    retry: 3,
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error in complaints analysis:', error);
-        toast.error('Failed to analyze complaints. Please try again later.');
-      }
-    }
+    enabled: !!projectDetails?.client_name,
   });
 
   if (isLoading) {
     return (
       <Card className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-1/4"></div>
-          <div className="h-24 bg-muted rounded"></div>
+        <div className="flex items-center justify-center space-x-2">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <p>Analyzing complaints data...</p>
         </div>
       </Card>
     );
@@ -61,7 +74,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
         <p className="text-red-500">
-          Failed to load complaints analysis. Please try again later.
+          Failed to analyze complaints. Please ensure a company name is provided in the project details.
         </p>
       </Card>
     );
@@ -72,7 +85,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
         <p className="text-muted-foreground">
-          Analysis will appear here after processing your dataset.
+          Analysis will appear here after processing the company's complaint data.
         </p>
       </Card>
     );
@@ -81,12 +94,45 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
   return (
     <Card className="p-8">
       <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-      <div className="prose prose-gray max-w-none">
-        <div className="bg-muted/30 p-6 rounded-lg">
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-            {complaints.summary}
-          </p>
-        </div>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-1/2">Complaint Theme/Trend</TableHead>
+              <TableHead className="w-1/4 text-right">Volume</TableHead>
+              <TableHead className="w-1/4 text-right">Example Links</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {complaints.map((complaint, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{complaint.summary}</TableCell>
+                <TableCell className="text-right">{complaint.volume}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    {complaint.examples.map((example, exampleIndex) => (
+                      <a
+                        key={exampleIndex}
+                        href={example.startsWith('http') ? example : '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                        onClick={(e) => {
+                          if (!example.startsWith('http')) {
+                            e.preventDefault();
+                            toast.info(example);
+                          }
+                        }}
+                      >
+                        {exampleIndex + 1}
+                      </a>
+                    ))}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </Card>
   );
