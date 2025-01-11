@@ -14,25 +14,22 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Step 1: Starting complaint analysis');
+    
     if (!openAIApiKey) {
-      console.error('OPENAI_API_KEY is not configured');
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const { companyName, topics } = await req.json();
-    console.log('Step 1: Received request with:', { companyName, topics });
-    
-    if (!companyName) {
-      console.error('Company name is required');
-      throw new Error('Company name is required');
-    }
+    // Test with a sample company to validate OpenAI integration
+    const testCompany = "Apple";
+    console.log('Step 2: Testing with sample company:', testCompany);
 
-    const prompt = `Analyze complaints about the company "${companyName}" from sources like BBB, Trustpilot, Consumer Affairs, and social media. ${topics ? `Focus on complaints about: ${topics}` : ''}
+    const prompt = `Analyze complaints about the company "${testCompany}" from sources like BBB, Trustpilot, Consumer Affairs, and social media.
 
 Return a JSON array of complaint themes, where each theme has:
 {
   "summary": "Brief description of the complaint theme",
-  "volume": "Number of complaints found",
+  "volume": "Number of complaints found (numeric)",
   "complaints": [
     {
       "text": "The specific complaint text",
@@ -42,8 +39,8 @@ Return a JSON array of complaint themes, where each theme has:
   ]
 }`;
 
-    console.log('Step 2: Sending request to OpenAI with prompt:', prompt);
-
+    console.log('Step 3: Sending request to OpenAI');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -55,17 +52,16 @@ Return a JSON array of complaint themes, where each theme has:
         messages: [
           { 
             role: 'system', 
-            content: 'You are a complaints analyst. Return only a valid JSON array of complaint themes.'
+            content: 'You are a complaints analyst. Return only a valid JSON array of complaint themes. Each theme must have a summary, numeric volume, and array of complaints with text, source, and optional url.'
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 4000,
         response_format: { type: "json_object" }
       }),
     });
 
-    console.log('Step 3: Received response from OpenAI with status:', response.status);
+    console.log('Step 4: Received response from OpenAI with status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -74,7 +70,7 @@ Return a JSON array of complaint themes, where each theme has:
     }
 
     const data = await response.json();
-    console.log('Step 4: Raw OpenAI response:', JSON.stringify(data));
+    console.log('Step 5: Raw OpenAI response:', JSON.stringify(data));
 
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid OpenAI response format:', data);
@@ -82,11 +78,39 @@ Return a JSON array of complaint themes, where each theme has:
     }
 
     let rawContent = data.choices[0].message.content;
-    console.log('Step 5: OpenAI content:', rawContent);
+    console.log('Step 6: OpenAI content:', rawContent);
 
     try {
       const parsedContent = JSON.parse(rawContent);
-      console.log('Step 6: Successfully parsed JSON content:', parsedContent);
+      console.log('Step 7: Successfully parsed JSON content:', parsedContent);
+
+      // Validate the response structure
+      if (!Array.isArray(parsedContent.complaints)) {
+        throw new Error('Response is not an array of complaints');
+      }
+
+      // Validate each complaint theme
+      parsedContent.complaints.forEach((theme: any, index: number) => {
+        if (!theme.summary || typeof theme.summary !== 'string') {
+          throw new Error(`Theme ${index} missing valid summary`);
+        }
+        if (!theme.volume || typeof theme.volume !== 'number') {
+          throw new Error(`Theme ${index} missing valid volume number`);
+        }
+        if (!Array.isArray(theme.complaints)) {
+          throw new Error(`Theme ${index} missing complaints array`);
+        }
+        theme.complaints.forEach((complaint: any, complaintIndex: number) => {
+          if (!complaint.text || typeof complaint.text !== 'string') {
+            throw new Error(`Complaint ${complaintIndex} in theme ${index} missing valid text`);
+          }
+          if (!complaint.source || typeof complaint.source !== 'string') {
+            throw new Error(`Complaint ${complaintIndex} in theme ${index} missing valid source`);
+          }
+        });
+      });
+
+      console.log('Step 8: Validation successful, returning response');
 
       return new Response(JSON.stringify(parsedContent), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -95,7 +119,7 @@ Return a JSON array of complaint themes, where each theme has:
     } catch (error) {
       console.error('Error processing OpenAI response:', error);
       console.log('Problematic content:', rawContent);
-      throw new Error('Failed to process OpenAI response');
+      throw new Error(`Failed to process OpenAI response: ${error.message}`);
     }
   } catch (error) {
     console.error('Error in analyze-complaints function:', error);
