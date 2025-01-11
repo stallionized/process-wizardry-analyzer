@@ -75,10 +75,20 @@ serve(async (req) => {
 
     ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
-    IMPORTANT: You must return ALL complaints found for each theme, with no limit on the number of complaints per theme.
-    Make sure the volume number matches exactly the number of complaints provided in the complaints array.`;
+    IMPORTANT: Return a valid JSON array of objects. Each object MUST have exactly these properties:
+    {
+      "summary": "Clear description of the complaint theme",
+      "volume": number (must exactly match the number of complaints in the complaints array),
+      "complaints": [
+        {
+          "text": "The specific complaint text",
+          "source": "Name of the source website",
+          "url": "Direct URL to the complaint if available"
+        }
+      ]
+    }`;
 
-    console.log('Sending request to OpenAI...');
+    console.log('Sending request to OpenAI with prompt:', prompt);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -91,7 +101,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to analyze customer complaints across multiple platforms. Return a JSON array of objects with exactly these properties for each complaint theme: summary (string), volume (number matching the number of complaints), complaints (array of objects with text, source, and url).'
+            content: 'You are an AI trained to analyze customer complaints. You must return a valid JSON array of complaint themes. Each theme must have: summary (string), volume (number), and complaints (array of objects with text, source, and url properties).'
           },
           { role: 'user', content: prompt }
         ],
@@ -102,13 +112,13 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error response:', errorData);
+      const errorText = await response.text();
+      console.error('OpenAI API error response:', errorText);
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response received:', data);
+    console.log('Raw OpenAI response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid response format from OpenAI:', data);
@@ -116,11 +126,11 @@ serve(async (req) => {
     }
 
     let rawContent = data.choices[0].message.content;
-    console.log('Raw content from OpenAI:', rawContent);
+    console.log('Content from OpenAI:', rawContent);
 
     try {
       const parsedContent = JSON.parse(rawContent);
-      console.log('Successfully parsed content:', parsedContent);
+      console.log('Successfully parsed JSON content:', parsedContent);
       
       // Extract the array from the response
       const analysisResult = Array.isArray(parsedContent) ? parsedContent : 
@@ -133,17 +143,30 @@ serve(async (req) => {
       }
 
       // Validate and format each complaint theme
-      const validatedResults = analysisResult.map(item => ({
-        summary: String(item.summary || ''),
-        volume: Array.isArray(item.complaints) ? item.complaints.length : 0,
-        complaints: Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
+      const validatedResults = analysisResult.map(item => {
+        if (!item.complaints || !Array.isArray(item.complaints)) {
+          console.warn(`Invalid complaints array for theme "${item.summary}"`);
+          return {
+            summary: String(item.summary || ''),
+            volume: 0,
+            complaints: []
+          };
+        }
+
+        const complaints = item.complaints.map(complaint => ({
           text: String(complaint.text || ''),
           source: String(complaint.source || ''),
           url: String(complaint.url || '')
-        })) : []
-      }));
+        }));
 
-      console.log('Successfully validated results:', validatedResults);
+        return {
+          summary: String(item.summary || ''),
+          volume: complaints.length,
+          complaints
+        };
+      });
+
+      console.log('Final validated results:', validatedResults);
       return new Response(JSON.stringify(validatedResults), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
