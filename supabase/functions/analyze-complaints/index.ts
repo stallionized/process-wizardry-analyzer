@@ -36,17 +36,38 @@ serve(async (req) => {
       ...getCompanyVariations(companyName)
     ].join('", "');
 
-    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from these sources:
+    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from ALL of these sources:
+
+    Major Review & Complaint Platforms:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
     - Consumer Affairs
     - Google Reviews
-    - Facebook
-    - Reddit (especially r/consumer)
-    - Complaints Board
+    - ComplaintsBoard
     - Ripoff Report
     - Pissed Consumer
+    - SiteJabber
+    - Complaints.com
+    - Angie's List
+
+    Government & Consumer Protection:
+    - Consumer Financial Protection Bureau (CFPB)
+    - Federal Trade Commission (FTC)
+    - National Consumer League (NCL)
+
+    Social Media & Forums:
+    - Facebook
+    - Twitter
+    - Instagram
+    - Reddit (especially r/consumer and company-specific subreddits)
+    - LinkedIn
+
+    Industry-Specific:
+    - Amazon Customer Service (if applicable)
+    - TripAdvisor (if applicable)
+    - Skytrax (if applicable)
+    - Hotel Complaint sites (if applicable)
 
     Focus on complaints from the last 2 years. For each major complaint theme:
     1. Verify the complaint is about this specific company
@@ -95,7 +116,9 @@ serve(async (req) => {
 3. Ensure the volume number exactly matches the number of complaints in the complaints array
 4. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)
 5. Never include additional properties or formatting
-6. Never return an empty array unless absolutely no complaints exist`
+6. Never return an empty array unless absolutely no complaints exist
+7. Search thoroughly across all provided platforms
+8. Include direct URLs whenever possible`
           },
           { role: 'user', content: prompt }
         ],
@@ -184,7 +207,12 @@ function getCompanyVariations(companyName: string): string[] {
       'Anheuser Busch',
       'AB InBev',
       'Bud',
-      'Bud Light'
+      'Bud Light',
+      'Budweiser Brewing Company',
+      'Anheuser-Busch InBev',
+      'AB InBev SA/NV',
+      'Busch',
+      'Anheuser-Busch Companies'
     );
   }
   // Add more company-specific variations as needed
