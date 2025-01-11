@@ -76,23 +76,7 @@ serve(async (req) => {
     ${topics ? `Pay special attention to complaints about: ${topics}` : ''}
 
     IMPORTANT: You must return ALL complaints found for each theme, with no limit on the number of complaints per theme.
-    Make sure the volume number matches exactly the number of complaints provided in the complaints array.
-
-    Return a valid JSON array of objects. Each object MUST have exactly these properties:
-    {
-      "summary": "Clear description of the complaint theme",
-      "volume": number (must exactly match the number of complaints in the complaints array),
-      "complaints": [
-        {
-          "text": "The specific complaint text",
-          "source": "Name of the source website",
-          "url": "Direct URL to the complaint if available"
-        }
-      ]
-    }
-
-    Sort by volume in descending order. Include ONLY verified complaints about ${companyName}.
-    If truly no complaints are found, return an empty array: []`;
+    Make sure the volume number matches exactly the number of complaints provided in the complaints array.`;
 
     console.log('Sending request to OpenAI...');
 
@@ -107,7 +91,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an AI trained to analyze customer complaints across multiple platforms. You must return ONLY valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url). Never include markdown formatting or additional text.'
+            content: 'You are an AI trained to analyze customer complaints across multiple platforms. Return a JSON array of objects with exactly these properties for each complaint theme: summary (string), volume (number matching the number of complaints), complaints (array of objects with text, source, and url).'
           },
           { role: 'user', content: prompt }
         ],
@@ -138,7 +122,7 @@ serve(async (req) => {
       const parsedContent = JSON.parse(rawContent);
       console.log('Successfully parsed content:', parsedContent);
       
-      // Extract the array from the response, handling both direct array and nested data property
+      // Extract the array from the response
       const analysisResult = Array.isArray(parsedContent) ? parsedContent : 
                             Array.isArray(parsedContent.data) ? parsedContent.data : 
                             null;
@@ -148,31 +132,18 @@ serve(async (req) => {
         throw new Error('Response is not a valid array');
       }
 
-      const validatedResults = analysisResult.map(item => {
-        if (!item.complaints || !Array.isArray(item.complaints)) {
-          console.warn(`Invalid complaints array for theme "${item.summary}"`);
-          item.complaints = [];
-        }
-
-        const complaints = item.complaints.map(complaint => ({
+      // Validate and format each complaint theme
+      const validatedResults = analysisResult.map(item => ({
+        summary: String(item.summary || ''),
+        volume: Array.isArray(item.complaints) ? item.complaints.length : 0,
+        complaints: Array.isArray(item.complaints) ? item.complaints.map(complaint => ({
           text: String(complaint.text || ''),
           source: String(complaint.source || ''),
           url: String(complaint.url || '')
-        }));
+        })) : []
+      }));
 
-        return {
-          summary: String(item.summary || ''),
-          volume: complaints.length,
-          complaints
-        };
-      });
-
-      console.log('Successfully parsed and validated analysis result');
-      console.log('Number of themes:', validatedResults.length);
-      validatedResults.forEach(theme => {
-        console.log(`Theme "${theme.summary}": ${theme.complaints.length} complaints`);
-      });
-
+      console.log('Successfully validated results:', validatedResults);
       return new Response(JSON.stringify(validatedResults), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
