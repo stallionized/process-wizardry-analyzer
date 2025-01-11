@@ -27,7 +27,16 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about "${companyName}" from these sources:
+    // Add common variations of the company name
+    const companyVariations = [
+      companyName,
+      companyName.toLowerCase(),
+      companyName.toUpperCase(),
+      // Add common abbreviations or alternate names
+      ...getCompanyVariations(companyName)
+    ].join('", "');
+
+    let prompt = `Act as a consumer complaints analyst. Search and analyze real complaints about any of these company names: "${companyVariations}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
@@ -40,7 +49,7 @@ serve(async (req) => {
     - Pissed Consumer
 
     Focus on complaints from the last 2 years. For each major complaint theme:
-    1. Verify the complaint is about this specific company (${companyName})
+    1. Verify the complaint is about this specific company
     2. Look for patterns across multiple sources
     3. Count the frequency of similar complaints
     4. For each complaint theme, provide ALL specific examples with their sources (do not limit the number of examples)
@@ -85,7 +94,8 @@ serve(async (req) => {
 2. Include ALL specific examples with sources, do not limit the number of complaints
 3. Ensure the volume number exactly matches the number of complaints in the complaints array
 4. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)
-5. Never include additional properties or formatting`
+5. Never include additional properties or formatting
+6. Never return an empty array unless absolutely no complaints exist`
           },
           { role: 'user', content: prompt }
         ],
@@ -162,3 +172,22 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to generate company name variations
+function getCompanyVariations(companyName: string): string[] {
+  const variations = [];
+  
+  // Add common variations
+  if (companyName.toLowerCase().includes('budweiser')) {
+    variations.push(
+      'Anheuser-Busch',
+      'Anheuser Busch',
+      'AB InBev',
+      'Bud',
+      'Bud Light'
+    );
+  }
+  // Add more company-specific variations as needed
+  
+  return variations;
+}
