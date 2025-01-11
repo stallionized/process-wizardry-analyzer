@@ -27,7 +27,7 @@ serve(async (req) => {
 
     console.log('Analyzing complaints for company:', companyName, 'topics:', topics);
     
-    let prompt = `Act as a consumer complaints analyst. Your task is to perform a comprehensive analysis of complaints about "${companyName}" from these sources:
+    let prompt = `Act as a consumer complaints analyst. Analyze complaints about "${companyName}" from these sources:
     - Better Business Bureau (BBB)
     - Trustpilot
     - Yelp
@@ -56,13 +56,13 @@ serve(async (req) => {
     7. If a complaint appears on multiple sites, count it only once
     8. DO NOT LIMIT the number of complaints per theme
     9. Return the top 20 themes by complaint volume
+    10. IMPORTANT: If you find ANY complaints at all, you MUST include them in the response
 
     ${topics ? `Pay special attention to complaints about: ${topics}. Prioritize these topics when identifying themes.` : ''}
 
     Format the response as a JSON array where each object has:
     {
       "summary": "Clear description of the complaint theme",
-      "volume": exact number of verified complaints found,
       "complaints": [
         {
           "text": "The exact complaint text",
@@ -72,7 +72,7 @@ serve(async (req) => {
       ]
     }
 
-    Sort themes by volume in descending order and return only the top 20 themes.
+    Sort themes by number of complaints in descending order and return only the top 20 themes.
     If no complaints are found, return an empty array: []`;
 
     console.log('Sending request to OpenAI with prompt:', prompt);
@@ -96,7 +96,8 @@ serve(async (req) => {
 5. Include specific sources and URLs when available
 6. Return ALL complaints within each theme
 7. Limit response to top 20 themes by volume
-8. Respond with valid JSON arrays containing objects with exactly: summary (string), volume (number), complaints (array of objects with text, source, and url)`
+8. If you find ANY complaints at all, you MUST include them in the response
+9. Respond with valid JSON arrays containing objects with exactly: summary (string), complaints (array of objects with text, source, and url)`
           },
           { role: 'user', content: prompt }
         ],
@@ -136,26 +137,18 @@ serve(async (req) => {
       }
       
       // Validate and normalize each complaint theme
-      analysisResult = analysisResult.map(item => {
-        if (!Array.isArray(item.complaints)) {
-          console.error('Invalid complaints array for theme:', item);
-          item.complaints = [];
-        }
-        
-        return {
+      analysisResult = analysisResult
+        .filter(item => item.complaints && item.complaints.length > 0)
+        .map(item => ({
           summary: String(item.summary || ''),
-          volume: item.complaints.length,
-          complaints: item.complaints.map(complaint => ({
+          complaints: (item.complaints || []).map(complaint => ({
             text: String(complaint.text || ''),
             source: String(complaint.source || ''),
             url: String(complaint.url || '')
           }))
-        };
-      });
-
-      // Sort by volume and limit to top 20 themes
-      analysisResult = analysisResult
-        .sort((a, b) => b.volume - a.volume)
+        }))
+        .filter(item => item.complaints.length > 0)
+        .sort((a, b) => b.complaints.length - a.complaints.length)
         .slice(0, 20);
       
       console.log('Processed analysis result:', analysisResult);
