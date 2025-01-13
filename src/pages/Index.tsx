@@ -18,7 +18,6 @@ const Index = () => {
   const [projectName, setProjectName] = useState('');
   const [clientName, setClientName] = useState('');
   const [deadline, setDeadline] = useState<Date>();
-  const [topics, setTopics] = useState<string | null>(null);
 
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
     const newFiles = uploadedFiles.map(file => ({
@@ -73,8 +72,6 @@ const Index = () => {
             setClientName={setClientName}
             deadline={deadline}
             setDeadline={setDeadline}
-            topics={topics}
-            setTopics={setTopics}
           />
         </TabsContent>
 

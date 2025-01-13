@@ -178,7 +178,6 @@ export type Database = {
           id: string
           project_name: string
           status: Database["public"]["Enums"]["project_status"] | null
-          topics: string | null
           updated_at: string | null
           visible_in_client_portal: boolean | null
         }
@@ -191,7 +190,6 @@ export type Database = {
           id?: string
           project_name: string
           status?: Database["public"]["Enums"]["project_status"] | null
-          topics?: string | null
           updated_at?: string | null
           visible_in_client_portal?: boolean | null
         }
@@ -204,7 +202,6 @@ export type Database = {
           id?: string
           project_name?: string
           status?: Database["public"]["Enums"]["project_status"] | null
-          topics?: string | null
           updated_at?: string | null
           visible_in_client_portal?: boolean | null
         }
