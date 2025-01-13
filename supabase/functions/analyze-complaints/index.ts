@@ -18,7 +18,8 @@ serve(async (req) => {
     console.log('Analyzing complaints for:', companyName, 'Topics:', topics);
 
     if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+      console.error('OPENAI_API_KEY is not configured');
+      throw new Error('OpenAI API key is not configured');
     }
 
     const prompt = `Analyze customer complaints about ${companyName}${topics ? ` focusing on ${topics}` : ''} from sources like BBB, Trustpilot, Consumer Affairs, and social media.
