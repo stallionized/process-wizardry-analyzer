@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ProjectDetailsProps {
   projectName: string;
@@ -13,6 +14,8 @@ interface ProjectDetailsProps {
   setClientName: (value: string) => void;
   deadline: Date | undefined;
   setDeadline: (date: Date | undefined) => void;
+  topics: string;
+  setTopics: (value: string) => void;
 }
 
 const ProjectDetails = ({
@@ -21,19 +24,22 @@ const ProjectDetails = ({
   clientName,
   setClientName,
   deadline,
-  setDeadline
+  setDeadline,
+  topics,
+  setTopics
 }: ProjectDetailsProps) => {
-  // Store initial values to revert to on cancel
   const [initialValues] = useState({
     projectName,
     clientName,
     deadline,
+    topics,
     dateInput: deadline ? format(deadline, 'yyyy-MM-dd') : ''
   });
 
   const [dateInput, setDateInput] = useState(deadline ? format(deadline, 'yyyy-MM-dd') : '');
   const [tempProjectName, setTempProjectName] = useState(projectName);
   const [tempClientName, setTempClientName] = useState(clientName);
+  const [tempTopics, setTempTopics] = useState(topics);
 
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -47,12 +53,14 @@ const ProjectDetails = ({
   const handleSave = () => {
     setProjectName(tempProjectName);
     setClientName(tempClientName);
+    setTopics(tempTopics);
     toast.success('Project details saved successfully');
   };
 
   const handleCancel = () => {
     setTempProjectName(initialValues.projectName);
     setTempClientName(initialValues.clientName);
+    setTempTopics(initialValues.topics);
     setDateInput(initialValues.dateInput);
     if (initialValues.deadline) {
       setDeadline(initialValues.deadline);
@@ -80,6 +88,17 @@ const ProjectDetails = ({
             value={tempClientName}
             onChange={(e) => setTempClientName(e.target.value)}
             placeholder="Enter client name"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="topics">Topics (one per line)</Label>
+          <Textarea
+            id="topics"
+            value={tempTopics}
+            onChange={(e) => setTempTopics(e.target.value)}
+            placeholder="Enter topics to analyze, one per line"
+            className="min-h-[100px]"
           />
         </div>
 
