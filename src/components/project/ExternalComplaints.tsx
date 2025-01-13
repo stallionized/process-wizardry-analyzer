@@ -50,7 +50,19 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       });
 
       if (response.error) throw response.error;
-      return response.data;
+      
+      // Parse the complaints data if it's a string
+      const parsedData = {
+        companyInfo: typeof response.data.companyInfo === 'string' 
+          ? JSON.parse(response.data.companyInfo) 
+          : response.data.companyInfo,
+        complaints: typeof response.data.complaints === 'string' 
+          ? JSON.parse(response.data.complaints) 
+          : response.data.complaints
+      };
+
+      console.log('Parsed complaints data:', parsedData);
+      return parsedData;
     },
     enabled: !!project?.client_name,
   });
@@ -121,7 +133,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
 
       <ScrollArea className="h-[500px] rounded-md border">
         <div className="p-4 space-y-4">
-          {complaints?.map((complaint, index) => (
+          {Array.isArray(complaints) && complaints.map((complaint, index) => (
             <div key={index} className="p-4 rounded-lg bg-muted/50">
               <div className="flex justify-between items-start mb-2">
                 <span className="text-sm font-medium">{complaint.category}</span>
