@@ -40,6 +40,8 @@ const ProjectDashboard = () => {
           setClientName={(name) => updateProjectMutation.mutate({ client_name: name })}
           deadline={project.deadline ? new Date(project.deadline) : undefined}
           setDeadline={(date) => updateProjectMutation.mutate({ deadline: date?.toISOString() })}
+          topics={project.topics || ''}
+          setTopics={(topics) => updateProjectMutation.mutate({ topics })}
         />
       )
     },
