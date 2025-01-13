@@ -45,8 +45,9 @@ serve(async (req) => {
     // Construct prompt for GPT to simulate web scraping
     const prompt = `You are a web scraping assistant. For each of these websites: ${websites.join(', ')}, 
     find customer complaints about ${clientName} ${topics ? `related to these topics: ${topics}` : ''}.
-    Format each complaint as: "Website URL | Complaint Text"
-    Include at least 3-5 relevant complaints per website if available. Ensure complaints are realistic and relevant.`;
+    Format each complaint exactly like this, one per line:
+    "Website URL | Complaint Text"
+    Include 3-5 relevant complaints per website. Ensure complaints are realistic and relevant.`;
 
     // Get complaints from GPT
     const complaintsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -77,10 +78,11 @@ serve(async (req) => {
     // Analyze complaints for themes and trends
     const analysisPrompt = `Analyze these customer complaints and categorize them into themes and trends. 
     For each complaint, assign one theme (broad category) and one trend (specific pattern).
-    Format: "Complaint Text | Theme | Trend"
+    Format each line exactly like this:
+    "Source URL | Complaint Text | Theme | Trend"
     
     Complaints to analyze:
-    ${complaints.map(c => c.text).join('\n')}`;
+    ${complaints.map(c => `${c.source} | ${c.text}`).join('\n')}`;
 
     const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -172,12 +174,7 @@ function parseAnalysis(content: string): { source: string; text: string; theme: 
   return content.split('\n')
     .filter(line => line.includes('|'))
     .map(line => {
-      const [text, theme, trend] = line.split('|').map(s => s.trim());
-      return {
-        text,
-        theme,
-        trend,
-        source: 'Analyzed from multiple sources'
-      };
+      const [source, text, theme, trend] = line.split('|').map(s => s.trim());
+      return { source, text, theme, trend };
     });
 }
