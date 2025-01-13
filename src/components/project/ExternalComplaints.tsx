@@ -39,7 +39,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw error;
       }
 
-      return summaries;
+      return summaries || [];
     },
   });
 
@@ -60,7 +60,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw error;
       }
 
-      return complaints;
+      return complaints || [];
     },
     enabled: !!selectedCategory,
   });
@@ -162,17 +162,15 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
           </TableHeader>
           <TableBody>
             {summaries.map((summary, index) => (
-              <TableRow key={index}>
+              <TableRow key={index} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="font-medium">
                   {summary.theme}
                 </TableCell>
-                <TableCell className="text-right">
-                  <button
-                    onClick={() => setSelectedCategory(summary.theme)}
-                    className="text-primary hover:underline focus:outline-none"
-                  >
-                    {summary.volume}
-                  </button>
+                <TableCell 
+                  className="text-right text-primary hover:underline"
+                  onClick={() => setSelectedCategory(summary.theme)}
+                >
+                  {summary.volume}
                 </TableCell>
               </TableRow>
             ))}
