@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 
@@ -11,8 +10,7 @@ interface ExternalComplaintsProps {
 }
 
 interface ComplaintSummary {
-  theme: string;
-  trend: string;
+  classification: string;
   volume: number;
   sources: string[];
   complaints: string[];
@@ -24,8 +22,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
   const { data: summaries, isLoading, error } = useQuery({
     queryKey: ['complaints', projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('complaint_summaries')
+      const { data: complaints, error } = await supabase
+        .from('complaints')
         .select('*')
         .eq('project_id', projectId);
 
@@ -34,7 +32,29 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw error;
       }
 
-      return data as ComplaintSummary[];
+      // Group complaints by theme/trend combination
+      const groupedComplaints = complaints.reduce((acc: { [key: string]: ComplaintSummary }, complaint) => {
+        const classification = `${complaint.theme} - ${complaint.trend}`;
+        
+        if (!acc[classification]) {
+          acc[classification] = {
+            classification,
+            volume: 0,
+            sources: [],
+            complaints: []
+          };
+        }
+        
+        acc[classification].volume += 1;
+        if (!acc[classification].sources.includes(complaint.source_url)) {
+          acc[classification].sources.push(complaint.source_url);
+        }
+        acc[classification].complaints.push(complaint.complaint_text);
+        
+        return acc;
+      }, {});
+
+      return Object.values(groupedComplaints);
     },
   });
 
@@ -85,7 +105,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
             Back to Summary
           </Button>
           <h2 className="text-2xl font-semibold">
-            {selectedSummary.theme} - {selectedSummary.trend}
+            {selectedSummary.classification}
           </h2>
         </div>
         
@@ -123,16 +143,14 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         <table className="w-full">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2">Theme</th>
-              <th className="text-left py-2">Trend</th>
+              <th className="text-left py-2">Classification</th>
               <th className="text-right py-2">Volume</th>
             </tr>
           </thead>
           <tbody>
             {summaries.map((summary, index) => (
               <tr key={index} className="border-b">
-                <td className="py-2">{summary.theme}</td>
-                <td className="py-2">{summary.trend}</td>
+                <td className="py-2">{summary.classification}</td>
                 <td className="py-2 text-right">
                   <Button
                     variant="link"
