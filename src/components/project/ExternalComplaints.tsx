@@ -22,6 +22,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
   const { data: summaries, isLoading, error } = useQuery({
     queryKey: ['complaints', projectId],
     queryFn: async () => {
+      console.log('Fetching complaints for project:', projectId);
       const { data: complaints, error } = await supabase
         .from('complaints')
         .select('*')
@@ -31,6 +32,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         console.error('Error fetching complaints:', error);
         throw error;
       }
+
+      console.log('Fetched complaints:', complaints);
 
       // Group complaints by theme/trend combination
       const groupedComplaints = complaints.reduce((acc: { [key: string]: ComplaintSummary }, complaint) => {
@@ -56,6 +59,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
 
       return Object.values(groupedComplaints);
     },
+    refetchInterval: 5000, // Refetch every 5 seconds while analysis is running
   });
 
   if (isLoading) {

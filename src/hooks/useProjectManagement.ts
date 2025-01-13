@@ -29,8 +29,8 @@ export const useProjectManagement = (projectId: string) => {
       if (error) throw error;
 
       // Check if client_name or topics were included in the updates object
-      const clientNameChanged = 'client_name' in updates && updates.client_name !== project?.client_name;
-      const topicsChanged = 'topics' in updates && updates.topics !== project?.topics;
+      const clientNameChanged = 'client_name' in updates;
+      const topicsChanged = 'topics' in updates;
 
       console.log('Topics changed:', topicsChanged, {
         updateTopics: updates.topics,
@@ -38,7 +38,11 @@ export const useProjectManagement = (projectId: string) => {
       });
 
       if (clientNameChanged || topicsChanged) {
-        await analyzeComplaints(projectId, updates.client_name || project?.client_name, updates.topics || project?.topics);
+        await analyzeComplaints(
+          projectId, 
+          updates.client_name || project?.client_name || '', 
+          updates.topics || project?.topics || ''
+        );
       }
     },
     onSuccess: () => {
@@ -46,13 +50,15 @@ export const useProjectManagement = (projectId: string) => {
     },
   });
 
-  const analyzeComplaints = async (projectId: string, clientName?: string, topics?: string) => {
+  const analyzeComplaints = async (projectId: string, clientName: string, topics: string) => {
     if (!clientName) {
       console.log('No client name provided, skipping analysis');
       return;
     }
 
     try {
+      console.log('Starting complaints analysis with:', { projectId, clientName, topics });
+      
       const response = await supabase.functions.invoke('analyze-complaints', {
         body: { projectId, clientName, topics }
       });
