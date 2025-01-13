@@ -38,45 +38,40 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     },
   });
 
-  // First, try to fetch existing complaints from the database
-  const { data: existingComplaints, isLoading: isLoadingExisting } = useQuery({
-    queryKey: ['existing-complaints', projectId],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['complaints', projectId],
     queryFn: async () => {
-      const { data: complaints, error: complaintsError } = await supabase
+      // First try to get complaints from database
+      const { data: existingComplaints, error: complaintsError } = await supabase
         .from('complaints')
         .select('*')
         .eq('project_id', projectId);
 
       if (complaintsError) throw complaintsError;
 
-      const { data: summaries, error: summariesError } = await supabase
-        .from('complaint_summaries')
-        .select('*')
-        .eq('project_id', projectId)
-        .maybeSingle();
+      // If we have complaints in the database, use those
+      if (existingComplaints && existingComplaints.length > 0) {
+        const { data: summaries } = await supabase
+          .from('complaint_summaries')
+          .select('*')
+          .eq('project_id', projectId)
+          .maybeSingle();
 
-      if (summariesError) throw summariesError;
+        return {
+          complaints: existingComplaints.map(c => ({
+            source_url: c.source_url,
+            complaint_text: c.complaint_text,
+            date: new Date(c.created_at).toLocaleDateString(),
+            category: c.theme
+          })),
+          companyInfo: {
+            description: summaries ? `Analysis based on ${summaries.volume} complaints` : '',
+            variations: []
+          }
+        };
+      }
 
-      return {
-        complaints: complaints.map(c => ({
-          source_url: c.source_url,
-          complaint_text: c.complaint_text,
-          date: new Date(c.created_at).toLocaleDateString(),
-          category: c.theme
-        })),
-        companyInfo: summaries ? {
-          description: `Analysis based on ${summaries.volume} complaints`,
-          variations: []
-        } : null
-      };
-    },
-    enabled: !!projectId,
-  });
-
-  // Only fetch new complaints if none exist in the database
-  const { data: scrapedData, isLoading: isLoadingScraped, error: scrapedError } = useQuery({
-    queryKey: ['scraped-complaints', projectId],
-    queryFn: async () => {
+      // If no complaints in database, fetch new ones
       if (!project?.client_name) {
         throw new Error('Client name is required');
       }
@@ -98,12 +93,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
 
       return parsedData;
     },
-    enabled: !!project?.client_name && !existingComplaints?.complaints.length,
+    enabled: !!projectId,
   });
-
-  const isLoading = isLoadingExisting || isLoadingScraped;
-  const error = scrapedError;
-  const data = existingComplaints?.complaints.length ? existingComplaints : scrapedData;
 
   if (isLoading) {
     return (

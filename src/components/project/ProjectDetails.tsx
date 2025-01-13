@@ -58,7 +58,7 @@ const ProjectDetails = ({
     // If client name has changed, update it and invalidate the complaints query
     if (tempClientName !== clientName) {
       setClientName(tempClientName);
-      // Invalidate both the complaints query and the company info
+      // Invalidate both the complaints query and any existing complaints
       queryClient.invalidateQueries({ queryKey: ['complaints'] });
     }
     
