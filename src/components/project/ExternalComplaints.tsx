@@ -10,13 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -30,7 +25,6 @@ interface ComplaintDetail {
 
 const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
 
   const { data: summaries, isLoading } = useQuery({
     queryKey: ['complaint-summaries', projectId],
@@ -93,10 +87,66 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  const handleVolumeClick = (category: string) => {
-    setSelectedCategory(category);
-    setShowDetails(true);
-  };
+  if (selectedCategory) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedCategory(null)}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back to Summary
+          </Button>
+          <h2 className="text-2xl font-semibold">{selectedCategory} Complaints</h2>
+        </div>
+
+        {isLoadingDetails ? (
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-1/4"></div>
+            <div className="h-24 bg-muted rounded"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Verbatim Complaints</h3>
+              <div className="space-y-4">
+                {details?.map((detail, index) => (
+                  <div key={index} className="p-4 bg-muted rounded-lg">
+                    <p className="whitespace-pre-wrap text-sm">
+                      {detail.complaint_text}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(detail.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Sources</h3>
+              <div className="space-y-4">
+                {details?.map((detail, index) => (
+                  <div key={index} className="p-4 bg-muted rounded-lg">
+                    <a
+                      href={detail.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline text-sm block"
+                    >
+                      {detail.source_url}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6">
@@ -118,7 +168,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                 </TableCell>
                 <TableCell className="text-right">
                   <button
-                    onClick={() => handleVolumeClick(summary.theme)}
+                    onClick={() => setSelectedCategory(summary.theme)}
                     className="text-primary hover:underline focus:outline-none"
                   >
                     {summary.volume}
@@ -128,60 +178,6 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
             ))}
           </TableBody>
         </Table>
-
-        <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
-                {selectedCategory} - Detailed Complaints
-              </DialogTitle>
-              <DialogDescription>
-                Showing all verbatim complaints from various sources
-              </DialogDescription>
-            </DialogHeader>
-            
-            {isLoadingDetails ? (
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-muted rounded w-1/4"></div>
-                <div className="h-24 bg-muted rounded"></div>
-              </div>
-            ) : (
-              <div className="mt-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-3/5">Verbatim Complaint</TableHead>
-                      <TableHead className="w-1/5">Source</TableHead>
-                      <TableHead className="w-1/5">Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {details?.map((detail, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="whitespace-pre-wrap align-top">
-                          {detail.complaint_text}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <a 
-                            href={detail.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            View Source
-                          </a>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {new Date(detail.created_at).toLocaleDateString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </Card>
   );
