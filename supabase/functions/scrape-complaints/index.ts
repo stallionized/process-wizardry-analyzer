@@ -30,7 +30,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [{
           role: 'system',
           content: 'You are a research assistant helping to gather information about companies. Return only valid JSON without any comments.'
@@ -48,14 +48,7 @@ serve(async (req) => {
     }
 
     const descriptionData = await descriptionResponse.json();
-    let companyInfo;
-    try {
-      companyInfo = JSON.parse(descriptionData.choices[0].message.content);
-    } catch (error) {
-      console.error('Failed to parse company info:', error);
-      console.error('Raw content:', descriptionData.choices[0].message.content);
-      throw new Error('Invalid company info format');
-    }
+    const companyInfo = descriptionData.choices[0].message.content;
 
     // Now use this information to simulate complaint scraping
     const scrapingResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -65,7 +58,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [{
           role: 'system',
           content: 'You are a web scraping assistant that generates realistic complaint data based on common customer issues. Return only valid JSON array without any comments.'
@@ -83,14 +76,7 @@ serve(async (req) => {
     }
 
     const scrapingData = await scrapingResponse.json();
-    let complaints;
-    try {
-      complaints = JSON.parse(scrapingData.choices[0].message.content);
-    } catch (error) {
-      console.error('Failed to parse complaints:', error);
-      console.error('Raw content:', scrapingData.choices[0].message.content);
-      throw new Error('Invalid complaints format');
-    }
+    const complaints = scrapingData.choices[0].message.content;
 
     return new Response(JSON.stringify({
       companyInfo,
