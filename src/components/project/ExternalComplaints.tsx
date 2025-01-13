@@ -40,16 +40,22 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       const { data, error } = await supabase
         .from('complaint_summaries')
         .select('project_id, theme, volume, sources')
-        .eq('project_id', projectId)
-        .not('theme', 'eq', 'Theme'); // Filter out the template row
+        .eq('project_id', projectId);
 
       if (error) {
         console.error('Error fetching complaint summaries:', error);
         throw error;
       }
 
-      console.log('Received summaries:', data);
-      return data as ComplaintSummary[];
+      console.log('Raw summaries data:', data);
+      
+      // Filter out null themes and ensure we have valid data
+      const validSummaries = (data || []).filter(summary => 
+        summary.theme && summary.theme !== 'Theme' && summary.volume
+      );
+      
+      console.log('Filtered summaries:', validSummaries);
+      return validSummaries as ComplaintSummary[];
     },
   });
 
@@ -71,8 +77,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw error;
       }
 
-      console.log('Received details:', data);
-      return data as ComplaintDetail[];
+      console.log('Raw details data:', data);
+      return (data || []) as ComplaintDetail[];
     },
     enabled: !!selectedCategory,
   });
@@ -143,7 +149,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                 {details.map((detail, index) => (
                   <div key={index} className="p-4 bg-muted rounded-lg">
                     <a
-                      href={detail.source_url.replace(/^"(.*)"$/, '$1')} // Remove quotes if present
+                      href={detail.source_url.replace(/^"(.*)"$/, '$1')}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline text-sm block"
