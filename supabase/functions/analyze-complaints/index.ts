@@ -24,13 +24,43 @@ serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Generate search queries based on client name variations
-    const nameVariations = generateNameVariations(clientName);
+    // First, get company name variations using GPT
+    const variationsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a business analyst. List alternative names and common abbreviations for companies.' 
+          },
+          { 
+            role: 'user', 
+            content: `List 3-5 alternative names or abbreviations for ${clientName}, separated by commas. Include parent company names if relevant.` 
+          }
+        ],
+        temperature: 0.3,
+      }),
+    });
+
+    const variationsData = await variationsResponse.json();
+    const nameVariations = [
+      clientName,
+      ...variationsData.choices[0].message.content.split(',').map((name: string) => name.trim())
+    ];
+
+    console.log('Generated name variations:', nameVariations);
+
+    // Generate search queries based on name variations and topics
     const searchQueries = topics && topics.trim() !== ''
       ? topics.split('\n').flatMap(topic => 
-          nameVariations.map(name => `${name} ${topic.trim()} complaints`)
+          nameVariations.map(name => `${name} ${topic.trim()} complaints reviews`)
         )
-      : nameVariations.map(name => `${name} complaints reviews feedback`);
+      : nameVariations.map(name => `${name} complaints reviews feedback problems issues`);
 
     console.log('Generated search queries:', searchQueries);
 
@@ -42,15 +72,25 @@ serve(async (req) => {
       'sitejabber.com',
       'complaintsboard.com',
       'ripoffreport.com',
+      'reddit.com',
+      'pissedconsumer.com'
     ];
 
     // Construct prompt for GPT
-    const prompt = `You are a web scraping assistant. For each of these websites: ${websites.join(', ')}, 
-    find customer complaints about ${clientName}${topics ? ` related to these topics: ${topics}` : ''}.
+    const prompt = `You are a web scraping assistant analyzing customer complaints about ${clientName} and its variations (${nameVariations.join(', ')})
+    ${topics ? `focusing on these topics: ${topics}` : ''}.
+    
+    For each of these websites: ${websites.join(', ')}, provide 3-5 relevant complaints.
     Format each complaint exactly like this, one per line:
     "Website URL | Complaint Text"
-    Include 3-5 relevant complaints per website. Ensure complaints are realistic, specific, and relevant.
-    Each complaint should be unique and from a different perspective.`;
+    
+    Guidelines:
+    - Ensure complaints are specific and detailed
+    - Include dates or timeframes when possible
+    - Focus on recent complaints (last 2 years)
+    - Include complaint source URLs
+    - Make complaints realistic and fact-based
+    - Vary the issues and perspectives`;
 
     console.log('Sending prompt to GPT:', prompt);
 
@@ -62,9 +102,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o',
         messages: [
-          { role: 'system', content: 'You are a web scraping assistant.' },
+          { role: 'system', content: 'You are a web scraping assistant specializing in customer feedback analysis.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -81,8 +121,11 @@ serve(async (req) => {
     const complaints = parseComplaints(complaintsData.choices[0].message.content);
 
     // Analyze complaints for themes and trends
-    const analysisPrompt = `Analyze these customer complaints and categorize them into themes and trends. 
-    For each complaint, assign one theme (broad category) and one trend (specific pattern).
+    const analysisPrompt = `Analyze these customer complaints about ${clientName} and categorize them into themes and trends. 
+    For each complaint, assign:
+    1. Theme (broad category like Product Quality, Customer Service, etc.)
+    2. Trend (specific pattern or issue)
+    
     Format each line exactly like this:
     "Source URL | Complaint Text | Theme | Trend"
     
@@ -96,9 +139,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o',
         messages: [
-          { role: 'system', content: 'You are a complaint analysis expert.' },
+          { role: 'system', content: 'You are a complaint analysis expert specializing in customer feedback categorization.' },
           { role: 'user', content: analysisPrompt }
         ],
         temperature: 0.5,
