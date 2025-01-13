@@ -24,13 +24,15 @@ serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Generate search queries based on client name variations and topics
+    // Generate search queries based on client name variations
     const nameVariations = generateNameVariations(clientName);
-    const searchQueries = topics
+    const searchQueries = topics && topics.trim() !== ''
       ? topics.split('\n').flatMap(topic => 
           nameVariations.map(name => `${name} ${topic.trim()} complaints`)
         )
-      : nameVariations.map(name => `${name} complaints`);
+      : nameVariations.map(name => `${name} complaints reviews feedback`);
+
+    console.log('Generated search queries:', searchQueries);
 
     // Common complaint websites to search
     const websites = [
@@ -42,12 +44,15 @@ serve(async (req) => {
       'ripoffreport.com',
     ];
 
-    // Construct prompt for GPT to simulate web scraping
+    // Construct prompt for GPT
     const prompt = `You are a web scraping assistant. For each of these websites: ${websites.join(', ')}, 
-    find customer complaints about ${clientName} ${topics ? `related to these topics: ${topics}` : ''}.
+    find customer complaints about ${clientName}${topics ? ` related to these topics: ${topics}` : ''}.
     Format each complaint exactly like this, one per line:
     "Website URL | Complaint Text"
-    Include 3-5 relevant complaints per website. Ensure complaints are realistic and relevant.`;
+    Include 3-5 relevant complaints per website. Ensure complaints are realistic, specific, and relevant.
+    Each complaint should be unique and from a different perspective.`;
+
+    console.log('Sending prompt to GPT:', prompt);
 
     // Get complaints from GPT
     const complaintsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -57,7 +62,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           { role: 'system', content: 'You are a web scraping assistant.' },
           { role: 'user', content: prompt }
@@ -91,7 +96,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           { role: 'system', content: 'You are a complaint analysis expert.' },
           { role: 'user', content: analysisPrompt }
