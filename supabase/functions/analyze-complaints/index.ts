@@ -38,7 +38,7 @@ Return a JSON array of complaint themes, where each theme contains:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           { 
             role: 'system', 
@@ -69,10 +69,13 @@ Return a JSON array of complaint themes, where each theme contains:
     let complaints;
     try {
       const content = data.choices[0].message.content;
+      console.log('Attempting to parse content:', content);
+      
       complaints = JSON.parse(content);
       
       // Ensure we have an array
       if (!Array.isArray(complaints)) {
+        console.log('Converting non-array response to array');
         complaints = [complaints];
       }
 
@@ -89,7 +92,7 @@ Return a JSON array of complaint themes, where each theme contains:
 
       console.log('Validated complaints:', JSON.stringify(complaints));
     } catch (error) {
-      console.error('Error parsing OpenAI response:', error);
+      console.error('Error parsing OpenAI response:', error, 'Content:', data.choices[0].message.content);
       throw new Error('Failed to parse OpenAI response as valid JSON');
     }
 
