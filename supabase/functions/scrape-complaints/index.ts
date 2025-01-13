@@ -33,10 +33,10 @@ serve(async (req) => {
         model: 'gpt-4',
         messages: [{
           role: 'system',
-          content: 'You are a research assistant helping to gather information about companies.'
+          content: 'You are a research assistant helping to gather information about companies. Return only valid JSON without any comments.'
         }, {
           role: 'user',
-          content: `Please provide a brief description of ${clientName} and list common variations of their name that people might use when complaining online. Format as JSON with "description" and "variations" fields.`
+          content: `Create a JSON object with two fields: "description" (a brief description of ${clientName}) and "variations" (an array of common name variations people might use when complaining online).`
         }]
       })
     });
@@ -48,7 +48,14 @@ serve(async (req) => {
     }
 
     const descriptionData = await descriptionResponse.json();
-    const companyInfo = JSON.parse(descriptionData.choices[0].message.content);
+    let companyInfo;
+    try {
+      companyInfo = JSON.parse(descriptionData.choices[0].message.content);
+    } catch (error) {
+      console.error('Failed to parse company info:', error);
+      console.error('Raw content:', descriptionData.choices[0].message.content);
+      throw new Error('Invalid company info format');
+    }
 
     // Now use this information to simulate complaint scraping
     const scrapingResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -61,10 +68,10 @@ serve(async (req) => {
         model: 'gpt-4',
         messages: [{
           role: 'system',
-          content: 'You are a web scraping assistant that generates realistic complaint data based on common customer issues.'
+          content: 'You are a web scraping assistant that generates realistic complaint data based on common customer issues. Return only valid JSON array without any comments.'
         }, {
           role: 'user',
-          content: `Generate 100+ realistic complaints about ${clientName} (${companyInfo.description}). Include complaints from common review sites, social media, and consumer complaint forums. Format as JSON array with fields: source_url, complaint_text, date, category. Make the complaints diverse and realistic, referencing actual products/services of the company.`
+          content: `Generate an array of 100+ realistic complaints about ${clientName} (${companyInfo.description}). Each complaint should be a JSON object with these exact fields: source_url (string), complaint_text (string), date (string in YYYY-MM-DD format), category (string). Make complaints diverse and realistic, referencing actual products/services.`
         }]
       })
     });
@@ -76,7 +83,14 @@ serve(async (req) => {
     }
 
     const scrapingData = await scrapingResponse.json();
-    const complaints = JSON.parse(scrapingData.choices[0].message.content);
+    let complaints;
+    try {
+      complaints = JSON.parse(scrapingData.choices[0].message.content);
+    } catch (error) {
+      console.error('Failed to parse complaints:', error);
+      console.error('Raw content:', scrapingData.choices[0].message.content);
+      throw new Error('Invalid complaints format');
+    }
 
     return new Response(JSON.stringify({
       companyInfo,
