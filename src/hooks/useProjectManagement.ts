@@ -28,9 +28,14 @@ export const useProjectManagement = (projectId: string) => {
       
       if (error) throw error;
 
-      // Only trigger complaints analysis if client name or topics changed
-      const clientNameChanged = updates.client_name !== undefined && updates.client_name !== project?.client_name;
-      const topicsChanged = updates.topics !== undefined && updates.topics !== project?.topics;
+      // Check if client_name or topics were included in the updates object
+      const clientNameChanged = 'client_name' in updates && updates.client_name !== project?.client_name;
+      const topicsChanged = 'topics' in updates && updates.topics !== project?.topics;
+
+      console.log('Topics changed:', topicsChanged, {
+        updateTopics: updates.topics,
+        projectTopics: project?.topics
+      });
 
       if (clientNameChanged || topicsChanged) {
         await analyzeComplaints(projectId, updates.client_name || project?.client_name, updates.topics || project?.topics);
