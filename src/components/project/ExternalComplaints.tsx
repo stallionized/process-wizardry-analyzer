@@ -146,7 +146,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Complaint</TableHead>
+                    <TableHead>Verbatim Complaint</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
@@ -154,7 +154,9 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                 <TableBody>
                   {details?.map((detail, index) => (
                     <TableRow key={index}>
-                      <TableCell className="max-w-xl">{detail.complaint_text}</TableCell>
+                      <TableCell className="max-w-xl whitespace-pre-wrap">
+                        {detail.complaint_text}
+                      </TableCell>
                       <TableCell>
                         <a 
                           href={detail.source_url}
