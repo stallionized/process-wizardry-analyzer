@@ -278,7 +278,6 @@ export type Database = {
           project_id: string | null
           sources: string[] | null
           theme: string | null
-          trend: string | null
           volume: number | null
         }
         Relationships: [
