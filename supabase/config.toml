@@ -25,3 +25,6 @@ verify_jwt = false
 
 [functions.analyze-dataset]
 verify_jwt = false
+
+[functions.scrape-complaints]
+verify_jwt = false
