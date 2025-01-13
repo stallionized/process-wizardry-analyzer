@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -29,7 +30,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [{
           role: 'system',
           content: 'You are a research assistant helping to gather information about companies.'
@@ -39,6 +40,12 @@ serve(async (req) => {
         }]
       })
     });
+
+    if (!descriptionResponse.ok) {
+      const error = await descriptionResponse.text();
+      console.error('OpenAI API error:', error);
+      throw new Error('Failed to get company description');
+    }
 
     const descriptionData = await descriptionResponse.json();
     const companyInfo = JSON.parse(descriptionData.choices[0].message.content);
@@ -51,7 +58,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [{
           role: 'system',
           content: 'You are a web scraping assistant that generates realistic complaint data based on common customer issues.'
@@ -61,6 +68,12 @@ serve(async (req) => {
         }]
       })
     });
+
+    if (!scrapingResponse.ok) {
+      const error = await scrapingResponse.text();
+      console.error('OpenAI API error:', error);
+      throw new Error('Failed to generate complaints');
+    }
 
     const scrapingData = await scrapingResponse.json();
     const complaints = JSON.parse(scrapingData.choices[0].message.content);
