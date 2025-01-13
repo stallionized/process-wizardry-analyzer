@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -14,6 +13,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -132,9 +132,12 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-xl font-semibold">
                 {selectedCategory} - Detailed Complaints
               </DialogTitle>
+              <DialogDescription>
+                Showing all verbatim complaints from various sources
+              </DialogDescription>
             </DialogHeader>
             
             {isLoadingDetails ? (
@@ -143,37 +146,39 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                 <div className="h-24 bg-muted rounded"></div>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Verbatim Complaint</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {details?.map((detail, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="max-w-xl whitespace-pre-wrap">
-                        {detail.complaint_text}
-                      </TableCell>
-                      <TableCell>
-                        <a 
-                          href={detail.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          View Source
-                        </a>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(detail.created_at).toLocaleDateString()}
-                      </TableCell>
+              <div className="mt-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-3/5">Verbatim Complaint</TableHead>
+                      <TableHead className="w-1/5">Source</TableHead>
+                      <TableHead className="w-1/5">Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {details?.map((detail, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="whitespace-pre-wrap align-top">
+                          {detail.complaint_text}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <a 
+                            href={detail.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            View Source
+                          </a>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          {new Date(detail.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </DialogContent>
         </Dialog>
