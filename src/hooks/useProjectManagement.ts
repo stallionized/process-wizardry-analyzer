@@ -29,7 +29,10 @@ export const useProjectManagement = (projectId: string) => {
       if (error) throw error;
 
       // Only trigger complaints analysis if client name or topics changed
-      if (updates.client_name !== project?.client_name || updates.topics !== project?.topics) {
+      const clientNameChanged = updates.client_name !== undefined && updates.client_name !== project?.client_name;
+      const topicsChanged = updates.topics !== undefined && updates.topics !== project?.topics;
+
+      if (clientNameChanged || topicsChanged) {
         await analyzeComplaints(projectId, updates.client_name || project?.client_name, updates.topics || project?.topics);
       }
     },
