@@ -106,7 +106,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Category</TableHead>
+              <TableHead>Theme/Trends</TableHead>
               <TableHead className="text-right">Volume</TableHead>
             </TableRow>
           </TableHeader>
