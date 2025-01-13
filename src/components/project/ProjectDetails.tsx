@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProjectDetailsProps {
   projectName: string;
@@ -28,6 +29,7 @@ const ProjectDetails = ({
   topics = '',
   setTopics = () => {}
 }: ProjectDetailsProps) => {
+  const queryClient = useQueryClient();
   const [initialValues] = useState({
     projectName,
     clientName,
@@ -52,7 +54,14 @@ const ProjectDetails = ({
 
   const handleSave = () => {
     setProjectName(tempProjectName);
-    setClientName(tempClientName);
+    
+    // If client name has changed, update it and invalidate the complaints query
+    if (tempClientName !== clientName) {
+      setClientName(tempClientName);
+      // Invalidate both the complaints query and the company info
+      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+    }
+    
     setTopics(tempTopics);
     toast.success('Project details saved successfully');
   };
