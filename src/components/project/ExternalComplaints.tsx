@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -128,28 +128,37 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       )}
 
       <div className="mb-4">
-        <h3 className="text-lg font-medium mb-2">Complaints ({complaints?.length || 0})</h3>
+        <h3 className="text-lg font-medium mb-2">Complaints ({Array.isArray(complaints) ? complaints.length : 0})</h3>
       </div>
 
       <ScrollArea className="h-[500px] rounded-md border">
         <div className="p-4 space-y-4">
-          {Array.isArray(complaints) && complaints.map((complaint, index) => (
-            <div key={index} className="p-4 rounded-lg bg-muted/50">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium">{complaint.category}</span>
-                <span className="text-sm text-muted-foreground">{complaint.date}</span>
+          {Array.isArray(complaints) && complaints.length > 0 ? (
+            complaints.map((complaint, index) => (
+              <div key={index} className="p-4 rounded-lg bg-muted/50">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm font-medium">{complaint.category}</span>
+                  <span className="text-sm text-muted-foreground">{complaint.date}</span>
+                </div>
+                <p className="text-sm mb-2">{complaint.complaint_text}</p>
+                <a 
+                  href={complaint.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 hover:underline"
+                >
+                  Source
+                </a>
               </div>
-              <p className="text-sm mb-2">{complaint.complaint_text}</p>
-              <a 
-                href={complaint.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-500 hover:underline"
-              >
-                Source
-              </a>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <Info className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">
+                No complaints found for this company. This could mean either there are no recorded complaints or the search needs to be refined.
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </ScrollArea>
     </Card>
