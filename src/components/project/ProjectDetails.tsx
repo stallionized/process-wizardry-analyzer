@@ -92,16 +92,6 @@ const ProjectDetails = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Project Deadline</Label>
-          <Input
-            type="date"
-            value={dateInput}
-            onChange={handleDateInputChange}
-            className="flex-1"
-          />
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="topics">Topics</Label>
           <Textarea
             id="topics"
@@ -109,6 +99,16 @@ const ProjectDetails = ({
             onChange={(e) => setTempTopics(e.target.value)}
             placeholder="Enter project topics (separate with commas)"
             className="min-h-[100px]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Project Deadline</Label>
+          <Input
+            type="date"
+            value={dateInput}
+            onChange={handleDateInputChange}
+            className="flex-1"
           />
         </div>
 
