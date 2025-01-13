@@ -143,7 +143,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         <table className="w-full">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2">Classification</th>
+              <th className="text-left py-2">Theme/Trend</th>
               <th className="text-right py-2">Volume</th>
             </tr>
           </thead>
