@@ -17,6 +17,13 @@ interface ExternalComplaintsProps {
   projectId: string;
 }
 
+interface ComplaintSummary {
+  project_id: string | null;
+  theme: string | null;
+  volume: number | null;
+  sources: string[] | null;
+}
+
 interface ComplaintDetail {
   complaint_text: string;
   source_url: string;
@@ -26,10 +33,11 @@ interface ComplaintDetail {
 const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: summaries, isLoading } = useQuery({
+  const { data: summaries, isLoading: isLoadingSummaries } = useQuery({
     queryKey: ['complaint-summaries', projectId],
     queryFn: async () => {
-      const { data: summaries, error } = await supabase
+      console.log('Fetching summaries for project:', projectId);
+      const { data, error } = await supabase
         .from('complaint_summaries')
         .select('*')
         .eq('project_id', projectId);
@@ -39,7 +47,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw error;
       }
 
-      return summaries || [];
+      console.log('Received summaries:', data);
+      return (data || []) as ComplaintSummary[];
     },
   });
 
@@ -48,7 +57,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     queryFn: async () => {
       if (!selectedCategory) return null;
 
-      const { data: complaints, error } = await supabase
+      console.log('Fetching details for category:', selectedCategory);
+      const { data, error } = await supabase
         .from('complaints')
         .select('complaint_text, source_url, created_at')
         .eq('project_id', projectId)
@@ -60,12 +70,13 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw error;
       }
 
-      return complaints || [];
+      console.log('Received details:', data);
+      return (data || []) as ComplaintDetail[];
     },
     enabled: !!selectedCategory,
   });
 
-  if (isLoading) {
+  if (isLoadingSummaries) {
     return (
       <Card className="p-6">
         <div className="animate-pulse space-y-4">
@@ -108,12 +119,12 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
             <div className="h-4 bg-muted rounded w-1/4"></div>
             <div className="h-24 bg-muted rounded"></div>
           </div>
-        ) : (
+        ) : details && details.length > 0 ? (
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Verbatim Complaints</h3>
               <div className="space-y-4">
-                {details?.map((detail, index) => (
+                {details.map((detail, index) => (
                   <div key={index} className="p-4 bg-muted rounded-lg">
                     <p className="whitespace-pre-wrap text-sm">
                       {detail.complaint_text}
@@ -128,7 +139,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Sources</h3>
               <div className="space-y-4">
-                {details?.map((detail, index) => (
+                {details.map((detail, index) => (
                   <div key={index} className="p-4 bg-muted rounded-lg">
                     <a
                       href={detail.source_url}
@@ -143,6 +154,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
               </div>
             </div>
           </div>
+        ) : (
+          <p className="text-muted-foreground">No detailed complaints found for this category.</p>
         )}
       </Card>
     );
@@ -162,14 +175,15 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
           </TableHeader>
           <TableBody>
             {summaries.map((summary, index) => (
-              <TableRow key={index} className="cursor-pointer hover:bg-muted/50">
+              <TableRow 
+                key={index} 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => summary.theme && setSelectedCategory(summary.theme)}
+              >
                 <TableCell className="font-medium">
                   {summary.theme}
                 </TableCell>
-                <TableCell 
-                  className="text-right text-primary hover:underline"
-                  onClick={() => setSelectedCategory(summary.theme)}
-                >
+                <TableCell className="text-right text-primary hover:underline">
                   {summary.volume}
                 </TableCell>
               </TableRow>
