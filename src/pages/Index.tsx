@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import FileUploadTab from '@/components/project/FileUploadTab';
 import AIResults from '@/components/project/AIResults';
+import ExternalComplaints from '@/components/project/ExternalComplaints';
 
 interface UploadedFile {
   id: string;
@@ -18,6 +19,7 @@ const Index = () => {
   const [projectName, setProjectName] = useState('');
   const [clientName, setClientName] = useState('');
   const [deadline, setDeadline] = useState<Date>();
+  const [topics, setTopics] = useState('');
 
   const handleUpload = (uploadedFiles: File[], fileType: string) => {
     const newFiles = uploadedFiles.map(file => ({
@@ -49,7 +51,7 @@ const Index = () => {
       </div>
 
       <Tabs defaultValue="project" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="project" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Grid className="mr-2 h-4 w-4" />
             Project Details
@@ -62,6 +64,10 @@ const Index = () => {
             <Grid className="mr-2 h-4 w-4" />
             AI Results
           </TabsTrigger>
+          <TabsTrigger value="complaints" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Grid className="mr-2 h-4 w-4" />
+            External Complaints
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="project">
@@ -72,6 +78,8 @@ const Index = () => {
             setClientName={setClientName}
             deadline={deadline}
             setDeadline={setDeadline}
+            topics={topics}
+            setTopics={setTopics}
           />
         </TabsContent>
 
@@ -85,6 +93,10 @@ const Index = () => {
 
         <TabsContent value="results">
           <AIResults projectId={demoProjectId} />
+        </TabsContent>
+
+        <TabsContent value="complaints">
+          <ExternalComplaints projectId={demoProjectId} />
         </TabsContent>
       </Tabs>
     </div>

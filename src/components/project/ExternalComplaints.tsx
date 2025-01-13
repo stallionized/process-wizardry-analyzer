@@ -3,46 +3,35 @@ import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface ExternalComplaintsProps {
   projectId: string;
 }
 
 const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
-  const { data: complaints, isLoading, error } = useQuery({
-    queryKey: ['complaints', projectId],
+  const { data: summaries, isLoading } = useQuery({
+    queryKey: ['complaint-summaries', projectId],
     queryFn: async () => {
-      console.log('Fetching external complaints for project:', projectId);
-      const { data: files } = await supabase
-        .from('files')
+      const { data: summaries, error } = await supabase
+        .from('complaint_summaries')
         .select('*')
-        .eq('project_id', projectId)
-        .is('deleted_at', null);
+        .eq('project_id', projectId);
 
-      if (!files?.length) {
-        console.log('No files found for complaints analysis');
-        return null;
+      if (error) {
+        console.error('Error fetching complaint summaries:', error);
+        throw error;
       }
 
-      const response = await supabase.functions.invoke('analyze-trends', {
-        body: { projectId, files, type: 'complaints' }
-      });
-
-      if (response.error) {
-        console.error('Error analyzing complaints:', response.error);
-        throw response.error;
-      }
-
-      return response.data;
+      return summaries;
     },
-    refetchInterval: (data) => (!data ? 5000 : false),
-    retry: 3,
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error in complaints analysis:', error);
-        toast.error('Failed to analyze complaints. Please try again later.');
-      }
-    }
   });
 
   if (isLoading) {
@@ -56,36 +45,52 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  if (error) {
-    return (
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-        <p className="text-red-500">
-          Failed to load complaints analysis. Please try again later.
-        </p>
-      </Card>
-    );
-  }
-
-  if (!complaints) {
+  if (!summaries || summaries.length === 0) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
         <p className="text-muted-foreground">
-          Analysis will appear here after processing your dataset.
+          No complaints analysis available yet. Update project details to trigger analysis.
         </p>
       </Card>
     );
   }
 
   return (
-    <Card className="p-8">
+    <Card className="p-6">
       <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-      <div className="prose prose-gray max-w-none">
-        <div className="bg-muted/30 p-6 rounded-lg">
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-            {complaints.summary}
-          </p>
+      
+      <div className="space-y-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Theme</TableHead>
+              <TableHead>Trend</TableHead>
+              <TableHead>Volume</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {summaries.map((summary, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{summary.theme}</TableCell>
+                <TableCell>{summary.trend}</TableCell>
+                <TableCell>{summary.volume}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-3">Recent Complaints</h3>
+          <div className="space-y-4">
+            {summaries.flatMap(summary => 
+              summary.complaints.slice(0, 3).map((complaint, idx) => (
+                <div key={idx} className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">{complaint}</p>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </Card>
