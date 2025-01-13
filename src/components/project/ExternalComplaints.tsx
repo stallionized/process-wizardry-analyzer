@@ -39,8 +39,9 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       console.log('Fetching summaries for project:', projectId);
       const { data, error } = await supabase
         .from('complaint_summaries')
-        .select('*')
-        .eq('project_id', projectId);
+        .select('project_id, theme, volume, sources')
+        .eq('project_id', projectId)
+        .not('theme', 'eq', 'Theme'); // Filter out the template row
 
       if (error) {
         console.error('Error fetching complaint summaries:', error);
@@ -48,7 +49,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       }
 
       console.log('Received summaries:', data);
-      return (data || []) as ComplaintSummary[];
+      return data as ComplaintSummary[];
     },
   });
 
@@ -71,7 +72,7 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       }
 
       console.log('Received details:', data);
-      return (data || []) as ComplaintDetail[];
+      return data as ComplaintDetail[];
     },
     enabled: !!selectedCategory,
   });
@@ -142,12 +143,12 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
                 {details.map((detail, index) => (
                   <div key={index} className="p-4 bg-muted rounded-lg">
                     <a
-                      href={detail.source_url}
+                      href={detail.source_url.replace(/^"(.*)"$/, '$1')} // Remove quotes if present
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline text-sm block"
                     >
-                      {detail.source_url}
+                      {detail.source_url.replace(/^"(.*)"$/, '$1')}
                     </a>
                   </div>
                 ))}
