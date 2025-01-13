@@ -51,10 +51,20 @@ const ProjectDetails = ({
   };
 
   const handleSave = () => {
+    // Check if client name or topics have changed
+    const clientNameChanged = tempClientName !== initialValues.clientName;
+    const topicsChanged = tempTopics !== initialValues.topics;
+
     setProjectName(tempProjectName);
     setClientName(tempClientName);
     setTopics(tempTopics);
-    toast.success('Project details saved successfully');
+
+    // Only show the analysis message if relevant fields changed
+    if (clientNameChanged || topicsChanged) {
+      toast.success('Project details saved successfully. Starting complaints analysis...');
+    } else {
+      toast.success('Project details saved successfully');
+    }
   };
 
   const handleCancel = () => {

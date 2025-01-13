@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 
 export const useProjectManagement = (projectId: string) => {
   const queryClient = useQueryClient();
@@ -29,14 +28,13 @@ export const useProjectManagement = (projectId: string) => {
       
       if (error) throw error;
 
-      // Trigger complaints analysis if client name or topics changed
-      if (updates.client_name || updates.topics) {
+      // Only trigger complaints analysis if client name or topics changed
+      if (updates.client_name !== project?.client_name || updates.topics !== project?.topics) {
         await analyzeComplaints(projectId, updates.client_name || project?.client_name, updates.topics || project?.topics);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-      toast.success('Project updated successfully');
     },
   });
 
