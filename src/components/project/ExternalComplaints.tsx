@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -38,8 +38,44 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     },
   });
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['complaints', projectId],
+  // First, try to fetch existing complaints from the database
+  const { data: existingComplaints, isLoading: isLoadingExisting } = useQuery({
+    queryKey: ['existing-complaints', projectId],
+    queryFn: async () => {
+      const { data: complaints, error: complaintsError } = await supabase
+        .from('complaints')
+        .select('*')
+        .eq('project_id', projectId);
+
+      if (complaintsError) throw complaintsError;
+
+      const { data: summaries, error: summariesError } = await supabase
+        .from('complaint_summaries')
+        .select('*')
+        .eq('project_id', projectId)
+        .maybeSingle();
+
+      if (summariesError) throw summariesError;
+
+      return {
+        complaints: complaints.map(c => ({
+          source_url: c.source_url,
+          complaint_text: c.complaint_text,
+          date: new Date(c.created_at).toLocaleDateString(),
+          category: c.theme
+        })),
+        companyInfo: summaries ? {
+          description: `Analysis based on ${summaries.volume} complaints`,
+          variations: []
+        } : null
+      };
+    },
+    enabled: !!projectId,
+  });
+
+  // Only fetch new complaints if none exist in the database
+  const { data: scrapedData, isLoading: isLoadingScraped, error: scrapedError } = useQuery({
+    queryKey: ['scraped-complaints', projectId],
     queryFn: async () => {
       if (!project?.client_name) {
         throw new Error('Client name is required');
@@ -51,7 +87,6 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
 
       if (response.error) throw response.error;
       
-      // Parse the complaints data if it's a string
       const parsedData = {
         companyInfo: typeof response.data.companyInfo === 'string' 
           ? JSON.parse(response.data.companyInfo) 
@@ -61,11 +96,14 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
           : response.data.complaints
       };
 
-      console.log('Parsed complaints data:', parsedData);
       return parsedData;
     },
-    enabled: !!project?.client_name,
+    enabled: !!project?.client_name && !existingComplaints?.complaints.length,
   });
+
+  const isLoading = isLoadingExisting || isLoadingScraped;
+  const error = scrapedError;
+  const data = existingComplaints?.complaints.length ? existingComplaints : scrapedData;
 
   if (isLoading) {
     return (
@@ -108,8 +146,8 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
     );
   }
 
-  const companyInfo = data?.companyInfo as CompanyInfo;
-  const complaints = data?.complaints as Complaint[];
+  const companyInfo = data?.companyInfo;
+  const complaints = data?.complaints || [];
 
   return (
     <Card className="p-6">
@@ -128,12 +166,12 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       )}
 
       <div className="mb-4">
-        <h3 className="text-lg font-medium mb-2">Complaints ({Array.isArray(complaints) ? complaints.length : 0})</h3>
+        <h3 className="text-lg font-medium mb-2">Complaints ({complaints.length})</h3>
       </div>
 
       <ScrollArea className="h-[500px] rounded-md border">
         <div className="p-4 space-y-4">
-          {Array.isArray(complaints) && complaints.length > 0 ? (
+          {complaints.length > 0 ? (
             complaints.map((complaint, index) => (
               <div key={index} className="p-4 rounded-lg bg-muted/50">
                 <div className="flex justify-between items-start mb-2">
