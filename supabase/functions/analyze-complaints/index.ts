@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,57 +24,95 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Generate search query based on client name and topics
-    const searchQuery = `${clientName} ${topics} complaints reviews issues problems`;
+    // Generate multiple search queries to increase coverage
+    const searchQueries = [
+      `${clientName} customer complaints reviews`,
+      `${clientName} ${topics} issues problems`,
+      `${clientName} negative feedback concerns`,
+      `${clientName} product quality complaints`,
+      `${clientName} service issues reviews`,
+    ];
     
-    // Call OpenAI to analyze the complaints
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an AI assistant that analyzes customer complaints and feedback. Identify key themes and trends.'
-          },
-          {
-            role: 'user',
-            content: `Analyze the following search query and generate sample complaints that might be relevant: ${searchQuery}`
-          }
-        ],
-        temperature: 0.7,
-      }),
-    });
+    // Simulate gathering complaints from multiple sources
+    const complaints = [];
+    for (const query of searchQueries) {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: `You are analyzing customer feedback for ${clientName} related to ${topics}. Generate realistic complaints and categorize them into high-level business categories. Focus on major themes that would be actionable for business improvement.`
+            },
+            {
+              role: 'user',
+              content: `Based on "${query}", generate 5 realistic customer complaints. For each complaint, provide:
+              1. The complaint text
+              2. A high-level business category (e.g., "Product Quality", "Customer Service", "Delivery Experience")
+              3. A simulated source URL
+              Format as JSON array with objects containing: text, category, source_url`
+            }
+          ],
+          temperature: 0.7,
+        }),
+      });
 
-    const data = await response.json();
-    const analysis = data.choices[0].message.content;
+      const data = await response.json();
+      const generatedComplaints = JSON.parse(data.choices[0].message.content);
+      complaints.push(...generatedComplaints);
+    }
 
-    // Create complaints records in the database
+    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Parse the analysis and create complaint records
-    const complaints = analysis.split('\n')
-      .filter((line: string) => line.trim().length > 0)
-      .map((complaint: string) => ({
-        project_id: projectId,
-        source_url: 'ai-generated', // This is a placeholder
-        complaint_text: complaint,
-        theme: 'General', // This would be enhanced with better categorization
-        trend: 'Initial Analysis',
-      }));
-
-    const { error } = await supabaseClient
+    // Insert complaints
+    const { error: insertError } = await supabaseClient
       .from('complaints')
-      .insert(complaints);
+      .insert(complaints.map(c => ({
+        project_id: projectId,
+        complaint_text: c.text,
+        theme: c.category,
+        trend: c.category, // Using same value for theme/trend as requested
+        source_url: c.source_url,
+      })));
 
-    if (error) throw error;
+    if (insertError) throw insertError;
+
+    // Calculate summaries
+    const summaries = complaints.reduce((acc, c) => {
+      const category = c.category;
+      if (!acc[category]) {
+        acc[category] = {
+          theme: category,
+          volume: 0,
+          sources: new Set(),
+          project_id: projectId,
+        };
+      }
+      acc[category].volume++;
+      acc[category].sources.add(c.source_url);
+      return acc;
+    }, {});
+
+    // Update summaries
+    const { error: summaryError } = await supabaseClient
+      .from('complaint_summaries')
+      .upsert(
+        Object.values(summaries).map(s => ({
+          ...s,
+          sources: Array.from(s.sources),
+        }))
+      );
+
+    if (summaryError) throw summaryError;
 
     return new Response(
       JSON.stringify({ success: true, complaintsCount: complaints.length }),
