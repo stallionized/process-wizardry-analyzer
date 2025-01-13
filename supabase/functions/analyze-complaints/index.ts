@@ -13,10 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const { projectId, clientName, topics } = await req.json();
+    const { clientName } = await req.json();
     
-    if (!projectId || !clientName || !topics) {
-      throw new Error('Missing required parameters');
+    if (!clientName) {
+      throw new Error('Client name is required');
     }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -24,18 +24,29 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Generate multiple search queries to increase coverage
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+    // Generate search queries to increase coverage
     const searchQueries = [
       `${clientName} customer complaints reviews`,
-      `${clientName} ${topics} issues problems`,
+      `${clientName} product quality issues problems`,
       `${clientName} negative feedback concerns`,
-      `${clientName} product quality complaints`,
       `${clientName} service issues reviews`,
     ];
     
-    // Simulate gathering complaints from multiple sources
+    // Gather complaints from multiple sources
     const complaints = [];
     for (const query of searchQueries) {
+      console.log('Processing search query:', query);
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -47,85 +58,111 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: `You are analyzing customer feedback for ${clientName} related to ${topics}. Generate realistic complaints and categorize them into high-level business categories. Focus on major themes that would be actionable for business improvement.`
+              content: `You are analyzing customer feedback for ${clientName}. Generate realistic complaints and categorize them into high-level business categories. Focus on major themes that would be actionable for business improvement.`
             },
             {
               role: 'user',
-              content: `Based on "${query}", generate 5 realistic customer complaints. For each complaint, provide:
+              content: `Based on "${query}", generate 3 realistic customer complaints. For each complaint, provide:
               1. The complaint text
-              2. A high-level business category (e.g., "Product Quality", "Customer Service", "Delivery Experience")
-              3. A simulated source URL
-              Format as JSON array with objects containing: text, category, source_url`
+              2. A high-level business category (e.g., "Product Quality", "Customer Service", "Delivery")
+              3. A simulated source URL (use a realistic domain)
+              Format as JSON array with objects containing: complaint_text, category, source_url`
             }
           ],
           temperature: 0.7,
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.statusText}`);
+      }
+
       const data = await response.json();
       const generatedComplaints = JSON.parse(data.choices[0].message.content);
       complaints.push(...generatedComplaints);
     }
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    console.log(`Generated ${complaints.length} complaints`);
 
-    // Insert complaints
-    const { error: insertError } = await supabaseClient
+    // Store complaints in the database
+    const { error: insertError } = await supabaseAdmin
       .from('complaints')
-      .insert(complaints.map(c => ({
-        project_id: projectId,
-        complaint_text: c.text,
-        theme: c.category,
-        trend: c.category, // Using same value for theme/trend as requested
-        source_url: c.source_url,
-      })));
+      .insert(
+        complaints.map(complaint => ({
+          complaint_text: complaint.complaint_text,
+          source_url: complaint.source_url,
+          theme: complaint.category,
+          trend: complaint.category, // Using category as both theme and trend
+          project_id: req.projectId,
+        }))
+      );
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error('Error storing complaints:', insertError);
+      throw insertError;
+    }
 
-    // Calculate summaries
-    const summaries = complaints.reduce((acc, c) => {
-      const category = c.category;
+    // Calculate and store complaint summaries
+    const summaries = complaints.reduce((acc, complaint) => {
+      const category = complaint.category;
       if (!acc[category]) {
         acc[category] = {
           theme: category,
           volume: 0,
           sources: new Set(),
-          project_id: projectId,
+          complaints: [],
+          project_id: req.projectId,
         };
       }
       acc[category].volume++;
-      acc[category].sources.add(c.source_url);
+      acc[category].sources.add(complaint.source_url);
+      acc[category].complaints.push(complaint.complaint_text);
       return acc;
     }, {});
 
-    // Update summaries
-    const { error: summaryError } = await supabaseClient
+    // Update complaint summaries
+    const { error: summaryError } = await supabaseAdmin
       .from('complaint_summaries')
       .upsert(
-        Object.values(summaries).map(s => ({
-          ...s,
-          sources: Array.from(s.sources),
+        Object.values(summaries).map(summary => ({
+          ...summary,
+          sources: Array.from(summary.sources),
+          complaints: Array.from(summary.complaints),
         }))
       );
 
-    if (summaryError) throw summaryError;
+    if (summaryError) {
+      console.error('Error storing summaries:', summaryError);
+      throw summaryError;
+    }
 
     return new Response(
-      JSON.stringify({ success: true, complaintsCount: complaints.length }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: true,
+        complaintsCount: complaints.length,
+        complaints,
+      }),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        } 
+      }
     );
 
   } catch (error) {
     console.error('Error in analyze-complaints function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false 
+      }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     );
   }
