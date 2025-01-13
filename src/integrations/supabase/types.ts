@@ -109,51 +109,6 @@ export type Database = {
         }
         Relationships: []
       }
-      complaints: {
-        Row: {
-          complaint_text: string
-          created_at: string | null
-          id: string
-          project_id: string
-          source_url: string
-          theme: string
-          trend: string
-        }
-        Insert: {
-          complaint_text: string
-          created_at?: string | null
-          id?: string
-          project_id: string
-          source_url: string
-          theme: string
-          trend: string
-        }
-        Update: {
-          complaint_text?: string
-          created_at?: string | null
-          id?: string
-          project_id?: string
-          source_url?: string
-          theme?: string
-          trend?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "complaints_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       files: {
         Row: {
           created_at: string | null
@@ -271,32 +226,6 @@ export type Database = {
           is_admin: boolean | null
         }
         Relationships: []
-      }
-      complaint_summaries: {
-        Row: {
-          complaints: string[] | null
-          project_id: string | null
-          sources: string[] | null
-          theme: string | null
-          trend: string | null
-          volume: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "complaints_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
