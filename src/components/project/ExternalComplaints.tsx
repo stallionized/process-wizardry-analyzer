@@ -107,9 +107,11 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-2">Company Information</h3>
           <p className="text-muted-foreground mb-2">{companyInfo.description}</p>
-          <p className="text-sm text-muted-foreground">
-            Common name variations: {companyInfo.variations.join(', ')}
-          </p>
+          {companyInfo.variations && companyInfo.variations.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Common name variations: {companyInfo.variations.join(', ')}
+            </p>
+          )}
         </div>
       )}
 
