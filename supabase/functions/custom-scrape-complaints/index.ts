@@ -6,36 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_PAGES_PER_SOURCE = 5;
-const MAX_COMPLAINTS_PER_SOURCE = 50;
-
-function isWithinLastYear(dateStr: string): boolean {
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      console.log('Invalid date format:', dateStr, '- including by default');
-      return true; // Include complaints with unparseable dates
-    }
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    return date >= oneYearAgo;
-  } catch (e) {
-    console.error('Error checking date:', e);
-    return true; // Include complaints if date checking fails
-  }
-}
+const MAX_PAGES_PER_SOURCE = 10; // Increased from 5
+const MAX_COMPLAINTS_PER_SOURCE = 100; // Increased from 50
 
 function extractDate(html: string, datePattern: RegExp): string {
   try {
     const match = html.match(datePattern);
     if (match && match[1]) {
-      const date = new Date(match[1]);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString();
-      }
+      return new Date(match[1]).toISOString();
     }
-    // If no valid date found or parsing fails, return current date
-    console.log('No valid date found, using current date');
     return new Date().toISOString();
   } catch (e) {
     console.error('Error extracting date:', e);
@@ -68,8 +47,9 @@ serve(async (req) => {
     try {
       // Trustpilot scraping
       console.log('Attempting to scrape Trustpilot...');
+      const trustpilotDomain = clientName.toLowerCase().replace(/[^a-z0-9]/g, '-');
       for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const trustpilotUrl = `https://www.trustpilot.com/review/${clientName.toLowerCase().replace(/[^a-z0-9]/g, '-')}?page=${page}`;
+        const trustpilotUrl = `https://www.trustpilot.com/review/${trustpilotDomain}?page=${page}`;
         console.log(`Scraping Trustpilot page ${page}:`, trustpilotUrl);
         
         const trustpilotResponse = await fetch(trustpilotUrl, {
@@ -101,74 +81,90 @@ serve(async (req) => {
         if (foundOnPage === 0) break;
       }
 
-      // BBB scraping
+      // BBB scraping with enhanced search
       console.log('Attempting to scrape BBB...');
-      for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const bbbUrl = `https://www.bbb.org/search?find_text=${encodedCompanyName}&filter_complaints=1&page=${page}`;
-        console.log(`Scraping BBB page ${page}:`, bbbUrl);
-        
-        const bbbResponse = await fetch(bbbUrl, {
-          headers: { 'User-Agent': userAgent }
-        });
-        
-        if (!bbbResponse.ok) {
-          console.log(`BBB page ${page} returned status ${bbbResponse.status}. Stopping pagination.`);
-          break;
-        }
-        
-        const bbbHtml = await bbbResponse.text();
-        const complaintPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
-        const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
-        let match;
-        let foundOnPage = 0;
-        
-        while ((match = complaintPattern.exec(bbbHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
-          const complaintDate = extractDate(bbbHtml.slice(match.index), datePattern);
-          complaints.push({
-            text: match[1].trim(),
-            date: complaintDate,
-            source: bbbUrl
+      const searchTerms = [
+        encodedCompanyName,
+        `${encodedCompanyName}%20complaints`,
+        `${encodedCompanyName}%20reviews`
+      ];
+
+      for (const searchTerm of searchTerms) {
+        for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
+          const bbbUrl = `https://www.bbb.org/search?find_text=${searchTerm}&filter_complaints=1&page=${page}`;
+          console.log(`Scraping BBB page ${page} for term "${searchTerm}":`, bbbUrl);
+          
+          const bbbResponse = await fetch(bbbUrl, {
+            headers: { 'User-Agent': userAgent }
           });
-          foundOnPage++;
+          
+          if (!bbbResponse.ok) {
+            console.log(`BBB page ${page} returned status ${bbbResponse.status}. Stopping pagination.`);
+            break;
+          }
+          
+          const bbbHtml = await bbbResponse.text();
+          const complaintPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
+          const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
+          let match;
+          let foundOnPage = 0;
+          
+          while ((match = complaintPattern.exec(bbbHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
+            const complaintDate = extractDate(bbbHtml.slice(match.index), datePattern);
+            complaints.push({
+              text: match[1].trim(),
+              date: complaintDate,
+              source: bbbUrl
+            });
+            foundOnPage++;
+          }
+          
+          console.log(`Found ${foundOnPage} complaints on BBB page ${page}`);
+          if (foundOnPage === 0) break;
         }
-        
-        console.log(`Found ${foundOnPage} complaints on BBB page ${page}`);
-        if (foundOnPage === 0) break;
       }
 
-      // ConsumerAffairs scraping
+      // ConsumerAffairs scraping with enhanced search
       console.log('Attempting to scrape ConsumerAffairs...');
-      for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const caUrl = `https://www.consumeraffairs.com/search?query=${encodedCompanyName}&page=${page}`;
-        console.log(`Scraping ConsumerAffairs page ${page}:`, caUrl);
-        
-        const caResponse = await fetch(caUrl, {
-          headers: { 'User-Agent': userAgent }
-        });
-        
-        if (!caResponse.ok) {
-          console.log(`ConsumerAffairs page ${page} returned status ${caResponse.status}. Stopping pagination.`);
-          break;
-        }
-        
-        const caHtml = await caResponse.text();
-        const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
-        const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
-        let match;
-        let foundOnPage = 0;
-        
-        while ((match = reviewPattern.exec(caHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
-          const reviewDate = extractDate(caHtml.slice(match.index), datePattern);
-          complaints.push({
-            text: match[1].trim(),
-            date: reviewDate,
-            source: caUrl
+      const caSearchTerms = [
+        encodedCompanyName,
+        `${encodedCompanyName}%20reviews`,
+        `${encodedCompanyName}%20complaints`
+      ];
+
+      for (const searchTerm of caSearchTerms) {
+        for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
+          const caUrl = `https://www.consumeraffairs.com/search?query=${searchTerm}&page=${page}`;
+          console.log(`Scraping ConsumerAffairs page ${page} for term "${searchTerm}":`, caUrl);
+          
+          const caResponse = await fetch(caUrl, {
+            headers: { 'User-Agent': userAgent }
           });
-          foundOnPage++;
+          
+          if (!caResponse.ok) {
+            console.log(`ConsumerAffairs page ${page} returned status ${caResponse.status}. Stopping pagination.`);
+            break;
+          }
+          
+          const caHtml = await caResponse.text();
+          const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+          const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
+          let match;
+          let foundOnPage = 0;
+          
+          while ((match = reviewPattern.exec(caHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
+            const reviewDate = extractDate(caHtml.slice(match.index), datePattern);
+            complaints.push({
+              text: match[1].trim(),
+              date: reviewDate,
+              source: caUrl
+            });
+            foundOnPage++;
+          }
+          
+          console.log(`Found ${foundOnPage} complaints on ConsumerAffairs page ${page}`);
+          if (foundOnPage === 0) break;
         }
-        
-        console.log(`Found ${foundOnPage} complaints on ConsumerAffairs page ${page}`);
-        if (foundOnPage === 0) break;
       }
 
       // Store complaints in the database if any were found
