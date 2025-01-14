@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,6 +24,8 @@ interface CompanyInfo {
 }
 
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
+  const queryClient = useQueryClient();
+
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
@@ -39,7 +41,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['complaints', projectId],
+    queryKey: ['complaints', projectId, project?.client_name],
     queryFn: async () => {
       // First try to get complaints from database
       const { data: existingComplaints, error: complaintsError } = await supabase
@@ -98,7 +100,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         }
       };
     },
-    enabled: !!projectId,
+    enabled: !!projectId && !!project?.client_name,
   });
 
   if (isLoading) {
