@@ -6,8 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_PAGES_PER_SOURCE = 5; // Limit to 5 pages per source to avoid timeouts
-const MAX_COMPLAINTS_PER_SOURCE = 50; // Maximum complaints to fetch per source
+const MAX_PAGES_PER_SOURCE = 5;
+const MAX_COMPLAINTS_PER_SOURCE = 50;
+
+function isWithinLastYear(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  return date >= oneYearAgo;
+}
+
+function extractDate(html: string, datePattern: RegExp): string | null {
+  const match = html.match(datePattern);
+  if (match && match[1]) {
+    try {
+      const date = new Date(match[1]);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    } catch (e) {
+      console.error('Error parsing date:', e);
+    }
+  }
+  return null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,10 +54,10 @@ serve(async (req) => {
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     
     try {
-      // Trustpilot (paginated)
+      // Trustpilot scraping
       console.log('Attempting to scrape Trustpilot...');
       for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const trustpilotUrl = `https://www.trustpilot.com/review/www.${clientName.toLowerCase().replace(/\s+/g, '')}.com?page=${page}`;
+        const trustpilotUrl = `https://www.trustpilot.com/review/${clientName.toLowerCase().replace(/[^a-z0-9]/g, '')}?page=${page}`;
         console.log(`Scraping Trustpilot page ${page}:`, trustpilotUrl);
         
         const trustpilotResponse = await fetch(trustpilotUrl, {
@@ -49,27 +71,31 @@ serve(async (req) => {
         
         const trustpilotHtml = await trustpilotResponse.text();
         const reviewPattern = /<p[^>]*data-service-review-text[^>]*>([^<]+)<\/p>/g;
+        const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
         let match;
         let foundOnPage = 0;
         
         while ((match = reviewPattern.exec(trustpilotHtml)) !== null) {
-          complaints.push({
-            text: match[1].trim(),
-            date: new Date().toISOString(),
-            source: trustpilotUrl
-          });
-          foundOnPage++;
+          const reviewDate = extractDate(trustpilotHtml.slice(match.index), datePattern);
+          if (reviewDate && isWithinLastYear(reviewDate)) {
+            complaints.push({
+              text: match[1].trim(),
+              date: reviewDate,
+              source: trustpilotUrl
+            });
+            foundOnPage++;
+          }
         }
         
-        console.log(`Found ${foundOnPage} complaints on Trustpilot page ${page}`);
-        if (foundOnPage === 0) break; // No more reviews found
+        console.log(`Found ${foundOnPage} valid complaints on Trustpilot page ${page}`);
+        if (foundOnPage === 0) break;
         if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
 
-      // BBB (Better Business Bureau - paginated)
+      // BBB scraping
       console.log('Attempting to scrape BBB...');
       for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const bbbUrl = `https://www.bbb.org/search?find_text=${encodedCompanyName}&page=${page}`;
+        const bbbUrl = `https://www.bbb.org/search?find_text=${encodedCompanyName}&filter_complaints=1&page=${page}`;
         console.log(`Scraping BBB page ${page}:`, bbbUrl);
         
         const bbbResponse = await fetch(bbbUrl, {
@@ -82,139 +108,116 @@ serve(async (req) => {
         }
         
         const bbbHtml = await bbbResponse.text();
-        const bbbPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
+        const complaintPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
+        const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
+        let match;
         let foundOnPage = 0;
         
-        while ((match = bbbPattern.exec(bbbHtml)) !== null) {
-          complaints.push({
-            text: match[1].trim(),
-            date: new Date().toISOString(),
-            source: bbbUrl
-          });
-          foundOnPage++;
+        while ((match = complaintPattern.exec(bbbHtml)) !== null) {
+          const complaintDate = extractDate(bbbHtml.slice(match.index), datePattern);
+          if (complaintDate && isWithinLastYear(complaintDate)) {
+            complaints.push({
+              text: match[1].trim(),
+              date: complaintDate,
+              source: bbbUrl
+            });
+            foundOnPage++;
+          }
         }
         
-        console.log(`Found ${foundOnPage} complaints on BBB page ${page}`);
+        console.log(`Found ${foundOnPage} valid complaints on BBB page ${page}`);
         if (foundOnPage === 0) break;
         if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
 
-      // ConsumerAffairs (paginated)
+      // ConsumerAffairs scraping
       console.log('Attempting to scrape ConsumerAffairs...');
       for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
         const caUrl = `https://www.consumeraffairs.com/search?query=${encodedCompanyName}&page=${page}`;
         console.log(`Scraping ConsumerAffairs page ${page}:`, caUrl);
         
-        const consumerAffairsResponse = await fetch(caUrl, {
+        const caResponse = await fetch(caUrl, {
           headers: { 'User-Agent': userAgent }
         });
         
-        if (!consumerAffairsResponse.ok) {
-          console.log(`ConsumerAffairs page ${page} returned status ${consumerAffairsResponse.status}. Stopping pagination.`);
+        if (!caResponse.ok) {
+          console.log(`ConsumerAffairs page ${page} returned status ${caResponse.status}. Stopping pagination.`);
           break;
         }
         
-        const consumerAffairsHtml = await consumerAffairsResponse.text();
-        const caPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+        const caHtml = await caResponse.text();
+        const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+        const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/;
+        let match;
         let foundOnPage = 0;
         
-        while ((match = caPattern.exec(consumerAffairsHtml)) !== null) {
-          complaints.push({
-            text: match[1].trim(),
-            date: new Date().toISOString(),
-            source: caUrl
-          });
-          foundOnPage++;
+        while ((match = reviewPattern.exec(caHtml)) !== null) {
+          const reviewDate = extractDate(caHtml.slice(match.index), datePattern);
+          if (reviewDate && isWithinLastYear(reviewDate)) {
+            complaints.push({
+              text: match[1].trim(),
+              date: reviewDate,
+              source: caUrl
+            });
+            foundOnPage++;
+          }
         }
         
-        console.log(`Found ${foundOnPage} complaints on ConsumerAffairs page ${page}`);
+        console.log(`Found ${foundOnPage} valid complaints on ConsumerAffairs page ${page}`);
         if (foundOnPage === 0) break;
         if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
 
-      // SiteJabber (paginated)
-      console.log('Attempting to scrape SiteJabber...');
-      for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const sjUrl = `https://www.sitejabber.com/reviews/${clientName.toLowerCase().replace(/\s+/g, '-')}?page=${page}`;
-        console.log(`Scraping SiteJabber page ${page}:`, sjUrl);
+      // Store complaints in the database if any were found
+      if (complaints.length > 0) {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
         
-        const siteJabberResponse = await fetch(sjUrl, {
-          headers: { 'User-Agent': userAgent }
-        });
-        
-        if (!siteJabberResponse.ok) {
-          console.log(`SiteJabber page ${page} returned status ${siteJabberResponse.status}. Stopping pagination.`);
-          break;
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Supabase configuration missing');
         }
-        
-        const siteJabberHtml = await siteJabberResponse.text();
-        const sjPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
-        let foundOnPage = 0;
-        
-        while ((match = sjPattern.exec(siteJabberHtml)) !== null) {
-          complaints.push({
-            text: match[1].trim(),
-            date: new Date().toISOString(),
-            source: sjUrl
-          });
-          foundOnPage++;
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const { error: insertError } = await supabase
+          .from('complaints')
+          .upsert(
+            complaints.map(complaint => ({
+              complaint_text: complaint.text,
+              source_url: complaint.source,
+              theme: 'Customer Review',
+              trend: 'Recent',
+              project_id: projectId,
+              created_at: complaint.date
+            }))
+          );
+
+        if (insertError) {
+          console.error('Error storing complaints:', insertError);
+          throw insertError;
         }
-        
-        console.log(`Found ${foundOnPage} complaints on SiteJabber page ${page}`);
-        if (foundOnPage === 0) break;
-        if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
+
+      console.log(`Scraping completed. Found total of ${complaints.length} complaints within the last year`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          complaintsCount: complaints.length,
+          complaints
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
 
     } catch (error) {
       console.error('Error during scraping:', error);
-      // Continue execution even if scraping fails
+      throw error;
     }
-
-    // Store complaints in the database if any were found
-    if (complaints.length > 0) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase configuration missing');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { error: insertError } = await supabase
-        .from('complaints')
-        .upsert(
-          complaints.map(complaint => ({
-            complaint_text: complaint.text,
-            source_url: complaint.source,
-            theme: 'Customer Review',
-            trend: 'Recent',
-            project_id: projectId,
-            created_at: complaint.date
-          }))
-        );
-
-      if (insertError) {
-        console.error('Error storing complaints:', insertError);
-        throw insertError;
-      }
-    }
-
-    console.log(`Scraping completed. Found total of ${complaints.length} complaints`);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        complaintsCount: complaints.length,
-        complaints
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
 
   } catch (error) {
     console.error('Error in custom-scrape-complaints function:', error);
