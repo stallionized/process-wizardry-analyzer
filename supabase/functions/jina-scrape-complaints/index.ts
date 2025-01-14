@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,9 +12,10 @@ interface ScrapeRequest {
 }
 
 interface ComplaintData {
-  text: string;
-  source: string;
+  source_url: string;
+  complaint_text: string;
   category: string;
+  date: string;
 }
 
 serve(async (req) => {
@@ -35,6 +37,12 @@ serve(async (req) => {
       throw new Error('JINA_API_KEY is not configured')
     }
 
+    // Create Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // Define search queries for different platforms
     const platforms = [
       'Better Business Bureau',
@@ -48,6 +56,7 @@ serve(async (req) => {
     // Use Jina AI to search and extract complaints from each platform
     for (const platform of platforms) {
       const query = `${clientName} complaints reviews ${platform}`
+      console.log(`Searching ${platform} for: ${query}`)
       
       const response = await fetch('https://api.jina.ai/v1/search', {
         method: 'POST',
@@ -75,12 +84,13 @@ serve(async (req) => {
       // Process and store complaints
       for (const result of (results.data || [])) {
         const complaint: ComplaintData = {
-          text: result.text || result.snippet || '',
-          source: result.url || platform,
-          category: 'Customer Review'
+          source_url: result.url || platform,
+          complaint_text: result.text || result.snippet || '',
+          category: platform,
+          date: new Date().toISOString() // Using current date as fallback
         }
 
-        if (complaint.text) {
+        if (complaint.complaint_text) {
           complaints.push(complaint)
           
           // Store in database
@@ -88,8 +98,8 @@ serve(async (req) => {
             .from('complaints')
             .insert({
               project_id: projectId,
-              complaint_text: complaint.text,
-              source_url: complaint.source,
+              complaint_text: complaint.complaint_text,
+              source_url: complaint.source_url,
               theme: complaint.category,
               trend: 'neutral'
             })
