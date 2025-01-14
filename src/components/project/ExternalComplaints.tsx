@@ -26,22 +26,16 @@ interface CompanyInfo {
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
   const queryClient = useQueryClient();
 
-  const { data: project, isLoading: isLoadingProject } = useQuery({
+  const { data: project } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
-      console.log('Fetching project:', projectId);
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
         .single();
 
-      if (error) {
-        console.error('Error fetching project:', error);
-        throw error;
-      }
-      
-      console.log('Fetched project data:', data);
+      if (error) throw error;
       return data;
     },
   });
@@ -49,12 +43,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const { data, isLoading, error } = useQuery({
     queryKey: ['complaints', projectId, project?.client_name],
     queryFn: async () => {
-      if (!project?.client_name) {
-        throw new Error('Client name is required');
-      }
-
-      console.log('Starting complaints query for:', project.client_name);
-
       // First try to get complaints from database
       const { data: existingComplaints, error: complaintsError } = await supabase
         .from('complaints')
@@ -65,7 +53,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
-        console.log('Found existing complaints:', existingComplaints.length);
         const { data: summaries } = await supabase
           .from('complaint_summaries')
           .select('*')
@@ -87,7 +74,10 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       }
 
       // If no complaints in database, fetch new ones
-      console.log('Fetching new complaints for:', project.client_name);
+      if (!project?.client_name) {
+        throw new Error('Client name is required');
+      }
+
       const response = await supabase.functions.invoke('custom-scrape-complaints', {
         body: { 
           clientName: project.client_name,
@@ -95,12 +85,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         }
       });
 
-      if (response.error) {
-        console.error('Error fetching complaints:', response.error);
-        throw response.error;
-      }
-      
-      console.log('Received complaints response:', response);
+      if (response.error) throw response.error;
       
       return {
         complaints: response.data.complaints.map((c: any) => ({
@@ -116,11 +101,9 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       };
     },
     enabled: !!projectId && !!project?.client_name,
-    staleTime: 0, // Always consider the data stale
-    gcTime: 0, // Don't cache the results (previously cacheTime)
   });
 
-  if (isLoadingProject || isLoading) {
+  if (isLoading) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
