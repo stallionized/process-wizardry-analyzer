@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_COMPLAINTS_PER_SOURCE = 10;
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,86 +25,66 @@ serve(async (req) => {
     console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     const complaints = [];
-    const encodedCompanyName = encodeURIComponent(clientName);
+    const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
     
-    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    // Focus on ConsumerAffairs only with a simple approach
+    const url = `https://www.consumeraffairs.com/search/?query=${encodedCompanyName}`;
     
-    const sources = [
-      {
-        name: 'ConsumerAffairs',
-        url: `https://www.consumeraffairs.com/search/?query=${encodedCompanyName}`,
-        pattern: /<div class="rvw-bd">(.*?)<\/div>/gs,
-        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/
-      },
-      {
-        name: 'PissedConsumer',
-        url: `https://www.pissedconsumer.com/search.html?query=${encodedCompanyName}`,
-        pattern: /<div class="review-text">(.*?)<\/div>/gs,
-        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/
-      }
-    ];
-
-    for (const source of sources) {
-      console.log(`Scraping from ${source.name}...`);
+    console.log(`Fetching from URL: ${url}`);
+    
+    try {
+      const response = await fetch(url, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Referer': 'https://www.google.com/'
+        }
+      });
       
-      try {
-        const response = await fetch(source.url, {
-          headers: { 
-            'User-Agent': userAgent,
-            'Accept': 'text/html',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://www.google.com/'
-          }
+      if (!response.ok) {
+        console.error(`ConsumerAffairs returned status ${response.status}`);
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
+      
+      const html = await response.text();
+      console.log(`Got HTML response of length: ${html.length}`);
+
+      // Simple regex pattern to extract reviews
+      const reviewPattern = /<div class="rvw-bd">(.*?)<\/div>/gs;
+      const matches = html.matchAll(reviewPattern);
+      
+      for (const match of matches) {
+        let complaintText = match[1]
+          .replace(/<[^>]+>/g, '') // Remove HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .trim();
+        
+        if (complaintText.length < 20) continue; // Skip very short texts
+        
+        complaints.push({
+          text: complaintText,
+          date: new Date().toISOString(),
+          source: url,
+          category: 'ConsumerAffairs Review'
         });
         
-        if (!response.ok) {
-          console.log(`${source.name} returned status ${response.status}. Skipping.`);
-          continue;
-        }
+        console.log(`Found complaint: ${complaintText.substring(0, 50)}...`);
         
-        const html = await response.text();
-        console.log(`Got HTML response of length: ${html.length}`);
-
-        const matches = html.matchAll(source.pattern);
-        let count = 0;
-        
-        for (const match of matches) {
-          if (count >= MAX_COMPLAINTS_PER_SOURCE) break;
-          
-          let complaintText = match[1]
-            .replace(/<[^>]+>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .trim();
-          
-          if (complaintText.length < 20) continue;
-          
-          complaints.push({
-            text: complaintText,
-            date: new Date().toISOString(),
-            source: source.url,
-            category: source.name
-          });
-          
-          count++;
-          console.log(`Added complaint from ${source.name}: ${complaintText.substring(0, 50)}...`);
-        }
-        
-        // Add a small delay between sources
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-      } catch (error) {
-        console.error(`Error scraping ${source.name}:`, error);
-        continue;
+        if (complaints.length >= 10) break; // Limit to 10 complaints
       }
+      
+    } catch (error) {
+      console.error('Error scraping ConsumerAffairs:', error);
     }
 
     console.log(`Total complaints found: ${complaints.length}`);
 
-    // Store complaints in the database
+    // Store complaints in the database if any were found
     if (complaints.length > 0) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
