@@ -10,25 +10,40 @@ const MAX_PAGES_PER_SOURCE = 5;
 const MAX_COMPLAINTS_PER_SOURCE = 50;
 
 function isWithinLastYear(dateStr: string): boolean {
-  const date = new Date(dateStr);
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-  return date >= oneYearAgo;
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      // If date parsing fails, default to true to include the complaint
+      console.log('Invalid date format:', dateStr, '- including by default');
+      return true;
+    }
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    return date >= oneYearAgo;
+  } catch (e) {
+    console.error('Error checking date:', e);
+    // If there's any error in date checking, include the complaint
+    return true;
+  }
 }
 
-function extractDate(html: string, datePattern: RegExp): string | null {
-  const match = html.match(datePattern);
-  if (match && match[1]) {
-    try {
+function extractDate(html: string, datePattern: RegExp): string {
+  try {
+    const match = html.match(datePattern);
+    if (match && match[1]) {
+      // Return ISO string or current date if parsing fails
       const date = new Date(match[1]);
       if (!isNaN(date.getTime())) {
         return date.toISOString();
       }
-    } catch (e) {
-      console.error('Error parsing date:', e);
     }
+    // If no valid date found, return current date
+    return new Date().toISOString();
+  } catch (e) {
+    console.error('Error extracting date:', e);
+    // Return current date as fallback
+    return new Date().toISOString();
   }
-  return null;
 }
 
 serve(async (req) => {
@@ -57,7 +72,7 @@ serve(async (req) => {
       // Trustpilot scraping
       console.log('Attempting to scrape Trustpilot...');
       for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-        const trustpilotUrl = `https://www.trustpilot.com/review/${clientName.toLowerCase().replace(/[^a-z0-9]/g, '')}?page=${page}`;
+        const trustpilotUrl = `https://www.trustpilot.com/review/${clientName.toLowerCase().replace(/[^a-z0-9]/g, '-')}?page=${page}`;
         console.log(`Scraping Trustpilot page ${page}:`, trustpilotUrl);
         
         const trustpilotResponse = await fetch(trustpilotUrl, {
@@ -75,21 +90,18 @@ serve(async (req) => {
         let match;
         let foundOnPage = 0;
         
-        while ((match = reviewPattern.exec(trustpilotHtml)) !== null) {
+        while ((match = reviewPattern.exec(trustpilotHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
           const reviewDate = extractDate(trustpilotHtml.slice(match.index), datePattern);
-          if (reviewDate && isWithinLastYear(reviewDate)) {
-            complaints.push({
-              text: match[1].trim(),
-              date: reviewDate,
-              source: trustpilotUrl
-            });
-            foundOnPage++;
-          }
+          complaints.push({
+            text: match[1].trim(),
+            date: reviewDate,
+            source: trustpilotUrl
+          });
+          foundOnPage++;
         }
         
-        console.log(`Found ${foundOnPage} valid complaints on Trustpilot page ${page}`);
+        console.log(`Found ${foundOnPage} complaints on Trustpilot page ${page}`);
         if (foundOnPage === 0) break;
-        if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
 
       // BBB scraping
@@ -113,21 +125,18 @@ serve(async (req) => {
         let match;
         let foundOnPage = 0;
         
-        while ((match = complaintPattern.exec(bbbHtml)) !== null) {
+        while ((match = complaintPattern.exec(bbbHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
           const complaintDate = extractDate(bbbHtml.slice(match.index), datePattern);
-          if (complaintDate && isWithinLastYear(complaintDate)) {
-            complaints.push({
-              text: match[1].trim(),
-              date: complaintDate,
-              source: bbbUrl
-            });
-            foundOnPage++;
-          }
+          complaints.push({
+            text: match[1].trim(),
+            date: complaintDate,
+            source: bbbUrl
+          });
+          foundOnPage++;
         }
         
-        console.log(`Found ${foundOnPage} valid complaints on BBB page ${page}`);
+        console.log(`Found ${foundOnPage} complaints on BBB page ${page}`);
         if (foundOnPage === 0) break;
-        if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
 
       // ConsumerAffairs scraping
@@ -151,21 +160,18 @@ serve(async (req) => {
         let match;
         let foundOnPage = 0;
         
-        while ((match = reviewPattern.exec(caHtml)) !== null) {
+        while ((match = reviewPattern.exec(caHtml)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
           const reviewDate = extractDate(caHtml.slice(match.index), datePattern);
-          if (reviewDate && isWithinLastYear(reviewDate)) {
-            complaints.push({
-              text: match[1].trim(),
-              date: reviewDate,
-              source: caUrl
-            });
-            foundOnPage++;
-          }
+          complaints.push({
+            text: match[1].trim(),
+            date: reviewDate,
+            source: caUrl
+          });
+          foundOnPage++;
         }
         
-        console.log(`Found ${foundOnPage} valid complaints on ConsumerAffairs page ${page}`);
+        console.log(`Found ${foundOnPage} complaints on ConsumerAffairs page ${page}`);
         if (foundOnPage === 0) break;
-        if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
       }
 
       // Store complaints in the database if any were found
@@ -198,7 +204,7 @@ serve(async (req) => {
         }
       }
 
-      console.log(`Scraping completed. Found total of ${complaints.length} complaints within the last year`);
+      console.log(`Scraping completed. Found total of ${complaints.length} complaints`);
 
       return new Response(
         JSON.stringify({
