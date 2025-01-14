@@ -50,15 +50,20 @@ serve(async (req) => {
     const resultsPerPage = 10
     const startIndex = (page - 1) * resultsPerPage
 
-    // Construct query specifically for Trustpilot
-    const query = `site:trustpilot.com ${clientName} reviews`
-    console.log(`Searching with query: ${query}`)
+    // Format company name for Trustpilot URL
+    const formattedCompanyName = clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+    // Construct Trustpilot URL
+    const searchUrl = `https://www.trustpilot.com/review/${formattedCompanyName}`;
+    console.log('Constructed Trustpilot URL:', searchUrl);
     
     // Use the Reader API endpoint for web content extraction
-    const baseUrl = 'https://r.jina.ai/reader'
-    const searchUrl = `https://www.trustpilot.com/review/${clientName.toLowerCase().replace(/\s+/g, '')}`
+    const baseUrl = 'https://r.jina.ai/reader';
     
-    console.log('Making request to Jina Reader API:', searchUrl)
+    console.log('Making request to Jina Reader API for URL:', searchUrl);
     
     const response = await fetch(baseUrl, {
       method: 'POST',
@@ -69,28 +74,30 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: searchUrl,
-        mode: 'article'
+        mode: 'article',
+        wait_for_selector: '.styles_reviewContent__0Q2Tg' // Trustpilot review content class
       })
-    })
+    });
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Error response from Jina AI:', errorText)
-      throw new Error(`Jina AI API returned status ${response.status}: ${errorText}`)
+      const errorText = await response.text();
+      console.error('Error response from Jina AI:', errorText);
+      throw new Error(`Jina AI API returned status ${response.status}: ${errorText}`);
     }
 
-    const results = await response.json()
-    console.log('Raw Jina AI response:', JSON.stringify(results))
+    const results = await response.json();
+    console.log('Raw Jina AI response:', JSON.stringify(results));
 
     // Process the extracted content
     if (results.text) {
-      // Split the content into paragraphs or reviews
-      const reviews = results.text.split(/\n\n+/).filter(Boolean)
+      // Split the content into reviews using Trustpilot's review content class
+      const reviewPattern = /(?:★{1,5}|⭐{1,5})\s*([\s\S]*?)(?=(?:★{1,5}|⭐{1,5})|$)/g;
+      const reviews = results.text.match(reviewPattern) || [];
       
       // Process each review segment
       for (const reviewText of reviews.slice(startIndex, startIndex + resultsPerPage)) {
         if (!reviewText.trim()) {
-          continue
+          continue;
         }
 
         const complaint: ComplaintData = {
@@ -98,9 +105,9 @@ serve(async (req) => {
           complaint_text: reviewText.trim(),
           category: 'Trustpilot Review',
           date: new Date().toISOString()
-        }
+        };
 
-        complaints.push(complaint)
+        complaints.push(complaint);
         
         // Store in database
         const { error: insertError } = await supabaseAdmin
@@ -111,15 +118,15 @@ serve(async (req) => {
             source_url: complaint.source_url,
             theme: complaint.category,
             trend: 'neutral'
-          })
+          });
 
         if (insertError) {
-          console.error('Error storing complaint:', insertError)
+          console.error('Error storing complaint:', insertError);
         }
       }
     }
 
-    console.log(`Successfully processed ${complaints.length} complaints`)
+    console.log(`Successfully processed ${complaints.length} complaints`);
 
     return new Response(
       JSON.stringify({ 
@@ -133,10 +140,10 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         } 
       }
-    )
+    );
 
   } catch (error) {
-    console.error('Scraping error:', error)
+    console.error('Scraping error:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -149,6 +156,6 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         }
       }
-    )
+    );
   }
-})
+});
