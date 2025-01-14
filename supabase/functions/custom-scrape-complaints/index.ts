@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_PAGES_PER_SOURCE = 3;
-const MAX_COMPLAINTS_PER_SOURCE = 25;
+const MAX_PAGES_PER_SOURCE = 2;
+const MAX_COMPLAINTS_PER_SOURCE = 15;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -25,16 +25,21 @@ serve(async (req) => {
       throw new Error('Project ID is required');
     }
 
-    console.log(`Starting enhanced scraping for ${clientName} with project ID ${projectId}`);
+    console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     const complaints = [];
     const encodedCompanyName = encodeURIComponent(clientName);
-    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    
+    // More varied user agents to prevent blocking
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0'
+    ];
     
     // Additional search variations to increase coverage
     const searchVariations = [
       clientName,
-      `${clientName} reviews`,
       `${clientName} complaints`,
       clientName.toLowerCase(),
       clientName.replace(/\s+/g, '-').toLowerCase(),
@@ -43,27 +48,27 @@ serve(async (req) => {
 
     const sources = [
       {
-        name: 'Trustpilot',
-        baseUrl: (variation) => `https://www.trustpilot.com/review/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        pattern: /<p[^>]*data-service-review-text-typography[^>]*>([^<]+)<\/p>/g,
-        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
-      },
-      {
         name: 'ConsumerAffairs',
         baseUrl: (variation) => `https://www.consumeraffairs.com/search/?query=${encodeURIComponent(variation)}`,
-        pattern: /<p[^>]*class="[^"]*ca-review-content[^"]*"[^>]*>([^<]+)<\/p>/g,
+        pattern: /<div[^>]*class="[^"]*rvw-bd[^"]*"[^>]*>(.*?)<\/div>/g,
         datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       },
       {
         name: 'PissedConsumer',
-        baseUrl: (variation) => `https://www.pissedconsumer.com/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/reviews`,
-        pattern: /<div[^>]*class="[^"]*review-text[^"]*"[^>]*>([^<]+)<\/div>/g,
+        baseUrl: (variation) => `https://www.pissedconsumer.com/search.html?query=${encodeURIComponent(variation)}`,
+        pattern: /<div[^>]*class="[^"]*review-text[^"]*"[^>]*>(.*?)<\/div>/g,
         datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       },
       {
         name: 'BBB',
         baseUrl: (variation) => `https://www.bbb.org/search?find_text=${encodeURIComponent(variation)}`,
-        pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g,
+        pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>(.*?)<\/div>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
+      },
+      {
+        name: 'ComplaintsBoard',
+        baseUrl: (variation) => `https://www.complaintsboard.com/search?query=${encodeURIComponent(variation)}`,
+        pattern: /<div[^>]*class="[^"]*complaint-content[^"]*"[^>]*>(.*?)<\/div>/g,
         datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       }
     ];
@@ -74,8 +79,10 @@ serve(async (req) => {
       for (const variation of searchVariations) {
         console.log(`Trying variation: ${variation}`);
         
+        const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+        
         for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
-          const url = `${source.baseUrl(variation)}${page > 1 ? `?page=${page}` : ''}`;
+          const url = `${source.baseUrl(variation)}${page > 1 ? `&page=${page}` : ''}`;
           console.log(`Fetching: ${url}`);
           
           try {
@@ -87,7 +94,8 @@ serve(async (req) => {
                 'Cache-Control': 'no-cache',
                 'Pragma': 'no-cache',
                 'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+                'Upgrade-Insecure-Requests': '1',
+                'Referer': 'https://www.google.com/'
               }
             });
             
@@ -99,36 +107,40 @@ serve(async (req) => {
             const html = await response.text();
             console.log(`Got HTML response of length: ${html.length}`);
 
-            let match;
-            let dateMatch;
             let foundOnPage = 0;
+            const htmlContent = html.replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ');
             
-            // Extract complaints and their dates
-            while ((match = source.pattern.exec(html)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
-              const complaintText = match[1].trim()
+            // Extract complaints using more lenient patterns
+            const complaintMatches = htmlContent.match(source.pattern) || [];
+            console.log(`Found ${complaintMatches.length} potential complaints`);
+            
+            for (const match of complaintMatches) {
+              if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
+              
+              // Clean up the complaint text
+              let complaintText = match
+                .replace(/<[^>]+>/g, '')
                 .replace(/&nbsp;/g, ' ')
                 .replace(/&amp;/g, '&')
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"');
-              
-              let complaintDate = new Date().toISOString();
-
-              // Try to find the corresponding date for this complaint
-              if (source.datePattern) {
-                dateMatch = source.datePattern.exec(html);
-                if (dateMatch) {
-                  try {
-                    complaintDate = new Date(dateMatch[1]).toISOString();
-                  } catch (e) {
-                    console.log(`Failed to parse date: ${dateMatch[1]}`);
-                  }
-                }
-              }
+                .replace(/&quot;/g, '"')
+                .trim();
               
               // Skip if complaint is too short or appears to be spam
               if (complaintText.length < 20 || /[<>]/.test(complaintText)) {
                 continue;
+              }
+              
+              // Use current date if we can't extract one
+              let complaintDate = new Date().toISOString();
+              const dateMatch = htmlContent.match(source.datePattern);
+              if (dateMatch && dateMatch[1]) {
+                try {
+                  complaintDate = new Date(dateMatch[1]).toISOString();
+                } catch (e) {
+                  console.log(`Failed to parse date: ${dateMatch[1]}`);
+                }
               }
               
               complaints.push({
@@ -137,14 +149,15 @@ serve(async (req) => {
                 source: url,
                 category: source.name
               });
+              
               foundOnPage++;
+              console.log(`Added complaint: ${complaintText.substring(0, 50)}...`);
             }
             
-            console.log(`Found ${foundOnPage} complaints on ${source.name} page ${page}`);
+            console.log(`Found ${foundOnPage} valid complaints on ${source.name} page ${page}`);
             if (foundOnPage === 0) break;
-            if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
-
-            // Add a small delay between requests to be respectful
+            
+            // Add a delay between requests
             await new Promise(resolve => setTimeout(resolve, 2000));
           } catch (error) {
             console.error(`Error scraping ${source.name}:`, error);
@@ -199,12 +212,7 @@ serve(async (req) => {
         complaintsCount: complaints.length,
         complaints
       }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
