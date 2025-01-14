@@ -216,6 +216,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       </ScrollArea>
     </Card>
   );
-});
+};
 
 export default ExternalComplaints;
