@@ -101,38 +101,48 @@ serve(async (req) => {
     }
 
     const results = await response.json()
-    console.log(`Got ${results.data?.length || 0} results from Jina AI search`)
+    console.log('Raw Jina AI response:', JSON.stringify(results))
 
     // Process and store complaints
-    for (const result of (results.data || [])) {
-      if (!result.text && !result.snippet) {
-        console.log('Skipping result with no text content:', result)
-        continue
-      }
+    if (results.data && Array.isArray(results.data)) {
+      for (const result of results.data) {
+        if (!result.text && !result.content) {
+          console.log('Skipping result with no text content:', result)
+          continue
+        }
 
-      const complaint: ComplaintData = {
-        source_url: result.url || 'Trustpilot',
-        complaint_text: result.text || result.snippet || '',
-        category: 'Trustpilot Review',
-        date: new Date().toISOString()
-      }
+        const complaintText = result.text || result.content || result.snippet || ''
+        if (!complaintText.trim()) {
+          console.log('Skipping empty text result:', result)
+          continue
+        }
 
-      complaints.push(complaint)
-      
-      // Store in database
-      const { error: insertError } = await supabaseAdmin
-        .from('complaints')
-        .insert({
-          project_id: projectId,
-          complaint_text: complaint.complaint_text,
-          source_url: complaint.source_url,
-          theme: complaint.category,
-          trend: 'neutral'
-        })
+        const complaint: ComplaintData = {
+          source_url: result.url || 'Trustpilot',
+          complaint_text: complaintText,
+          category: 'Trustpilot Review',
+          date: new Date().toISOString()
+        }
 
-      if (insertError) {
-        console.error('Error storing complaint:', insertError)
+        complaints.push(complaint)
+        
+        // Store in database
+        const { error: insertError } = await supabaseAdmin
+          .from('complaints')
+          .insert({
+            project_id: projectId,
+            complaint_text: complaint.complaint_text,
+            source_url: complaint.source_url,
+            theme: complaint.category,
+            trend: 'neutral'
+          })
+
+        if (insertError) {
+          console.error('Error storing complaint:', insertError)
+        }
       }
+    } else {
+      console.log('No data array in results:', results)
     }
 
     console.log(`Successfully processed ${complaints.length} complaints`)
