@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
-import { format, isValid, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -43,11 +43,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
   const formatDate = (dateString: string) => {
     try {
-      const date = parseISO(dateString);
-      if (isValid(date)) {
-        return format(date, 'MMM d, yyyy');
-      }
-      return 'Date unavailable';
+      return format(new Date(dateString), 'MMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Date unavailable';
@@ -70,12 +66,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
         console.log('Found existing complaints:', existingComplaints.length);
-        const { data: summaries } = await supabase
-          .from('complaint_summaries')
-          .select('*')
-          .eq('project_id', projectId)
-          .maybeSingle();
-
         return {
           complaints: existingComplaints.map(c => ({
             source_url: c.source_url,
@@ -84,7 +74,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
             category: c.theme
           })),
           companyInfo: {
-            description: summaries ? `Analysis based on ${summaries.volume} complaints` : '',
+            description: `Found ${existingComplaints.length} complaints`,
             variations: []
           }
         };
@@ -114,11 +104,11 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         complaints: response.data.complaints.map((c: any) => ({
           source_url: c.source,
           complaint_text: c.text,
-          date: c.date || new Date().toISOString(),
+          date: new Date().toISOString(),
           category: c.category || 'Customer Review'
         })),
         companyInfo: {
-          description: `Found ${response.data.complaints.length} recent complaints`,
+          description: `Found ${response.data.complaints.length} complaints`,
           variations: []
         }
       };
@@ -180,11 +170,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-2">Company Information</h3>
           <p className="text-muted-foreground mb-2">{companyInfo.description}</p>
-          {companyInfo.variations && companyInfo.variations.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              Common name variations: {companyInfo.variations.join(', ')}
-            </p>
-          )}
         </div>
       )}
 

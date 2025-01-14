@@ -6,55 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function scrapeConsumerAffairs(clientName: string) {
-  console.log('Scraping ConsumerAffairs for:', clientName);
-  const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
-  const url = `https://www.consumeraffairs.com/search/?query=${encodedCompanyName}`;
-  
-  try {
-    const response = await fetch(url, {
-      headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`ConsumerAffairs returned status ${response.status}`);
-      return [];
-    }
-
-    const html = await response.text();
-    const reviewPattern = /<div class="rvw-bd">(.*?)<\/div>/gs;
-    const matches = html.matchAll(reviewPattern);
-    const complaints = [];
-
-    for (const match of matches) {
-      const complaintText = match[1]
-        .replace(/<[^>]+>/g, '')
-        .trim();
-
-      if (complaintText.length >= 20) {
-        complaints.push({
-          text: complaintText,
-          source: url,
-          date: new Date().toISOString(),
-          category: 'ConsumerAffairs Review'
-        });
-      }
-    }
-
-    console.log(`Found ${complaints.length} complaints on ConsumerAffairs`);
-    return complaints;
-  } catch (error) {
-    console.error('Error scraping ConsumerAffairs:', error);
-    return [];
-  }
-}
-
 async function scrapeBBB(clientName: string) {
   console.log('Scraping BBB for:', clientName);
-  const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
-  const url = `https://www.bbb.org/search?find_text=${encodedCompanyName}`;
+  const encodedName = encodeURIComponent(clientName.toLowerCase());
+  const url = `https://www.bbb.org/search?find_text=${encodedName}`;
   
   try {
     const response = await fetch(url, {
@@ -69,26 +24,22 @@ async function scrapeBBB(clientName: string) {
     }
 
     const html = await response.text();
-    const reviewPattern = /<div class="complaint">(.*?)<\/div>/gs;
-    const matches = html.matchAll(reviewPattern);
     const complaints = [];
+    const reviewPattern = /<div class="complaint-text">(.*?)<\/div>/gs;
+    const matches = html.matchAll(reviewPattern);
 
     for (const match of matches) {
-      const complaintText = match[1]
-        .replace(/<[^>]+>/g, '')
-        .trim();
-
-      if (complaintText.length >= 20) {
+      const text = match[1].replace(/<[^>]+>/g, '').trim();
+      if (text.length > 20) {
         complaints.push({
-          text: complaintText,
+          text,
           source: url,
-          date: new Date().toISOString(),
           category: 'BBB Complaint'
         });
       }
     }
 
-    console.log(`Found ${complaints.length} complaints on BBB`);
+    console.log(`Found ${complaints.length} BBB complaints`);
     return complaints;
   } catch (error) {
     console.error('Error scraping BBB:', error);
@@ -98,8 +49,8 @@ async function scrapeBBB(clientName: string) {
 
 async function scrapeTrustpilot(clientName: string) {
   console.log('Scraping Trustpilot for:', clientName);
-  const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
-  const url = `https://www.trustpilot.com/review/search?query=${encodedCompanyName}`;
+  const encodedName = encodeURIComponent(clientName.toLowerCase());
+  const url = `https://www.trustpilot.com/review/search?query=${encodedName}`;
   
   try {
     const response = await fetch(url, {
@@ -114,29 +65,107 @@ async function scrapeTrustpilot(clientName: string) {
     }
 
     const html = await response.text();
+    const complaints = [];
     const reviewPattern = /<p class="review-content">(.*?)<\/p>/gs;
     const matches = html.matchAll(reviewPattern);
-    const complaints = [];
 
     for (const match of matches) {
-      const complaintText = match[1]
-        .replace(/<[^>]+>/g, '')
-        .trim();
-
-      if (complaintText.length >= 20) {
+      const text = match[1].replace(/<[^>]+>/g, '').trim();
+      if (text.length > 20) {
         complaints.push({
-          text: complaintText,
+          text,
           source: url,
-          date: new Date().toISOString(),
           category: 'Trustpilot Review'
         });
       }
     }
 
-    console.log(`Found ${complaints.length} complaints on Trustpilot`);
+    console.log(`Found ${complaints.length} Trustpilot reviews`);
     return complaints;
   } catch (error) {
     console.error('Error scraping Trustpilot:', error);
+    return [];
+  }
+}
+
+async function scrapeYelp(clientName: string) {
+  console.log('Scraping Yelp for:', clientName);
+  const encodedName = encodeURIComponent(clientName.toLowerCase());
+  const url = `https://www.yelp.com/search?find_desc=${encodedName}`;
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Yelp returned status ${response.status}`);
+      return [];
+    }
+
+    const html = await response.text();
+    const complaints = [];
+    const reviewPattern = /<p class="comment">(.*?)<\/p>/gs;
+    const matches = html.matchAll(reviewPattern);
+
+    for (const match of matches) {
+      const text = match[1].replace(/<[^>]+>/g, '').trim();
+      if (text.length > 20) {
+        complaints.push({
+          text,
+          source: url,
+          category: 'Yelp Review'
+        });
+      }
+    }
+
+    console.log(`Found ${complaints.length} Yelp reviews`);
+    return complaints;
+  } catch (error) {
+    console.error('Error scraping Yelp:', error);
+    return [];
+  }
+}
+
+async function scrapePissedCustomer(clientName: string) {
+  console.log('Scraping PissedCustomer for:', clientName);
+  const encodedName = encodeURIComponent(clientName.toLowerCase());
+  const url = `https://www.pissedconsumer.com/search.html?query=${encodedName}`;
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`PissedCustomer returned status ${response.status}`);
+      return [];
+    }
+
+    const html = await response.text();
+    const complaints = [];
+    const reviewPattern = /<div class="review-text">(.*?)<\/div>/gs;
+    const matches = html.matchAll(reviewPattern);
+
+    for (const match of matches) {
+      const text = match[1].replace(/<[^>]+>/g, '').trim();
+      if (text.length > 20) {
+        complaints.push({
+          text,
+          source: url,
+          category: 'PissedCustomer Review'
+        });
+      }
+    }
+
+    console.log(`Found ${complaints.length} PissedCustomer complaints`);
+    return complaints;
+  } catch (error) {
+    console.error('Error scraping PissedCustomer:', error);
     return [];
   }
 }
@@ -159,24 +188,27 @@ serve(async (req) => {
 
     console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
-    // Scrape from multiple sources
-    const [consumerAffairsComplaints, bbbComplaints, trustpilotComplaints] = await Promise.all([
-      scrapeConsumerAffairs(clientName),
+    // Scrape from all sources concurrently
+    const [bbbComplaints, trustpilotComplaints, yelpComplaints, pissedCustomerComplaints] = await Promise.all([
       scrapeBBB(clientName),
-      scrapeTrustpilot(clientName)
+      scrapeTrustpilot(clientName),
+      scrapeYelp(clientName),
+      scrapePissedCustomer(clientName)
     ]);
 
     const allComplaints = [
-      ...consumerAffairsComplaints,
       ...bbbComplaints,
-      ...trustpilotComplaints
+      ...trustpilotComplaints,
+      ...yelpComplaints,
+      ...pissedCustomerComplaints
     ];
 
     console.log('Total complaints found:', {
       total: allComplaints.length,
-      consumerAffairs: consumerAffairsComplaints.length,
       bbb: bbbComplaints.length,
-      trustpilot: trustpilotComplaints.length
+      trustpilot: trustpilotComplaints.length,
+      yelp: yelpComplaints.length,
+      pissedCustomer: pissedCustomerComplaints.length
     });
 
     // Store complaints in the database if any were found
@@ -200,7 +232,7 @@ serve(async (req) => {
             theme: complaint.category,
             trend: 'Recent',
             project_id: projectId,
-            created_at: complaint.date
+            created_at: new Date().toISOString()
           }))
         );
 
