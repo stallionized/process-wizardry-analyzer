@@ -38,6 +38,8 @@ serve(async (req) => {
       throw new Error('JINA_API_KEY is not configured')
     }
 
+    console.log('JINA_API_KEY is configured, proceeding with API call')
+
     // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -51,6 +53,21 @@ serve(async (req) => {
     // Construct query specifically for Trustpilot
     const query = `site:trustpilot.com ${clientName} reviews`
     console.log(`Searching with query: ${query}`)
+    
+    // Test API key validity first
+    const testResponse = await fetch('https://api.jina.ai/search/ping', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${JINA_API_KEY}`,
+      }
+    });
+
+    if (!testResponse.ok) {
+      console.error('Jina AI API key validation failed:', await testResponse.text());
+      throw new Error('Invalid Jina AI API key');
+    }
+
+    console.log('Jina AI API key validated successfully');
     
     const response = await fetch('https://api.jina.ai/search', {
       method: 'POST',
