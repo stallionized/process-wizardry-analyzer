@@ -54,8 +54,10 @@ serve(async (req) => {
     const query = `site:trustpilot.com ${clientName} reviews`
     console.log(`Searching with query: ${query}`)
     
+    const baseUrl = 'https://api.jina.ai/v1/search'
+    
     // Test API key with a simple search request
-    const testResponse = await fetch('https://api.jina.ai/v1/search', {
+    const testResponse = await fetch(baseUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
@@ -77,7 +79,7 @@ serve(async (req) => {
 
     console.log('Jina AI API key validated successfully');
     
-    const response = await fetch('https://api.jina.ai/v1/search', {
+    const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
