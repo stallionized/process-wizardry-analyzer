@@ -44,18 +44,17 @@ serve(async (req) => {
       
       const html = await response.text();
       
-      // Extract reviews with dates using a more specific regex pattern
-      const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>[\s\S]*?<time[^>]*datetime="([^"]+)"[^>]*>/g;
+      // Extract reviews using a simpler regex pattern
+      const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
       let match;
       
       while ((match = reviewPattern.exec(html)) !== null) {
         const complaintText = match[1].trim();
-        const complaintDate = match[2]; // ISO date string from datetime attribute
         
-        if (complaintText && complaintDate) {
+        if (complaintText) {
           complaints.push({
             text: complaintText,
-            date: complaintDate,
+            date: new Date().toISOString(), // Use current date as fallback
             source: url
           });
         }
@@ -87,7 +86,7 @@ serve(async (req) => {
             theme: 'Customer Review',
             trend: 'Recent',
             project_id: projectId,
-            created_at: complaint.date // Use the actual complaint date
+            created_at: complaint.date
           }))
         );
 
