@@ -54,30 +54,11 @@ serve(async (req) => {
     const query = `site:trustpilot.com ${clientName} reviews`
     console.log(`Searching with query: ${query}`)
     
-    const baseUrl = 'https://api.jina.ai/v1/search'
+    // Use the Reader API endpoint for web content extraction
+    const baseUrl = 'https://r.jina.ai/reader'
+    const searchUrl = `https://www.trustpilot.com/review/${clientName.toLowerCase().replace(/\s+/g, '')}`
     
-    // Test API key with a simple search request
-    const testResponse = await fetch(baseUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        mode: 'web',
-        query: 'test',
-        limit: 1
-      })
-    });
-
-    if (!testResponse.ok) {
-      const errorText = await testResponse.text();
-      console.error('Jina AI API key validation failed:', errorText);
-      throw new Error(`Invalid Jina AI API key: ${errorText}`);
-    }
-
-    console.log('Jina AI API key validated successfully');
+    console.log('Making request to Jina Reader API:', searchUrl)
     
     const response = await fetch(baseUrl, {
       method: 'POST',
@@ -87,10 +68,8 @@ serve(async (req) => {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        mode: 'web',
-        query: query,
-        limit: resultsPerPage,
-        offset: startIndex
+        url: searchUrl,
+        mode: 'article'
       })
     })
 
@@ -103,23 +82,20 @@ serve(async (req) => {
     const results = await response.json()
     console.log('Raw Jina AI response:', JSON.stringify(results))
 
-    // Process and store complaints
-    if (results.data && Array.isArray(results.data)) {
-      for (const result of results.data) {
-        if (!result.text && !result.content) {
-          console.log('Skipping result with no text content:', result)
-          continue
-        }
-
-        const complaintText = result.text || result.content || result.snippet || ''
-        if (!complaintText.trim()) {
-          console.log('Skipping empty text result:', result)
+    // Process the extracted content
+    if (results.text) {
+      // Split the content into paragraphs or reviews
+      const reviews = results.text.split(/\n\n+/).filter(Boolean)
+      
+      // Process each review segment
+      for (const reviewText of reviews.slice(startIndex, startIndex + resultsPerPage)) {
+        if (!reviewText.trim()) {
           continue
         }
 
         const complaint: ComplaintData = {
-          source_url: result.url || 'Trustpilot',
-          complaint_text: complaintText,
+          source_url: searchUrl,
+          complaint_text: reviewText.trim(),
           category: 'Trustpilot Review',
           date: new Date().toISOString()
         }
@@ -141,8 +117,6 @@ serve(async (req) => {
           console.error('Error storing complaint:', insertError)
         }
       }
-    } else {
-      console.log('No data array in results:', results)
     }
 
     console.log(`Successfully processed ${complaints.length} complaints`)
@@ -151,7 +125,7 @@ serve(async (req) => {
       JSON.stringify({ 
         complaints,
         message: `Successfully scraped ${complaints.length} complaints from page ${page}`,
-        hasMore: results.data?.length === resultsPerPage
+        hasMore: complaints.length === resultsPerPage
       }),
       { 
         headers: { 
