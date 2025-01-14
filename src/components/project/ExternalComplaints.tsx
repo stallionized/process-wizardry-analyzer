@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -64,7 +64,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           complaints: existingComplaints.map(c => ({
             source_url: c.source_url,
             complaint_text: c.complaint_text,
-            date: format(parseISO(c.created_at), 'MMM d, yyyy'),
+            date: format(new Date(c.created_at), 'MMM d, yyyy'),
             category: c.theme
           })),
           companyInfo: {
@@ -92,8 +92,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         complaints: response.data.complaints.map((c: any) => ({
           source_url: c.source,
           complaint_text: c.text,
-          date: format(parseISO(c.date), 'MMM d, yyyy'),
-          category: 'Customer Review'
+          date: format(new Date(c.date), 'MMM d, yyyy'),
+          category: c.category || 'Customer Review'
         })),
         companyInfo: {
           description: `Found ${response.data.complaints.length} recent complaints`,
@@ -102,6 +102,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       };
     },
     enabled: !!projectId && !!project?.client_name,
+    staleTime: 0,
+    gcTime: 0
   });
 
   if (isLoading) {

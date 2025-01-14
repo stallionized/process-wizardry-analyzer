@@ -22,49 +22,67 @@ serve(async (req) => {
       throw new Error('Project ID is required');
     }
 
-    console.log(`Starting scraping for ${clientName}`);
+    console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     const complaints = [];
-    const encodedCompanyName = encodeURIComponent(clientName);
-    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-
-    // ConsumerAffairs scraping
+    const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
+    
+    // Focus on ConsumerAffairs only with a simple approach
+    const url = `https://www.consumeraffairs.com/search/?query=${encodedCompanyName}`;
+    
+    console.log(`Fetching from URL: ${url}`);
+    
     try {
-      const url = `https://www.consumeraffairs.com/search?query=${encodedCompanyName}`;
-      console.log('Scraping ConsumerAffairs:', url);
-      
       const response = await fetch(url, {
-        headers: { 'User-Agent': userAgent }
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Referer': 'https://www.google.com/'
+        }
       });
       
       if (!response.ok) {
-        console.log(`ConsumerAffairs returned status ${response.status}`);
-        throw new Error(`Failed to fetch from ConsumerAffairs: ${response.status}`);
+        console.error(`ConsumerAffairs returned status ${response.status}`);
+        throw new Error(`Failed to fetch: ${response.status}`);
       }
       
       const html = await response.text();
+      console.log(`Got HTML response of length: ${html.length}`);
+
+      // Simple regex pattern to extract reviews
+      const reviewPattern = /<div class="rvw-bd">(.*?)<\/div>/gs;
+      const matches = html.matchAll(reviewPattern);
       
-      // Extract reviews using a reliable regex pattern
-      const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([\s\S]*?)<\/div>/g;
-      let match;
-      
-      while ((match = reviewPattern.exec(html)) !== null) {
-        const complaintText = match[1].trim().replace(/<[^>]*>/g, ''); // Remove any nested HTML tags
+      for (const match of matches) {
+        let complaintText = match[1]
+          .replace(/<[^>]+>/g, '') // Remove HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .trim();
         
-        if (complaintText) {
-          complaints.push({
-            text: complaintText,
-            date: new Date().toISOString().split('T')[0], // Use YYYY-MM-DD format
-            source: url
-          });
-        }
+        if (complaintText.length < 20) continue; // Skip very short texts
+        
+        complaints.push({
+          text: complaintText,
+          date: new Date().toISOString(),
+          source: url,
+          category: 'ConsumerAffairs Review'
+        });
+        
+        console.log(`Found complaint: ${complaintText.substring(0, 50)}...`);
+        
+        if (complaints.length >= 10) break; // Limit to 10 complaints
       }
-      
-      console.log(`Found ${complaints.length} complaints on ConsumerAffairs`);
       
     } catch (error) {
       console.error('Error scraping ConsumerAffairs:', error);
     }
+
+    console.log(`Total complaints found: ${complaints.length}`);
 
     // Store complaints in the database if any were found
     if (complaints.length > 0) {
@@ -77,13 +95,20 @@ serve(async (req) => {
 
       const supabase = createClient(supabaseUrl, supabaseKey);
 
+      // Filter out duplicate complaints based on text content
+      const uniqueComplaints = complaints.filter((complaint, index, self) =>
+        index === self.findIndex((c) => c.text === complaint.text)
+      );
+
+      console.log(`Storing ${uniqueComplaints.length} unique complaints`);
+
       const { error: insertError } = await supabase
         .from('complaints')
         .upsert(
-          complaints.map(complaint => ({
+          uniqueComplaints.map(complaint => ({
             complaint_text: complaint.text,
             source_url: complaint.source,
-            theme: 'Customer Review',
+            theme: complaint.category,
             trend: 'Recent',
             project_id: projectId,
             created_at: complaint.date
@@ -96,20 +121,13 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Scraping completed. Found total of ${complaints.length} complaints`);
-
     return new Response(
       JSON.stringify({
         success: true,
         complaintsCount: complaints.length,
         complaints
       }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
