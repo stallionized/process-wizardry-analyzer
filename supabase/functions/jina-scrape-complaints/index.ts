@@ -55,11 +55,12 @@ serve(async (req) => {
     console.log(`Searching with query: ${query}`)
     
     // Test API key with a simple search request
-    const testResponse = await fetch('https://api.jina.ai/search', {
+    const testResponse = await fetch('https://api.jina.ai/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         query: 'test',
@@ -75,11 +76,12 @@ serve(async (req) => {
 
     console.log('Jina AI API key validated successfully');
     
-    const response = await fetch('https://api.jina.ai/search', {
+    const response = await fetch('https://api.jina.ai/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         query: query,
