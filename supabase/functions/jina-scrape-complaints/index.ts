@@ -9,6 +9,7 @@ const corsHeaders = {
 interface ScrapeRequest {
   clientName: string;
   projectId: string;
+  page?: number;
 }
 
 interface ComplaintData {
@@ -25,8 +26,8 @@ serve(async (req) => {
   }
 
   try {
-    const { clientName, projectId } = await req.json() as ScrapeRequest
-    console.log(`Starting scrape for client: ${clientName}, project: ${projectId}`)
+    const { clientName, projectId, page = 1 } = await req.json() as ScrapeRequest
+    console.log(`Starting scrape for client: ${clientName}, project: ${projectId}, page: ${page}`)
 
     if (!clientName || !projectId) {
       throw new Error('Client name and project ID are required')
@@ -43,80 +44,74 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Define search queries for different platforms
-    const platforms = [
-      'Better Business Bureau',
-      'Trustpilot',
-      'Yelp',
-      'PissedConsumer'
-    ]
-
     const complaints: ComplaintData[] = []
+    const resultsPerPage = 10
+    const startIndex = (page - 1) * resultsPerPage
 
-    // Use Jina AI to search and extract complaints from each platform
-    for (const platform of platforms) {
-      const query = `${clientName} complaints reviews ${platform}`
-      console.log(`Searching ${platform} for: ${query}`)
-      
-      const response = await fetch('https://api.jina.ai/v1/search', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${JINA_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          query: query,
-          top_k: 5, // Get top 5 results per platform
-          filter: {
-            domain: platform.toLowerCase()
-          }
-        })
+    // Construct query specifically for Trustpilot
+    const query = `${clientName} reviews Trustpilot`
+    console.log(`Searching Trustpilot for: ${query}`)
+    
+    const response = await fetch('https://api.jina.ai/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${JINA_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: query,
+        top_k: resultsPerPage,
+        from: startIndex,
+        filter: {
+          domain: 'trustpilot.com'
+        }
       })
+    })
 
-      if (!response.ok) {
-        console.error(`Error searching ${platform}:`, await response.text())
-        continue
+    if (!response.ok) {
+      console.error('Error from Jina AI:', await response.text())
+      throw new Error('Failed to fetch results from Jina AI')
+    }
+
+    const results = await response.json()
+    console.log(`Got ${results.data?.length || 0} results from Trustpilot`)
+
+    // Process and store complaints
+    for (const result of (results.data || [])) {
+      const complaint: ComplaintData = {
+        source_url: result.url || 'Trustpilot',
+        complaint_text: result.text || result.snippet || '',
+        category: 'Trustpilot Review',
+        date: new Date().toISOString()
       }
 
-      const results = await response.json()
-      console.log(`Got ${results.data?.length || 0} results from ${platform}`)
+      if (complaint.complaint_text) {
+        complaints.push(complaint)
+        
+        // Store in database
+        const { error } = await supabaseAdmin
+          .from('complaints')
+          .insert({
+            project_id: projectId,
+            complaint_text: complaint.complaint_text,
+            source_url: complaint.source_url,
+            theme: complaint.category,
+            trend: 'neutral'
+          })
 
-      // Process and store complaints
-      for (const result of (results.data || [])) {
-        const complaint: ComplaintData = {
-          source_url: result.url || platform,
-          complaint_text: result.text || result.snippet || '',
-          category: platform,
-          date: new Date().toISOString() // Using current date as fallback
-        }
-
-        if (complaint.complaint_text) {
-          complaints.push(complaint)
-          
-          // Store in database
-          const { error } = await supabaseAdmin
-            .from('complaints')
-            .insert({
-              project_id: projectId,
-              complaint_text: complaint.complaint_text,
-              source_url: complaint.source_url,
-              theme: complaint.category,
-              trend: 'neutral'
-            })
-
-          if (error) {
-            console.error('Error storing complaint:', error)
-          }
+        if (error) {
+          console.error('Error storing complaint:', error)
         }
       }
     }
 
-    console.log(`Scraped ${complaints.length} total complaints`)
+    console.log(`Scraped ${complaints.length} complaints from page ${page}`)
 
     return new Response(
       JSON.stringify({ 
         complaints,
-        message: `Successfully scraped ${complaints.length} complaints`
+        message: `Successfully scraped ${complaints.length} complaints from page ${page}`,
+        hasMore: results.data?.length === resultsPerPage
       }),
       { 
         headers: { 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -20,6 +21,7 @@ interface Complaint {
 }
 
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
+  const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
 
   const { data: project } = useQuery({
@@ -45,8 +47,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   };
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['complaints', projectId, project?.client_name],
+  const { data, isLoading, error, isFetching } = useQuery({
+    queryKey: ['complaints', projectId, project?.client_name, currentPage],
     queryFn: async () => {
       console.log('Fetching complaints for:', project?.client_name);
       
@@ -61,12 +63,15 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
         console.log('Found existing complaints:', existingComplaints.length);
-        return existingComplaints.map(c => ({
-          source_url: c.source_url,
-          complaint_text: c.complaint_text,
-          date: c.created_at,
-          category: c.theme
-        }));
+        return {
+          complaints: existingComplaints.map(c => ({
+            source_url: c.source_url,
+            complaint_text: c.complaint_text,
+            date: c.created_at,
+            category: c.theme
+          })),
+          hasMore: false
+        };
       }
 
       // If no complaints in database, fetch new ones
@@ -78,7 +83,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       const response = await supabase.functions.invoke('jina-scrape-complaints', {
         body: { 
           clientName: project.client_name,
-          projectId: projectId
+          projectId: projectId,
+          page: currentPage
         }
       });
 
@@ -88,12 +94,16 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       }
       
       console.log('Scraping response:', response.data);
-      return response.data.complaints;
+      return {
+        complaints: response.data.complaints,
+        hasMore: response.data.hasMore
+      };
     },
     enabled: !!projectId && !!project?.client_name,
-    staleTime: 0,
-    gcTime: 0
   });
+
+  const complaints = data?.complaints || [];
+  const hasMore = data?.hasMore || false;
 
   if (isLoading) {
     return (
@@ -122,8 +132,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     );
   }
 
-  const complaints = data || [];
-
   return (
     <Card className="p-6">
       <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
@@ -135,23 +143,36 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       <ScrollArea className="h-[500px] rounded-md border">
         <div className="p-4 space-y-4">
           {complaints.length > 0 ? (
-            complaints.map((complaint, index) => (
-              <div key={index} className="p-4 rounded-lg bg-muted/50">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm font-medium">{complaint.category}</span>
-                  <span className="text-sm text-muted-foreground">{formatDate(complaint.date)}</span>
+            <>
+              {complaints.map((complaint, index) => (
+                <div key={index} className="p-4 rounded-lg bg-muted/50">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-sm font-medium">{complaint.category}</span>
+                    <span className="text-sm text-muted-foreground">{formatDate(complaint.date)}</span>
+                  </div>
+                  <p className="text-sm mb-2">{complaint.complaint_text}</p>
+                  <a 
+                    href={complaint.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-500 hover:underline"
+                  >
+                    Source
+                  </a>
                 </div>
-                <p className="text-sm mb-2">{complaint.complaint_text}</p>
-                <a 
-                  href={complaint.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:underline"
-                >
-                  Source
-                </a>
-              </div>
-            ))
+              ))}
+              {hasMore && (
+                <div className="flex justify-center pt-4">
+                  <Button 
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    disabled={isFetching}
+                    variant="outline"
+                  >
+                    {isFetching ? 'Loading...' : 'Load More'}
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Info className="h-8 w-8 text-muted-foreground mb-2" />
