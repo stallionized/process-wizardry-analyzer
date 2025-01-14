@@ -86,32 +86,12 @@ serve(async (req) => {
         });
       }
 
-      // If no complaints found, add sample data for testing
-      if (complaints.length === 0) {
-        complaints.push(
-          {
-            text: "Product quality inconsistent across different batches",
-            date: new Date().toISOString(),
-            source: "Consumer Review"
-          },
-          {
-            text: "Customer service response time needs improvement",
-            date: new Date().toISOString(),
-            source: "Customer Feedback"
-          },
-          {
-            text: "Packaging sometimes arrives damaged during shipping",
-            date: new Date().toISOString(),
-            source: "Product Review"
-          }
-        );
-      }
     } catch (error) {
       console.error('Error during scraping:', error);
       // Continue execution even if scraping fails
     }
 
-    // Store complaints in the database
+    // Store complaints in the database if any were found
     if (complaints.length > 0) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
