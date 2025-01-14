@@ -25,12 +25,15 @@ serve(async (req) => {
     console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     const complaints = [];
-    const encodedCompanyName = encodeURIComponent(clientName.toLowerCase().replace(/\s+/g, ''));
+    const encodedCompanyName = encodeURIComponent(clientName);
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     
     try {
       // Trustpilot
-      const trustpilotResponse = await fetch(`https://www.trustpilot.com/review/${encodedCompanyName}`, {
+      console.log('Attempting to scrape Trustpilot...');
+      const trustpilotUrl = `https://www.trustpilot.com/review/www.${clientName.toLowerCase().replace(/\s+/g, '')}.com`;
+      console.log('Trustpilot URL:', trustpilotUrl);
+      const trustpilotResponse = await fetch(trustpilotUrl, {
         headers: { 'User-Agent': userAgent }
       });
       const trustpilotHtml = await trustpilotResponse.text();
@@ -40,51 +43,70 @@ serve(async (req) => {
         complaints.push({
           text: match[1].trim(),
           date: new Date().toISOString(),
-          source: 'Trustpilot'
+          source: trustpilotUrl
         });
       }
+      console.log(`Found ${complaints.length} complaints from Trustpilot`);
 
       // BBB (Better Business Bureau)
-      const bbbResponse = await fetch(`https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`, {
+      console.log('Attempting to scrape BBB...');
+      const bbbUrl = `https://www.bbb.org/search?find_text=${encodedCompanyName}`;
+      console.log('BBB URL:', bbbUrl);
+      const bbbResponse = await fetch(bbbUrl, {
         headers: { 'User-Agent': userAgent }
       });
       const bbbHtml = await bbbResponse.text();
       const bbbPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
+      let bbbCount = 0;
       while ((match = bbbPattern.exec(bbbHtml)) !== null) {
         complaints.push({
           text: match[1].trim(),
           date: new Date().toISOString(),
-          source: 'BBB'
+          source: bbbUrl
         });
+        bbbCount++;
       }
+      console.log(`Found ${bbbCount} complaints from BBB`);
 
       // ConsumerAffairs
-      const consumerAffairsResponse = await fetch(`https://www.consumeraffairs.com/search?query=${encodeURIComponent(clientName)}`, {
+      console.log('Attempting to scrape ConsumerAffairs...');
+      const caUrl = `https://www.consumeraffairs.com/search?query=${encodedCompanyName}`;
+      console.log('ConsumerAffairs URL:', caUrl);
+      const consumerAffairsResponse = await fetch(caUrl, {
         headers: { 'User-Agent': userAgent }
       });
       const consumerAffairsHtml = await consumerAffairsResponse.text();
       const caPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+      let caCount = 0;
       while ((match = caPattern.exec(consumerAffairsHtml)) !== null) {
         complaints.push({
           text: match[1].trim(),
           date: new Date().toISOString(),
-          source: 'ConsumerAffairs'
+          source: caUrl
         });
+        caCount++;
       }
+      console.log(`Found ${caCount} complaints from ConsumerAffairs`);
 
       // SiteJabber
-      const siteJabberResponse = await fetch(`https://www.sitejabber.com/search?query=${encodeURIComponent(clientName)}`, {
+      console.log('Attempting to scrape SiteJabber...');
+      const sjUrl = `https://www.sitejabber.com/reviews/${clientName.toLowerCase().replace(/\s+/g, '-')}`;
+      console.log('SiteJabber URL:', sjUrl);
+      const siteJabberResponse = await fetch(sjUrl, {
         headers: { 'User-Agent': userAgent }
       });
       const siteJabberHtml = await siteJabberResponse.text();
       const sjPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+      let sjCount = 0;
       while ((match = sjPattern.exec(siteJabberHtml)) !== null) {
         complaints.push({
           text: match[1].trim(),
           date: new Date().toISOString(),
-          source: 'SiteJabber'
+          source: sjUrl
         });
+        sjCount++;
       }
+      console.log(`Found ${sjCount} complaints from SiteJabber`);
 
     } catch (error) {
       console.error('Error during scraping:', error);
@@ -120,6 +142,8 @@ serve(async (req) => {
         throw insertError;
       }
     }
+
+    console.log(`Scraping completed. Found total of ${complaints.length} complaints`);
 
     return new Response(
       JSON.stringify({
