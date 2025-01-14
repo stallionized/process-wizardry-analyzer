@@ -13,17 +13,15 @@ function isWithinLastYear(dateStr: string): boolean {
   try {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
-      // If date parsing fails, default to true to include the complaint
       console.log('Invalid date format:', dateStr, '- including by default');
-      return true;
+      return true; // Include complaints with unparseable dates
     }
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     return date >= oneYearAgo;
   } catch (e) {
     console.error('Error checking date:', e);
-    // If there's any error in date checking, include the complaint
-    return true;
+    return true; // Include complaints if date checking fails
   }
 }
 
@@ -31,17 +29,16 @@ function extractDate(html: string, datePattern: RegExp): string {
   try {
     const match = html.match(datePattern);
     if (match && match[1]) {
-      // Return ISO string or current date if parsing fails
       const date = new Date(match[1]);
       if (!isNaN(date.getTime())) {
         return date.toISOString();
       }
     }
-    // If no valid date found, return current date
+    // If no valid date found or parsing fails, return current date
+    console.log('No valid date found, using current date');
     return new Date().toISOString();
   } catch (e) {
     console.error('Error extracting date:', e);
-    // Return current date as fallback
     return new Date().toISOString();
   }
 }
