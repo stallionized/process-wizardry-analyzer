@@ -44,17 +44,17 @@ serve(async (req) => {
       
       const html = await response.text();
       
-      // Extract reviews using a simpler regex pattern
-      const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+      // Extract reviews using a reliable regex pattern
+      const reviewPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([\s\S]*?)<\/div>/g;
       let match;
       
       while ((match = reviewPattern.exec(html)) !== null) {
-        const complaintText = match[1].trim();
+        const complaintText = match[1].trim().replace(/<[^>]*>/g, ''); // Remove any nested HTML tags
         
         if (complaintText) {
           complaints.push({
             text: complaintText,
-            date: new Date().toISOString(), // Use current date as fallback
+            date: new Date().toISOString().split('T')[0], // Use YYYY-MM-DD format
             source: url
           });
         }
