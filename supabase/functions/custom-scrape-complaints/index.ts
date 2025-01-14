@@ -12,13 +12,17 @@ serve(async (req) => {
   }
 
   try {
-    const { clientName } = await req.json();
+    const { clientName, projectId } = await req.json();
     
     if (!clientName) {
       throw new Error('Client name is required');
     }
 
-    console.log(`Starting scraping for ${clientName}`);
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
+
+    console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     const complaints = [];
     
@@ -109,7 +113,7 @@ serve(async (req) => {
             source_url: complaint.source,
             theme: 'Customer Review',
             trend: 'Recent',
-            project_id: req.projectId,
+            project_id: projectId,
             created_at: complaint.date
           }))
         );

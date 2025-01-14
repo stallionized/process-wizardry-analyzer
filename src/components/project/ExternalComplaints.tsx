@@ -77,7 +77,10 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       }
 
       const response = await supabase.functions.invoke('custom-scrape-complaints', {
-        body: { clientName: project.client_name }
+        body: { 
+          clientName: project.client_name,
+          projectId: projectId
+        }
       });
 
       if (response.error) throw response.error;
@@ -194,6 +197,6 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </ScrollArea>
     </Card>
   );
-};
+});
 
 export default ExternalComplaints;
