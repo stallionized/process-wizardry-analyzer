@@ -49,8 +49,8 @@ serve(async (req) => {
     const startIndex = (page - 1) * resultsPerPage
 
     // Construct query specifically for Trustpilot
-    const query = `${clientName} reviews Trustpilot`
-    console.log(`Searching Trustpilot for: ${query}`)
+    const query = `site:trustpilot.com ${clientName} reviews`
+    console.log(`Searching with query: ${query}`)
     
     const response = await fetch('https://api.jina.ai/v1/search', {
       method: 'POST',
@@ -61,23 +61,26 @@ serve(async (req) => {
       body: JSON.stringify({
         query: query,
         top_k: resultsPerPage,
-        from: startIndex,
-        filter: {
-          domain: 'trustpilot.com'
-        }
+        from: startIndex
       })
     })
 
     if (!response.ok) {
-      console.error('Error from Jina AI:', await response.text())
-      throw new Error('Failed to fetch results from Jina AI')
+      const errorText = await response.text()
+      console.error('Error response from Jina AI:', errorText)
+      throw new Error(`Jina AI API returned status ${response.status}: ${errorText}`)
     }
 
     const results = await response.json()
-    console.log(`Got ${results.data?.length || 0} results from Trustpilot`)
+    console.log(`Got ${results.data?.length || 0} results from Jina AI search`)
 
     // Process and store complaints
     for (const result of (results.data || [])) {
+      if (!result.text && !result.snippet) {
+        console.log('Skipping result with no text content:', result)
+        continue
+      }
+
       const complaint: ComplaintData = {
         source_url: result.url || 'Trustpilot',
         complaint_text: result.text || result.snippet || '',
@@ -85,27 +88,25 @@ serve(async (req) => {
         date: new Date().toISOString()
       }
 
-      if (complaint.complaint_text) {
-        complaints.push(complaint)
-        
-        // Store in database
-        const { error } = await supabaseAdmin
-          .from('complaints')
-          .insert({
-            project_id: projectId,
-            complaint_text: complaint.complaint_text,
-            source_url: complaint.source_url,
-            theme: complaint.category,
-            trend: 'neutral'
-          })
+      complaints.push(complaint)
+      
+      // Store in database
+      const { error: insertError } = await supabaseAdmin
+        .from('complaints')
+        .insert({
+          project_id: projectId,
+          complaint_text: complaint.complaint_text,
+          source_url: complaint.source_url,
+          theme: complaint.category,
+          trend: 'neutral'
+        })
 
-        if (error) {
-          console.error('Error storing complaint:', error)
-        }
+      if (insertError) {
+        console.error('Error storing complaint:', insertError)
       }
     }
 
-    console.log(`Scraped ${complaints.length} complaints from page ${page}`)
+    console.log(`Successfully processed ${complaints.length} complaints`)
 
     return new Response(
       JSON.stringify({ 
