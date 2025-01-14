@@ -25,22 +25,17 @@ serve(async (req) => {
     console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     const complaints = [];
+    const encodedCompanyName = encodeURIComponent(clientName.toLowerCase().replace(/\s+/g, ''));
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     
-    // Fetch from multiple sources
     try {
       // Trustpilot
-      const trustpilotResponse = await fetch(`https://www.trustpilot.com/review/${encodeURIComponent(clientName.toLowerCase().replace(/\s+/g, ''))}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+      const trustpilotResponse = await fetch(`https://www.trustpilot.com/review/${encodedCompanyName}`, {
+        headers: { 'User-Agent': userAgent }
       });
-      
       const trustpilotHtml = await trustpilotResponse.text();
-      
-      // Extract reviews using regex
       const reviewPattern = /<p[^>]*data-service-review-text[^>]*>([^<]+)<\/p>/g;
       let match;
-      
       while ((match = reviewPattern.exec(trustpilotHtml)) !== null) {
         complaints.push({
           text: match[1].trim(),
@@ -51,17 +46,11 @@ serve(async (req) => {
 
       // BBB (Better Business Bureau)
       const bbbResponse = await fetch(`https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        headers: { 'User-Agent': userAgent }
       });
-      
       const bbbHtml = await bbbResponse.text();
-      
-      // Extract reviews using regex
-      const bbbReviewPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
-      
-      while ((match = bbbReviewPattern.exec(bbbHtml)) !== null) {
+      const bbbPattern = /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g;
+      while ((match = bbbPattern.exec(bbbHtml)) !== null) {
         complaints.push({
           text: match[1].trim(),
           date: new Date().toISOString(),
@@ -69,7 +58,35 @@ serve(async (req) => {
         });
       }
 
-      // If no complaints found, add some sample data for testing
+      // ConsumerAffairs
+      const consumerAffairsResponse = await fetch(`https://www.consumeraffairs.com/search?query=${encodeURIComponent(clientName)}`, {
+        headers: { 'User-Agent': userAgent }
+      });
+      const consumerAffairsHtml = await consumerAffairsResponse.text();
+      const caPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+      while ((match = caPattern.exec(consumerAffairsHtml)) !== null) {
+        complaints.push({
+          text: match[1].trim(),
+          date: new Date().toISOString(),
+          source: 'ConsumerAffairs'
+        });
+      }
+
+      // SiteJabber
+      const siteJabberResponse = await fetch(`https://www.sitejabber.com/search?query=${encodeURIComponent(clientName)}`, {
+        headers: { 'User-Agent': userAgent }
+      });
+      const siteJabberHtml = await siteJabberResponse.text();
+      const sjPattern = /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g;
+      while ((match = sjPattern.exec(siteJabberHtml)) !== null) {
+        complaints.push({
+          text: match[1].trim(),
+          date: new Date().toISOString(),
+          source: 'SiteJabber'
+        });
+      }
+
+      // If no complaints found, add sample data for testing
       if (complaints.length === 0) {
         complaints.push(
           {
