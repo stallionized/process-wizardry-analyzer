@@ -37,30 +37,61 @@ serve(async (req) => {
       `${clientName} complaints`,
       `${clientName} reviews`,
       `${clientName} customer service`,
+      `${clientName} feedback`,
+      `${clientName} problems`,
       clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      clientName.replace(/\s+/g, '')
+      clientName.replace(/\s+/g, ''),
+      clientName.toLowerCase()
     ];
 
     const sources = [
       {
         name: 'Trustpilot',
         baseUrl: (variation) => `https://www.trustpilot.com/review/${variation}`,
-        pattern: /<p[^>]*data-service-review-text[^>]*>([^<]+)<\/p>/g
+        pattern: /<p[^>]*data-service-review-text[^>]*>([^<]+)<\/p>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       },
       {
         name: 'BBB',
         baseUrl: (variation) => `https://www.bbb.org/search?find_text=${encodeURIComponent(variation)}`,
-        pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g
+        pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g,
+        datePattern: /<meta[^>]*itemprop="datePublished"[^>]*content="([^"]+)"[^>]*>/g
       },
       {
         name: 'ConsumerAffairs',
         baseUrl: (variation) => `https://www.consumeraffairs.com/search?query=${encodeURIComponent(variation)}`,
-        pattern: /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g
+        pattern: /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       },
       {
         name: 'SiteJabber',
         baseUrl: (variation) => `https://www.sitejabber.com/reviews/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        pattern: /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g
+        pattern: /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
+      },
+      {
+        name: 'Yelp',
+        baseUrl: (variation) => `https://www.yelp.com/biz/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        pattern: /<p[^>]*class="[^"]*comment__09f24__D0cxf[^"]*"[^>]*>([^<]+)<\/p>/g,
+        datePattern: /<span[^>]*class="[^"]*css-chan6m[^"]*"[^>]*>([^<]+)<\/span>/g
+      },
+      {
+        name: 'Google Reviews',
+        baseUrl: (variation) => `https://www.google.com/maps/place/${encodeURIComponent(variation)}/reviews`,
+        pattern: /<span[^>]*class="[^"]*review-full-text[^"]*"[^>]*>([^<]+)<\/span>/g,
+        datePattern: /<span[^>]*class="[^"]*review-date[^"]*"[^>]*>([^<]+)<\/span>/g
+      },
+      {
+        name: 'PissedConsumer',
+        baseUrl: (variation) => `https://www.pissedconsumer.com/search.html?query=${encodeURIComponent(variation)}`,
+        pattern: /<div[^>]*class="[^"]*review-text[^"]*"[^>]*>([^<]+)<\/div>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
+      },
+      {
+        name: 'Complaints Board',
+        baseUrl: (variation) => `https://www.complaintsboard.com/search?query=${encodeURIComponent(variation)}`,
+        pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       }
     ];
 
@@ -74,7 +105,12 @@ serve(async (req) => {
           
           try {
             const response = await fetch(url, {
-              headers: { 'User-Agent': userAgent }
+              headers: { 
+                'User-Agent': userAgent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+              }
             });
             
             if (!response.ok) {
@@ -84,10 +120,25 @@ serve(async (req) => {
             
             const html = await response.text();
             let match;
+            let dateMatch;
             let foundOnPage = 0;
             
+            // Extract complaints and their dates
             while ((match = source.pattern.exec(html)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
               const complaintText = match[1].trim();
+              let complaintDate = new Date().toISOString();
+
+              // Try to find the corresponding date for this complaint
+              if (source.datePattern) {
+                dateMatch = source.datePattern.exec(html);
+                if (dateMatch) {
+                  try {
+                    complaintDate = new Date(dateMatch[1]).toISOString();
+                  } catch (e) {
+                    console.log(`Failed to parse date: ${dateMatch[1]}`);
+                  }
+                }
+              }
               
               // Skip if complaint is too short or appears to be spam
               if (complaintText.length < 20 || /[<>]/.test(complaintText)) {
@@ -96,7 +147,7 @@ serve(async (req) => {
               
               complaints.push({
                 text: complaintText,
-                date: new Date().toISOString(),
+                date: complaintDate,
                 source: url,
                 category: source.name
               });
@@ -106,6 +157,9 @@ serve(async (req) => {
             console.log(`Found ${foundOnPage} complaints on ${source.name} page ${page}`);
             if (foundOnPage === 0) break;
             if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
+
+            // Add a small delay between requests to be respectful
+            await new Promise(resolve => setTimeout(resolve, 1000));
           } catch (error) {
             console.error(`Error scraping ${source.name}:`, error);
             continue;
