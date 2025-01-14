@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const MAX_PAGES_PER_SOURCE = 5;
-const MAX_COMPLAINTS_PER_SOURCE = 50;
+const MAX_PAGES_PER_SOURCE = 3;
+const MAX_COMPLAINTS_PER_SOURCE = 25;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -29,67 +29,40 @@ serve(async (req) => {
     
     const complaints = [];
     const encodedCompanyName = encodeURIComponent(clientName);
-    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
     
     // Additional search variations to increase coverage
     const searchVariations = [
       clientName,
-      `${clientName} complaints`,
       `${clientName} reviews`,
-      `${clientName} customer service`,
-      `${clientName} feedback`,
-      `${clientName} problems`,
-      clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      clientName.replace(/\s+/g, ''),
-      clientName.toLowerCase()
+      `${clientName} complaints`,
+      clientName.toLowerCase(),
+      clientName.replace(/\s+/g, '-').toLowerCase(),
+      clientName.replace(/[^a-zA-Z0-9]+/g, '').toLowerCase()
     ];
 
     const sources = [
       {
         name: 'Trustpilot',
-        baseUrl: (variation) => `https://www.trustpilot.com/review/${variation}`,
-        pattern: /<p[^>]*data-service-review-text[^>]*>([^<]+)<\/p>/g,
+        baseUrl: (variation) => `https://www.trustpilot.com/review/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        pattern: /<p[^>]*data-service-review-text-typography[^>]*>([^<]+)<\/p>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
+      },
+      {
+        name: 'ConsumerAffairs',
+        baseUrl: (variation) => `https://www.consumeraffairs.com/search/?query=${encodeURIComponent(variation)}`,
+        pattern: /<p[^>]*class="[^"]*ca-review-content[^"]*"[^>]*>([^<]+)<\/p>/g,
+        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
+      },
+      {
+        name: 'PissedConsumer',
+        baseUrl: (variation) => `https://www.pissedconsumer.com/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/reviews`,
+        pattern: /<div[^>]*class="[^"]*review-text[^"]*"[^>]*>([^<]+)<\/div>/g,
         datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       },
       {
         name: 'BBB',
         baseUrl: (variation) => `https://www.bbb.org/search?find_text=${encodeURIComponent(variation)}`,
-        pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g,
-        datePattern: /<meta[^>]*itemprop="datePublished"[^>]*content="([^"]+)"[^>]*>/g
-      },
-      {
-        name: 'ConsumerAffairs',
-        baseUrl: (variation) => `https://www.consumeraffairs.com/search?query=${encodeURIComponent(variation)}`,
-        pattern: /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g,
-        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
-      },
-      {
-        name: 'SiteJabber',
-        baseUrl: (variation) => `https://www.sitejabber.com/reviews/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        pattern: /<div[^>]*class="[^"]*review-content[^"]*"[^>]*>([^<]+)<\/div>/g,
-        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
-      },
-      {
-        name: 'Yelp',
-        baseUrl: (variation) => `https://www.yelp.com/biz/${variation.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        pattern: /<p[^>]*class="[^"]*comment__09f24__D0cxf[^"]*"[^>]*>([^<]+)<\/p>/g,
-        datePattern: /<span[^>]*class="[^"]*css-chan6m[^"]*"[^>]*>([^<]+)<\/span>/g
-      },
-      {
-        name: 'Google Reviews',
-        baseUrl: (variation) => `https://www.google.com/maps/place/${encodeURIComponent(variation)}/reviews`,
-        pattern: /<span[^>]*class="[^"]*review-full-text[^"]*"[^>]*>([^<]+)<\/span>/g,
-        datePattern: /<span[^>]*class="[^"]*review-date[^"]*"[^>]*>([^<]+)<\/span>/g
-      },
-      {
-        name: 'PissedConsumer',
-        baseUrl: (variation) => `https://www.pissedconsumer.com/search.html?query=${encodeURIComponent(variation)}`,
-        pattern: /<div[^>]*class="[^"]*review-text[^"]*"[^>]*>([^<]+)<\/div>/g,
-        datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
-      },
-      {
-        name: 'Complaints Board',
-        baseUrl: (variation) => `https://www.complaintsboard.com/search?query=${encodeURIComponent(variation)}`,
         pattern: /<div[^>]*class="[^"]*complaint-text[^"]*"[^>]*>([^<]+)<\/div>/g,
         datePattern: /<time[^>]*datetime="([^"]+)"[^>]*>/g
       }
@@ -99,9 +72,11 @@ serve(async (req) => {
       console.log(`Scraping from ${source.name}...`);
       
       for (const variation of searchVariations) {
+        console.log(`Trying variation: ${variation}`);
+        
         for (let page = 1; page <= MAX_PAGES_PER_SOURCE; page++) {
           const url = `${source.baseUrl(variation)}${page > 1 ? `?page=${page}` : ''}`;
-          console.log(`Attempting to fetch: ${url}`);
+          console.log(`Fetching: ${url}`);
           
           try {
             const response = await fetch(url, {
@@ -109,23 +84,34 @@ serve(async (req) => {
                 'User-Agent': userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
                 'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
               }
             });
             
             if (!response.ok) {
               console.log(`${source.name} page ${page} returned status ${response.status}. Skipping.`);
-              break;
+              continue;
             }
             
             const html = await response.text();
+            console.log(`Got HTML response of length: ${html.length}`);
+
             let match;
             let dateMatch;
             let foundOnPage = 0;
             
             // Extract complaints and their dates
             while ((match = source.pattern.exec(html)) !== null && complaints.length < MAX_COMPLAINTS_PER_SOURCE) {
-              const complaintText = match[1].trim();
+              const complaintText = match[1].trim()
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"');
+              
               let complaintDate = new Date().toISOString();
 
               // Try to find the corresponding date for this complaint
@@ -159,7 +145,7 @@ serve(async (req) => {
             if (complaints.length >= MAX_COMPLAINTS_PER_SOURCE) break;
 
             // Add a small delay between requests to be respectful
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
           } catch (error) {
             console.error(`Error scraping ${source.name}:`, error);
             continue;
@@ -168,7 +154,9 @@ serve(async (req) => {
       }
     }
 
-    // Store unique complaints in the database
+    console.log(`Total complaints found: ${complaints.length}`);
+
+    // Store complaints in the database
     if (complaints.length > 0) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -183,6 +171,8 @@ serve(async (req) => {
       const uniqueComplaints = complaints.filter((complaint, index, self) =>
         index === self.findIndex((c) => c.text === complaint.text)
       );
+
+      console.log(`Storing ${uniqueComplaints.length} unique complaints`);
 
       const { error: insertError } = await supabase
         .from('complaints')
@@ -202,8 +192,6 @@ serve(async (req) => {
         throw insertError;
       }
     }
-
-    console.log(`Scraping completed. Found total of ${complaints.length} unique complaints`);
 
     return new Response(
       JSON.stringify({
