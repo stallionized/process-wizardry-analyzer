@@ -7,16 +7,14 @@ const corsHeaders = {
 };
 
 async function scrapeConsumerAffairs(clientName: string) {
+  console.log('Scraping ConsumerAffairs for:', clientName);
   const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
   const url = `https://www.consumeraffairs.com/search/?query=${encodedCompanyName}`;
   
   try {
     const response = await fetch(url, {
       headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://www.google.com/'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
 
@@ -33,24 +31,19 @@ async function scrapeConsumerAffairs(clientName: string) {
     for (const match of matches) {
       const complaintText = match[1]
         .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
         .trim();
 
       if (complaintText.length >= 20) {
         complaints.push({
           text: complaintText,
           source: url,
+          date: new Date().toISOString(),
           category: 'ConsumerAffairs Review'
         });
       }
-
-      if (complaints.length >= 10) break;
     }
 
+    console.log(`Found ${complaints.length} complaints on ConsumerAffairs`);
     return complaints;
   } catch (error) {
     console.error('Error scraping ConsumerAffairs:', error);
@@ -59,15 +52,14 @@ async function scrapeConsumerAffairs(clientName: string) {
 }
 
 async function scrapeBBB(clientName: string) {
+  console.log('Scraping BBB for:', clientName);
   const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
   const url = `https://www.bbb.org/search?find_text=${encodedCompanyName}`;
   
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html',
-        'Accept-Language': 'en-US,en;q=0.5'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
 
@@ -77,7 +69,7 @@ async function scrapeBBB(clientName: string) {
     }
 
     const html = await response.text();
-    const reviewPattern = /<div class="complaint-detail">(.*?)<\/div>/gs;
+    const reviewPattern = /<div class="complaint">(.*?)<\/div>/gs;
     const matches = html.matchAll(reviewPattern);
     const complaints = [];
 
@@ -90,13 +82,13 @@ async function scrapeBBB(clientName: string) {
         complaints.push({
           text: complaintText,
           source: url,
+          date: new Date().toISOString(),
           category: 'BBB Complaint'
         });
       }
-
-      if (complaints.length >= 10) break;
     }
 
+    console.log(`Found ${complaints.length} complaints on BBB`);
     return complaints;
   } catch (error) {
     console.error('Error scraping BBB:', error);
@@ -105,15 +97,14 @@ async function scrapeBBB(clientName: string) {
 }
 
 async function scrapeTrustpilot(clientName: string) {
+  console.log('Scraping Trustpilot for:', clientName);
   const encodedCompanyName = encodeURIComponent(clientName.toLowerCase());
   const url = `https://www.trustpilot.com/review/search?query=${encodedCompanyName}`;
   
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html',
-        'Accept-Language': 'en-US,en;q=0.5'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
 
@@ -136,13 +127,13 @@ async function scrapeTrustpilot(clientName: string) {
         complaints.push({
           text: complaintText,
           source: url,
+          date: new Date().toISOString(),
           category: 'Trustpilot Review'
         });
       }
-
-      if (complaints.length >= 10) break;
     }
 
+    console.log(`Found ${complaints.length} complaints on Trustpilot`);
     return complaints;
   } catch (error) {
     console.error('Error scraping Trustpilot:', error);
@@ -179,13 +170,10 @@ serve(async (req) => {
       ...consumerAffairsComplaints,
       ...bbbComplaints,
       ...trustpilotComplaints
-    ].map(complaint => ({
-      ...complaint,
-      date: new Date().toISOString()
-    }));
+    ];
 
-    console.log(`Found total complaints: ${allComplaints.length}`);
-    console.log('Complaints breakdown:', {
+    console.log('Total complaints found:', {
+      total: allComplaints.length,
       consumerAffairs: consumerAffairsComplaints.length,
       bbb: bbbComplaints.length,
       trustpilot: trustpilotComplaints.length
@@ -202,17 +190,11 @@ serve(async (req) => {
 
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Filter out duplicate complaints based on text content
-      const uniqueComplaints = allComplaints.filter((complaint, index, self) =>
-        index === self.findIndex((c) => c.text === complaint.text)
-      );
-
-      console.log(`Storing ${uniqueComplaints.length} unique complaints`);
-
+      console.log('Storing complaints in database...');
       const { error: insertError } = await supabase
         .from('complaints')
         .upsert(
-          uniqueComplaints.map(complaint => ({
+          allComplaints.map(complaint => ({
             complaint_text: complaint.text,
             source_url: complaint.source,
             theme: complaint.category,
@@ -226,6 +208,7 @@ serve(async (req) => {
         console.error('Error storing complaints:', insertError);
         throw insertError;
       }
+      console.log('Successfully stored complaints in database');
     }
 
     return new Response(

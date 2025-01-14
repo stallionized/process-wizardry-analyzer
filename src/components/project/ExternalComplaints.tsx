@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -41,9 +41,24 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     },
   });
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (isValid(date)) {
+        return format(date, 'MMM d, yyyy');
+      }
+      return 'Date unavailable';
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Date unavailable';
+    }
+  };
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['complaints', projectId, project?.client_name],
     queryFn: async () => {
+      console.log('Fetching complaints for:', project?.client_name);
+      
       // First try to get complaints from database
       const { data: existingComplaints, error: complaintsError } = await supabase
         .from('complaints')
@@ -54,6 +69,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
+        console.log('Found existing complaints:', existingComplaints.length);
         const { data: summaries } = await supabase
           .from('complaint_summaries')
           .select('*')
@@ -64,7 +80,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           complaints: existingComplaints.map(c => ({
             source_url: c.source_url,
             complaint_text: c.complaint_text,
-            date: format(new Date(c.created_at), 'MMM d, yyyy'),
+            date: c.created_at,
             category: c.theme
           })),
           companyInfo: {
@@ -79,6 +95,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         throw new Error('Client name is required');
       }
 
+      console.log('Fetching new complaints for:', project.client_name);
       const response = await supabase.functions.invoke('custom-scrape-complaints', {
         body: { 
           clientName: project.client_name,
@@ -86,13 +103,18 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         }
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error from scraping function:', response.error);
+        throw response.error;
+      }
+      
+      console.log('Scraping response:', response.data);
       
       return {
         complaints: response.data.complaints.map((c: any) => ({
           source_url: c.source,
           complaint_text: c.text,
-          date: format(new Date(c.date), 'MMM d, yyyy'),
+          date: c.date || new Date().toISOString(),
           category: c.category || 'Customer Review'
         })),
         companyInfo: {
@@ -177,7 +199,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
               <div key={index} className="p-4 rounded-lg bg-muted/50">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-sm font-medium">{complaint.category}</span>
-                  <span className="text-sm text-muted-foreground">{complaint.date}</span>
+                  <span className="text-sm text-muted-foreground">{formatDate(complaint.date)}</span>
                 </div>
                 <p className="text-sm mb-2">{complaint.complaint_text}</p>
                 <a 
