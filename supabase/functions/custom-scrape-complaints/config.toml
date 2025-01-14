@@ -1,1 +1,4 @@
 project_id = "trybqrktjibalolvsvej"
+
+[functions.custom-scrape-complaints]
+verify_jwt = false

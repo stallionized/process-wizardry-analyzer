@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,76 +20,35 @@ serve(async (req) => {
 
     console.log(`Starting scraping for ${clientName}`);
     
-    const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
     const complaints = [];
     
-    // Scrape Trustpilot
+    // Fetch from Trustpilot
     try {
-      const page = await browser.newPage();
-      await page.goto(`https://www.trustpilot.com/review/search?query=${encodeURIComponent(clientName)}`, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
+      const response = await fetch(`https://www.trustpilot.com/review/search?query=${encodeURIComponent(clientName)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
       });
-
-      const reviews = await page.evaluate(() => {
-        const reviewElements = document.querySelectorAll('[data-service-review-text-typography]');
-        const dateElements = document.querySelectorAll('time');
-        
-        const results = [];
-        reviewElements.forEach((review, index) => {
-          if (review.textContent && dateElements[index]?.getAttribute('datetime')) {
-            results.push({
-              text: review.textContent.trim(),
-              date: dateElements[index].getAttribute('datetime'),
-              source: 'Trustpilot'
-            });
-          }
+      
+      const html = await response.text();
+      
+      // Basic regex pattern to extract reviews
+      const reviewPattern = /<p[^>]*data-service-review-text-typography[^>]*>([^<]+)<\/p>/g;
+      const datePattern = /<time[^>]*datetime="([^"]+)"[^>]*>/g;
+      
+      let reviewMatch;
+      let dateMatch;
+      
+      while ((reviewMatch = reviewPattern.exec(html)) !== null && (dateMatch = datePattern.exec(html)) !== null) {
+        complaints.push({
+          text: reviewMatch[1].trim(),
+          date: dateMatch[1],
+          source: 'Trustpilot'
         });
-        return results;
-      });
-
-      complaints.push(...reviews);
-      await page.close();
+      }
     } catch (error) {
-      console.error('Error scraping Trustpilot:', error);
+      console.error('Error fetching from Trustpilot:', error);
     }
-
-    // Scrape BBB
-    try {
-      const page = await browser.newPage();
-      await page.goto(`https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
-      });
-
-      const reviews = await page.evaluate(() => {
-        const reviewElements = document.querySelectorAll('.complaint-text');
-        const dateElements = document.querySelectorAll('.complaint-date');
-        
-        const results = [];
-        reviewElements.forEach((review, index) => {
-          if (review.textContent && dateElements[index]?.textContent) {
-            results.push({
-              text: review.textContent.trim(),
-              date: new Date(dateElements[index].textContent.trim()).toISOString(),
-              source: 'BBB'
-            });
-          }
-        });
-        return results;
-      });
-
-      complaints.push(...reviews);
-      await page.close();
-    } catch (error) {
-      console.error('Error scraping BBB:', error);
-    }
-
-    await browser.close();
-    console.log(`Found ${complaints.length} complaints`);
 
     // Store complaints in the database
     if (complaints.length > 0) {
@@ -127,7 +85,12 @@ serve(async (req) => {
         complaintsCount: complaints.length,
         complaints
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
 
   } catch (error) {
