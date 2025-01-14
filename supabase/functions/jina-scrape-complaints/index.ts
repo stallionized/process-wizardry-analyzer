@@ -52,7 +52,7 @@ serve(async (req) => {
     const query = `site:trustpilot.com ${clientName} reviews`
     console.log(`Searching with query: ${query}`)
     
-    const response = await fetch('https://api.jina.ai/v1/search', {
+    const response = await fetch('https://api.jina.ai/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
