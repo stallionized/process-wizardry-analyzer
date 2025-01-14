@@ -23,7 +23,7 @@ interface CompanyInfo {
   variations: string[];
 }
 
-const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
+const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
@@ -197,6 +197,6 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
       </ScrollArea>
     </Card>
   );
-});
+};
 
 export default ExternalComplaints;
