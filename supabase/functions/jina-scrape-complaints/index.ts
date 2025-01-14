@@ -63,8 +63,9 @@ serve(async (req) => {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
+        mode: 'web',
         query: 'test',
-        top_k: 1
+        limit: 1
       })
     });
 
@@ -84,9 +85,10 @@ serve(async (req) => {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
+        mode: 'web',
         query: query,
-        top_k: resultsPerPage,
-        from: startIndex
+        limit: resultsPerPage,
+        offset: startIndex
       })
     })
 
