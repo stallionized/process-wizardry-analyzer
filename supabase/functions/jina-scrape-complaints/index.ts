@@ -54,17 +54,23 @@ serve(async (req) => {
     const query = `site:trustpilot.com ${clientName} reviews`
     console.log(`Searching with query: ${query}`)
     
-    // Test API key validity first
-    const testResponse = await fetch('https://api.jina.ai/search/ping', {
-      method: 'GET',
+    // Test API key with a simple search request
+    const testResponse = await fetch('https://api.jina.ai/search', {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
-      }
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: 'test',
+        top_k: 1
+      })
     });
 
     if (!testResponse.ok) {
-      console.error('Jina AI API key validation failed:', await testResponse.text());
-      throw new Error('Invalid Jina AI API key');
+      const errorText = await testResponse.text();
+      console.error('Jina AI API key validation failed:', errorText);
+      throw new Error(`Invalid Jina AI API key: ${errorText}`);
     }
 
     console.log('Jina AI API key validated successfully');
