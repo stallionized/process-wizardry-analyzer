@@ -18,7 +18,6 @@ port = 54324
 
 [storage]
 enabled = true
-port = 54325
 
 [functions.analyze-trends]
 verify_jwt = false
