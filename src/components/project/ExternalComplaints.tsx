@@ -76,22 +76,24 @@ const ExternalComplaints = ({ projectId }: ExternalComplaintsProps) => {
         throw new Error('Client name is required');
       }
 
-      const response = await supabase.functions.invoke('scrape-complaints', {
+      const response = await supabase.functions.invoke('custom-scrape-complaints', {
         body: { clientName: project.client_name }
       });
 
       if (response.error) throw response.error;
       
-      const parsedData = {
-        companyInfo: typeof response.data.companyInfo === 'string' 
-          ? JSON.parse(response.data.companyInfo) 
-          : response.data.companyInfo,
-        complaints: typeof response.data.complaints === 'string' 
-          ? JSON.parse(response.data.complaints) 
-          : response.data.complaints
+      return {
+        complaints: response.data.complaints.map((c: any) => ({
+          source_url: c.source,
+          complaint_text: c.text,
+          date: new Date(c.date).toLocaleDateString(),
+          category: 'Customer Review'
+        })),
+        companyInfo: {
+          description: `Found ${response.data.complaints.length} recent complaints`,
+          variations: []
+        }
       };
-
-      return parsedData;
     },
     enabled: !!projectId,
   });
