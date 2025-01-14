@@ -19,11 +19,6 @@ interface Complaint {
   category: string;
 }
 
-interface CompanyInfo {
-  description: string;
-  variations: string[];
-}
-
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
   const queryClient = useQueryClient();
 
@@ -66,18 +61,12 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
         console.log('Found existing complaints:', existingComplaints.length);
-        return {
-          complaints: existingComplaints.map(c => ({
-            source_url: c.source_url,
-            complaint_text: c.complaint_text,
-            date: c.created_at,
-            category: c.theme
-          })),
-          companyInfo: {
-            description: `Found ${existingComplaints.length} complaints`,
-            variations: []
-          }
-        };
+        return existingComplaints.map(c => ({
+          source_url: c.source_url,
+          complaint_text: c.complaint_text,
+          date: c.created_at,
+          category: c.theme
+        }));
       }
 
       // If no complaints in database, fetch new ones
@@ -86,7 +75,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       }
 
       console.log('Fetching new complaints for:', project.client_name);
-      const response = await supabase.functions.invoke('custom-scrape-complaints', {
+      const response = await supabase.functions.invoke('jina-scrape-complaints', {
         body: { 
           clientName: project.client_name,
           projectId: projectId
@@ -99,19 +88,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       }
       
       console.log('Scraping response:', response.data);
-      
-      return {
-        complaints: response.data.complaints.map((c: any) => ({
-          source_url: c.source,
-          complaint_text: c.text,
-          date: new Date().toISOString(),
-          category: c.category || 'Customer Review'
-        })),
-        companyInfo: {
-          description: `Found ${response.data.complaints.length} complaints`,
-          variations: []
-        }
-      };
+      return response.data.complaints;
     },
     enabled: !!projectId && !!project?.client_name,
     staleTime: 0,
@@ -145,34 +122,12 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     );
   }
 
-  if (!project?.client_name) {
-    return (
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Please set a client name to analyze external complaints.
-          </AlertDescription>
-        </Alert>
-      </Card>
-    );
-  }
-
-  const companyInfo = data?.companyInfo;
-  const complaints = data?.complaints || [];
+  const complaints = data || [];
 
   return (
     <Card className="p-6">
       <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
       
-      {companyInfo && (
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-2">Company Information</h3>
-          <p className="text-muted-foreground mb-2">{companyInfo.description}</p>
-        </div>
-      )}
-
       <div className="mb-4">
         <h3 className="text-lg font-medium mb-2">Complaints ({complaints.length})</h3>
       </div>
