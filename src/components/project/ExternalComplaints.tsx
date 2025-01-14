@@ -117,7 +117,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     },
     enabled: !!projectId && !!project?.client_name,
     staleTime: 0, // Always consider the data stale
-    cacheTime: 0, // Don't cache the results
+    gcTime: 0, // Don't cache the results (previously cacheTime)
   });
 
   if (isLoadingProject || isLoading) {
@@ -216,6 +216,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       </ScrollArea>
     </Card>
   );
-};
+});
 
 export default ExternalComplaints;
