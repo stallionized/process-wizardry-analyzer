@@ -12,24 +12,28 @@ const Auth = () => {
   const { session, isLoading } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Handle session changes
+  // Redirect to projects if session exists
   useEffect(() => {
     if (session) {
       navigate('/');
     }
   }, [session, navigate]);
 
-  // Set up auth state change listener
+  // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
       }
-      if (event === 'USER_UPDATED') {
-        handleAuthError();
+      // Handle authentication errors
+      if (event === 'USER_DELETED' || event === 'PASSWORD_RECOVERY') {
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          setErrorMessage(getErrorMessage(error));
+        }
       }
     });
 
@@ -38,29 +42,19 @@ const Auth = () => {
     };
   }, [navigate]);
 
-  const handleAuthError = async () => {
-    const { error } = await supabase.auth.getSession();
-    if (error) {
-      setErrorMessage(getErrorMessage(error));
-    }
-  };
-
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
+      // Handle specific authentication errors
       switch (error.status) {
         case 400:
-          return 'Invalid credentials. Please check your email and password.';
-        case 401:
-          return 'Invalid API key or authentication failed. Please try again.';
+          return 'Invalid email or password. Please try again.';
         case 422:
-          return 'Invalid email format.';
-        case 429:
-          return 'Too many login attempts. Please try again later.';
+          return 'Please enter a valid email address.';
         default:
-          return `Authentication error: ${error.message}`;
+          return 'Invalid email or password. Please try again.';
       }
     }
-    return 'An unexpected error occurred. Please try again.';
+    return 'Invalid email or password. Please try again.';
   };
 
   if (isLoading) {
