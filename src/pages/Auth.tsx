@@ -12,12 +12,14 @@ const Auth = () => {
   const { session, isLoading } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  // Handle session changes
   useEffect(() => {
     if (session) {
       navigate('/');
     }
   }, [session, navigate]);
 
+  // Set up auth state change listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
@@ -26,6 +28,9 @@ const Auth = () => {
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
       }
+      if (event === 'USER_UPDATED') {
+        handleAuthError();
+      }
     });
 
     return () => {
@@ -33,15 +38,26 @@ const Auth = () => {
     };
   }, [navigate]);
 
+  const handleAuthError = async () => {
+    const { error } = await supabase.auth.getSession();
+    if (error) {
+      setErrorMessage(getErrorMessage(error));
+    }
+  };
+
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
       switch (error.status) {
         case 400:
           return 'Invalid credentials. Please check your email and password.';
+        case 401:
+          return 'Invalid API key or authentication failed. Please try again.';
         case 422:
           return 'Invalid email format.';
+        case 429:
+          return 'Too many login attempts. Please try again later.';
         default:
-          return error.message;
+          return `Authentication error: ${error.message}`;
       }
     }
     return 'An unexpected error occurred. Please try again.';
