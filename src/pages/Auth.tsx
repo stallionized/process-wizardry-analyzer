@@ -42,11 +42,13 @@ const Auth = () => {
           return 'Invalid email or password. Please try again.';
         case 422:
           return 'Please enter a valid email address.';
+        case 401:
+          return 'Invalid credentials. Please check your email and password.';
         default:
-          return 'Invalid email or password. Please try again.';
+          return 'An error occurred during authentication. Please try again.';
       }
     }
-    return 'Invalid email or password. Please try again.';
+    return 'An unexpected error occurred. Please try again.';
   };
 
   if (isLoading) {
