@@ -21,19 +21,12 @@ const Auth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
-      }
-      // Handle authentication errors
-      if (event === 'USER_INVALID' || event === 'TOKEN_REFRESHED') {
-        const { error } = await supabase.auth.getSession();
-        if (error) {
-          setErrorMessage(getErrorMessage(error));
-        }
       }
     });
 
