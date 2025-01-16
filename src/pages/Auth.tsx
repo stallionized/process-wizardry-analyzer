@@ -21,8 +21,8 @@ const Auth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
@@ -37,7 +37,6 @@ const Auth = () => {
 
   const getErrorMessage = (error: AuthError) => {
     if (error instanceof AuthApiError) {
-      // Handle specific authentication errors
       switch (error.status) {
         case 400:
           return 'Invalid email or password. Please try again.';
