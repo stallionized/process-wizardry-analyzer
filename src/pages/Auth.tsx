@@ -29,7 +29,7 @@ const Auth = () => {
         setErrorMessage("");
       }
       // Handle authentication errors
-      if (event === 'USER_DELETED' || event === 'PASSWORD_RECOVERY') {
+      if (event === 'USER_INVALID' || event === 'TOKEN_REFRESHED') {
         const { error } = await supabase.auth.getSession();
         if (error) {
           setErrorMessage(getErrorMessage(error));
