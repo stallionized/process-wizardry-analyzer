@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) =>
 
 const Layout = () => {
   const supabase = useSupabaseClient();
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -75,9 +76,35 @@ const Layout = () => {
           </div>
         </div>
       </nav>
-      <main className="container pt-20 pb-8">
-        <Outlet />
-      </main>
+      <div className="flex">
+        {/* Vertical Menu */}
+        <div 
+          className="fixed left-0 top-0 h-screen z-40 pt-14"
+          onMouseEnter={() => setIsMenuVisible(true)}
+          onMouseLeave={() => setIsMenuVisible(false)}
+        >
+          <div 
+            className={cn(
+              "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
+              isMenuVisible ? "w-64 border-r border-black" : "w-16"
+            )}
+          >
+            <NavLink to="/project">Project</NavLink>
+            <NavLink to="/settings">Settings</NavLink>
+            <NavLink to="/help">Help</NavLink>
+            {/* Add more menu items as needed */}
+          </div>
+        </div>
+        {/* Main Content */}
+        <main className={cn(
+          "flex-1 transition-all duration-300 ease-in-out pt-14",
+          isMenuVisible ? "ml-64" : "ml-16"
+        )}>
+          <div className="p-4">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
