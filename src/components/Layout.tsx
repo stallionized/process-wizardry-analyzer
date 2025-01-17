@@ -48,7 +48,7 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-24 items-center pl-2 py-3">
+        <div className="container flex h-24 items-center pl-4 py-3">
           <Link to="/" className="flex items-center">
             <img 
               src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
