@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import LogoUpload from '@/components/clients/LogoUpload';
 import {
   Form,
   FormControl,
@@ -28,6 +29,7 @@ interface ClientFormData {
   phone: string;
   address: string;
   contact_person: string;
+  logo_url?: string;
 }
 
 interface ClientData extends ClientFormData {
@@ -110,6 +112,10 @@ const ClientManagement = () => {
     }
   };
 
+  const handleLogoUpload = (url: string) => {
+    clientForm.setValue('logo_url', url);
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">
@@ -131,7 +137,8 @@ const ClientManagement = () => {
                   email: '',
                   phone: '',
                   address: '',
-                  contact_person: ''
+                  contact_person: '',
+                  logo_url: ''
                 });
               }}>
                 <UserPlus className="mr-2 h-4 w-4" />
@@ -147,6 +154,24 @@ const ClientManagement = () => {
               <Form {...clientForm}>
                 <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <FormField
+                        control={clientForm.control}
+                        name="logo_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Logo</FormLabel>
+                            <FormControl>
+                              <LogoUpload
+                                currentLogo={field.value}
+                                onUpload={handleLogoUpload}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <FormField
                       control={clientForm.control}
                       name="name"
@@ -226,21 +251,30 @@ const ClientManagement = () => {
         <div className="space-y-4">
           {clients.map((client) => (
             <div key={client.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="space-y-1">
-                <h3 className="font-medium">{client.name}</h3>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {client.email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      {client.email}
-                    </span>
-                  )}
-                  {client.phone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {client.phone}
-                    </span>
-                  )}
+              <div className="flex items-center gap-4">
+                {client.logo_url && (
+                  <img
+                    src={client.logo_url}
+                    alt={`${client.name} logo`}
+                    className="w-12 h-12 object-contain rounded"
+                  />
+                )}
+                <div className="space-y-1">
+                  <h3 className="font-medium">{client.name}</h3>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    {client.email && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {client.email}
+                      </span>
+                    )}
+                    {client.phone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {client.phone}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
