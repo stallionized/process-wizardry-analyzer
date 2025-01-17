@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Grid, ChartBar, TrendingUp, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { cn } from '@/lib/utils';
+import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database } from 'lucide-react';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
@@ -13,11 +12,12 @@ import { useProjectManagement } from '@/hooks/useProjectManagement';
 
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
-  const [currentTabSet, setCurrentTabSet] = useState(0);
+  const [activeTab, setActiveTab] = useState('project');
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
   
   if (!id) return <div>Project ID is required</div>;
 
-  const { project, isLoadingProject, updateProjectMutation } = useProjectManagement(id);
+  const { project, isLoadingProject } = useProjectManagement(id);
 
   if (isLoadingProject) {
     return <div>Loading project details...</div>;
@@ -27,120 +27,103 @@ const ProjectDashboard = () => {
     return <div>Project not found</div>;
   }
 
-  const allTabs = [
+  const menuItems = [
     {
-      value: "project",
-      label: "Project Details",
-      icon: <Grid className="mr-2 h-4 w-4" />,
-      content: (
+      id: 'project',
+      label: 'Project Details',
+      icon: <FileText className="h-5 w-5" />,
+      component: (
         <ProjectDetails
           projectName={project.project_name}
-          setProjectName={(name) => updateProjectMutation.mutate({ project_name: name })}
           clientName={project.client_name || ''}
-          setClientName={(name) => updateProjectMutation.mutate({ client_name: name })}
           deadline={project.deadline ? new Date(project.deadline) : undefined}
-          setDeadline={(date) => updateProjectMutation.mutate({ deadline: date?.toISOString() })}
           topics={project.topics || ''}
-          setTopics={(topics) => updateProjectMutation.mutate({ topics })}
         />
       )
     },
     {
-      value: "upload",
-      label: "File Upload",
-      icon: <Grid className="mr-2 h-4 w-4" />,
-      content: <ProjectFiles projectId={id} />
+      id: 'upload',
+      label: 'File Upload',
+      icon: <Database className="h-5 w-5" />,
+      component: <ProjectFiles projectId={id} />
     },
     {
-      value: "results",
-      label: "AI Results",
-      icon: <Grid className="mr-2 h-4 w-4" />,
-      content: <AIResults projectId={id} />
+      id: 'results',
+      label: 'AI Results',
+      icon: <Grid className="h-5 w-5" />,
+      component: <AIResults projectId={id} />
     },
     {
-      value: "control",
-      label: "Control Results",
-      icon: <ChartBar className="mr-2 h-4 w-4" />,
-      content: <ControlResults projectId={id} />
+      id: 'control',
+      label: 'Control Results',
+      icon: <ChartBar className="h-5 w-5" />,
+      component: <ControlResults projectId={id} />
     },
     {
-      value: "trends",
-      label: "Trends & Themes",
-      icon: <TrendingUp className="mr-2 h-4 w-4" />,
-      content: <TrendsAndThemes projectId={id} />
+      id: 'trends',
+      label: 'Trends & Themes',
+      icon: <TrendingUp className="h-5 w-5" />,
+      component: <TrendsAndThemes projectId={id} />
     },
     {
-      value: "complaints",
-      label: "External Complaints",
-      icon: <AlertTriangle className="mr-2 h-4 w-4" />,
-      content: <ExternalComplaints projectId={id} />
+      id: 'complaints',
+      label: 'External Complaints',
+      icon: <AlertTriangle className="h-5 w-5" />,
+      component: <ExternalComplaints projectId={id} />
     }
   ];
 
-  const tabsPerSet = 4;
-  const totalSets = Math.ceil(allTabs.length / tabsPerSet);
-  const currentTabs = allTabs.slice(
-    currentTabSet * tabsPerSet,
-    (currentTabSet + 1) * tabsPerSet
-  );
-
-  const handlePreviousSet = () => {
-    setCurrentTabSet(prev => Math.max(0, prev - 1));
-  };
-
-  const handleNextSet = () => {
-    setCurrentTabSet(prev => Math.min(totalSets - 1, prev + 1));
-  };
+  const activeComponent = menuItems.find(item => item.id === activeTab)?.component;
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Process Engineering Analysis</h1>
-        <p className="text-muted-foreground">
-          Manage your process engineering project and documentation
-        </p>
+    <div 
+      className="min-h-screen relative animate-fade-in"
+      onMouseEnter={() => setIsMenuVisible(true)}
+      onMouseLeave={() => setIsMenuVisible(false)}
+    >
+      {/* Vertical Menu */}
+      <div 
+        className={cn(
+          "fixed left-0 top-0 h-screen bg-background/95 backdrop-blur-sm border-r transition-all duration-300 ease-in-out z-50 pt-20",
+          isMenuVisible ? "w-64 opacity-100" : "w-0 opacity-0"
+        )}
+      >
+        <div className="flex flex-col gap-2 p-4 h-full">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                "hover:bg-accent/10 hover:text-accent",
+                activeTab === item.id ? "bg-accent/10 text-accent" : "text-foreground"
+              )}
+            >
+              {item.icon}
+              <span className="font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Tabs defaultValue="project" className="w-full">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePreviousSet}
-            disabled={currentTabSet === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+      {/* Main Content */}
+      <div className={cn(
+        "transition-all duration-300 ease-in-out",
+        isMenuVisible ? "ml-64" : "ml-0"
+      )}>
+        <div className="p-8">
+          <div className="space-y-2 mb-8">
+            <h1 className="text-3xl font-bold tracking-tight">Process Engineering Analysis</h1>
+            <p className="text-muted-foreground">
+              Manage your process engineering project and documentation
+            </p>
+          </div>
           
-          <TabsList className="grid flex-1" style={{ gridTemplateColumns: `repeat(${currentTabs.length}, 1fr)` }}>
-            {currentTabs.map(tab => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                {tab.icon}
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNextSet}
-            disabled={currentTabSet === totalSets - 1}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="animate-fade-in">
+            {activeComponent}
+          </div>
         </div>
-
-        {allTabs.map(tab => (
-          <TabsContent key={tab.value} value={tab.value}>
-            {tab.content}
-          </TabsContent>
-        ))}
-      </Tabs>
+      </div>
     </div>
   );
 };
