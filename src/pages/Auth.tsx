@@ -123,7 +123,7 @@ const Auth = () => {
             alt="ProcessAI Logo" 
             className="mx-auto h-36 w-auto mb-8"
           />
-          <p className="text-lg text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Sign in to start learning more about your business.
           </p>
         </div>
