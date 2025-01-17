@@ -101,12 +101,54 @@ const ProjectDashboard = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className={cn(
-        "transition-all duration-300 ease-in-out",
-        isMenuVisible ? "ml-64" : "ml-16"
-      )}>
-        <div className="animate-fade-in">
-          {activeComponent}
+      <div className="min-h-screen relative">
+        {/* Vertical Menu */}
+        <div 
+          className="fixed left-0 top-0 h-screen z-50 pt-14"
+          onMouseEnter={() => setIsMenuVisible(true)}
+          onMouseLeave={() => setIsMenuVisible(false)}
+        >
+          <div 
+            className={cn(
+              "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
+              isMenuVisible ? "w-64 border-r border-black" : "w-16"
+            )}
+          >
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
+                  "hover:bg-accent/10 hover:text-accent min-w-[2rem]",
+                  activeTab === item.id ? "bg-accent/10 text-accent" : "text-foreground",
+                  !isMenuVisible && "justify-center px-2"
+                )}
+              >
+                <div className="flex-shrink-0">
+                  {item.icon}
+                </div>
+                <span 
+                  className={cn(
+                    "font-medium whitespace-nowrap transition-opacity duration-300",
+                    isMenuVisible ? "opacity-100" : "opacity-0 w-0"
+                  )}
+                >
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className={cn(
+          "transition-all duration-300 ease-in-out",
+          isMenuVisible ? "ml-64" : "ml-16"
+        )}>
+          <div className="animate-fade-in p-4">
+            {activeComponent}
+          </div>
         </div>
       </div>
     </div>
