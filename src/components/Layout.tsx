@@ -84,7 +84,7 @@ const Layout = () => {
         </div>
       </nav>
       <div className="flex">
-        <main className="flex-1 transition-all duration-300 ease-in-out pt-24">
+        <main className="flex-1 transition-all duration-300 ease-in-out pt-[5.5rem]">
           <div className="p-4">
             <Outlet />
           </div>
