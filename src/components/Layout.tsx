@@ -48,12 +48,12 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-32 items-center">
+        <div className="container flex h-24 items-center pl-2">
           <Link to="/" className="flex items-center">
             <img 
               src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
               alt="AI Process Engineer Logo" 
-              className="h-32 w-auto"
+              className="h-24 w-auto"
             />
           </Link>
           <div className="ml-auto flex items-center space-x-4">
@@ -84,7 +84,7 @@ const Layout = () => {
         </div>
       </nav>
       <div className="flex">
-        <main className="flex-1 transition-all duration-300 ease-in-out pt-32">
+        <main className="flex-1 transition-all duration-300 ease-in-out pt-24">
           <div className="p-4">
             <Outlet />
           </div>
