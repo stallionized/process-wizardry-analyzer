@@ -37,7 +37,7 @@ const Auth = () => {
   // Handle auth errors
   useEffect(() => {
     const handleAuthError = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY_ERROR' || event === 'USER_NOT_FOUND' || event === 'AUTH_ERROR') {
+      if (event === 'USER_DELETED' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
         setErrorMessage('Invalid email or password. Please check your credentials and try again.');
       }
     });
