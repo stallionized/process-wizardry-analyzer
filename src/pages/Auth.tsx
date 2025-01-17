@@ -46,11 +46,10 @@ const Auth = () => {
                 (parsedError.code === 'invalid_credentials' || 
                  parsedError.message?.includes('Invalid login credentials'))) ||
               (errorDescription?.includes('status 400')) ||
-              (errorDescription?.includes('failed to call url'))) {
+              (errorDescription?.includes('failed to call url')) ||
+              (errorDescription?.includes('body stream already read'))) {
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-          } else if (errorDescription?.includes('body stream already read')) {
-            setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-          } else if (errorDescription) {
+          } else if (errorDescription && !errorDescription.includes('body stream already read')) {
             setErrorMessage('An error occurred during sign in. Please try again.');
           }
         } catch (error) {
