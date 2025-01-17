@@ -30,15 +30,11 @@ const Auth = () => {
       }
       // Handle authentication errors
       if (!session && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
-        try {
-          const { error } = await supabase.auth.getSession();
-          if (error) {
-            setErrorMessage(getErrorMessage(error));
-          }
-        } catch (err) {
-          if (err instanceof Error) {
-            setErrorMessage('Authentication failed. Please try again.');
-          }
+        const { error } = await supabase.auth.getSession();
+        if (error instanceof AuthApiError && error.status === 400) {
+          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+        } else if (error) {
+          setErrorMessage(getErrorMessage(error));
         }
       }
     };
