@@ -4,6 +4,11 @@ import { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 type ProjectStatus = Database['public']['Enums']['project_status'];
+type CreateProjectInput = {
+  project_name: string;
+  program_id?: string;
+  client_id?: string;
+};
 
 export const useProjects = () => {
   const queryClient = useQueryClient();
@@ -51,10 +56,10 @@ export const useProjects = () => {
   });
 
   const createProjectMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (input: CreateProjectInput) => {
       const { data, error } = await supabase
         .from('projects')
-        .insert({ project_name: 'Untitled Project' })
+        .insert(input)
         .select()
         .single();
       
@@ -63,6 +68,7 @@ export const useProjects = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Project created successfully');
     },
   });
 
