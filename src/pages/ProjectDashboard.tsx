@@ -119,17 +119,19 @@ const ProjectDashboard = () => {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                "hover:bg-accent/10 hover:text-accent",
+                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
+                "hover:bg-accent/10 hover:text-accent min-w-[2rem]",
                 activeTab === item.id ? "bg-accent/10 text-accent" : "text-foreground",
-                !isMenuVisible && "justify-center"
+                !isMenuVisible && "justify-center px-2"
               )}
             >
-              {item.icon}
+              <div className="flex-shrink-0">
+                {item.icon}
+              </div>
               <span 
                 className={cn(
-                  "font-medium whitespace-nowrap transition-all duration-300",
-                  isMenuVisible ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                  "font-medium whitespace-nowrap transition-opacity duration-300",
+                  isMenuVisible ? "opacity-100" : "opacity-0 w-0"
                 )}
               >
                 {item.label}
