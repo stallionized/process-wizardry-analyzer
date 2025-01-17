@@ -5,6 +5,7 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
+import { AuthError } from '@supabase/supabase-js';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,10 +23,8 @@ const Auth = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        setErrorMessage(""); // Clear any error messages on successful sign in
         navigate('/');
-      }
-      if (event === 'SIGNED_OUT') {
-        setErrorMessage("");
       }
     });
 
@@ -46,6 +45,19 @@ const Auth = () => {
       handleAuthError.data.subscription.unsubscribe();
     };
   }, []);
+
+  const handleAuthError = (error: AuthError) => {
+    switch (error.message) {
+      case 'Invalid login credentials':
+        setErrorMessage('Invalid email or password. Please try again.');
+        break;
+      case 'Email not confirmed':
+        setErrorMessage('Please verify your email address before signing in.');
+        break;
+      default:
+        setErrorMessage('An error occurred during authentication. Please try again.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -69,7 +81,7 @@ const Auth = () => {
         </div>
 
         {errorMessage && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="animate-in fade-in-50">
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
@@ -90,6 +102,9 @@ const Auth = () => {
             }}
             providers={[]}
             redirectTo={window.location.origin}
+            onError={(error) => {
+              handleAuthError(error);
+            }}
           />
         </div>
       </div>
