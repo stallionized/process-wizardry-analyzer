@@ -74,6 +74,9 @@ const Auth = () => {
               case 'invalid_credentials':
                 setErrorMessage('Invalid email or password. Please check your credentials and try again.');
                 break;
+              case 'refresh_token_not_found':
+                setErrorMessage('Your session has expired. Please sign in again.');
+                break;
               default:
                 if (errorDescription) {
                   setErrorMessage('An error occurred during sign in. Please try again.');
@@ -91,8 +94,8 @@ const Auth = () => {
                 console.log('Reestablishing auth listener');
                 subscription = setupAuthListener();
               }
-            }, 2000); // Increased to 2 seconds
-          }, 1000); // Increased to 1 second
+            }, 2000);
+          }, 1000);
         }
       });
 

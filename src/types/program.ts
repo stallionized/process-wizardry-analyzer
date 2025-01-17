@@ -7,3 +7,6 @@ export interface Program {
   updated_at: string | null;
   deleted_at: string | null;
 }
+
+export type CreateProgramInput = Pick<Program, 'client_id' | 'program_name' | 'description'>;
+export type UpdateProgramInput = Partial<CreateProgramInput> & { id: string };

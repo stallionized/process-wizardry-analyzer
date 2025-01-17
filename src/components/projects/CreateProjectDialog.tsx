@@ -29,12 +29,14 @@ const CreateProjectDialog = ({ clientId }: CreateProjectDialogProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createProjectMutation.mutateAsync({
-      ...formData,
-      client_id: clientId,
-    });
-    setFormData({ project_name: '', program_id: '' });
-    setIsOpen(false);
+    if (clientId) {
+      await createProjectMutation.mutateAsync({
+        ...formData,
+        client_id: clientId,
+      });
+      setFormData({ project_name: '', program_id: '' });
+      setIsOpen(false);
+    }
   };
 
   return (

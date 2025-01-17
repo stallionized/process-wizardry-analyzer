@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Program } from '@/types/program';
+import { Program, CreateProgramInput, UpdateProgramInput } from '@/types/program';
 import { toast } from 'sonner';
 
 export const usePrograms = (clientId?: string) => {
@@ -28,7 +28,7 @@ export const usePrograms = (clientId?: string) => {
   });
 
   const createProgramMutation = useMutation({
-    mutationFn: async (newProgram: Partial<Program>) => {
+    mutationFn: async (newProgram: CreateProgramInput) => {
       const { data, error } = await supabase
         .from('programs')
         .insert(newProgram)
@@ -49,7 +49,7 @@ export const usePrograms = (clientId?: string) => {
   });
 
   const updateProgramMutation = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Program> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: UpdateProgramInput) => {
       const { error } = await supabase
         .from('programs')
         .update(updates)
