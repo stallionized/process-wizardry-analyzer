@@ -45,6 +45,9 @@ const Auth = () => {
     if (error instanceof AuthApiError) {
       switch (error.status) {
         case 400:
+          if (error.message.includes('Invalid login credentials')) {
+            return 'Invalid email or password. Please check your credentials and try again.';
+          }
           return 'Invalid email or password. Please try again.';
         case 422:
           return 'Please enter a valid email address.';
