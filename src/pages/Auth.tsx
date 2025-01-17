@@ -5,7 +5,7 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
-import { AuthError, AuthApiError } from '@supabase/supabase-js';
+import { AuthError } from '@supabase/supabase-js';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,19 +21,12 @@ const Auth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const handleAuthChange = async (event: string, session: any) => {
+    const handleAuthChange = (event: string) => {
       if (event === 'SIGNED_IN') {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
-      }
-      // Handle authentication errors
-      if (!session && event === 'SIGNED_IN') {
-        const { error } = await supabase.auth.getSession();
-        if (error instanceof AuthApiError) {
-          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-        }
       }
     };
 
@@ -43,6 +36,22 @@ const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
+
+  // Handle auth errors separately
+  useEffect(() => {
+    const handleAuthError = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+        }
+      }
+    });
+
+    return () => {
+      handleAuthError.data.subscription.unsubscribe();
+    };
+  }, []);
 
   if (isLoading) {
     return (
