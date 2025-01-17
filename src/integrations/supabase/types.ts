@@ -93,19 +93,31 @@ export type Database = {
       }
       clients: {
         Row: {
+          address: string | null
+          contact_person: string | null
           created_at: string | null
+          email: string | null
           id: string
           name: string
+          phone: string | null
         }
         Insert: {
+          address?: string | null
+          contact_person?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           name: string
+          phone?: string | null
         }
         Update: {
+          address?: string | null
+          contact_person?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           name?: string
+          phone?: string | null
         }
         Relationships: []
       }
