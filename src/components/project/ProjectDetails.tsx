@@ -55,10 +55,8 @@ const ProjectDetails = ({
   const handleSave = () => {
     setProjectName(tempProjectName);
     
-    // If client name has changed, update it and invalidate the complaints query
     if (tempClientName !== clientName) {
       setClientName(tempClientName);
-      // Invalidate both the complaints query and any existing complaints
       queryClient.invalidateQueries({ queryKey: ['complaints'] });
     }
     
@@ -79,6 +77,7 @@ const ProjectDetails = ({
 
   return (
     <Card className="p-6 animate-fade-in">
+      <h2 className="text-2xl font-semibold mb-6">Project Details</h2>
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="projectName">Project Name</Label>
