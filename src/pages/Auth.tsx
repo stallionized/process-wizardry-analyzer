@@ -21,12 +21,27 @@ const Auth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
+      }
+
+      // Handle authentication errors
+      if (event === 'USER_UPDATED') {
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          setErrorMessage(getErrorMessage(error));
+        }
+      }
+    });
+
+    // Set up error listener for sign-in attempts
+    const signInErrorListener = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && !session) {
+        setErrorMessage('Invalid email or password. Please try again.');
       }
     });
 
