@@ -36,7 +36,11 @@ const ProjectDashboard = () => {
   };
 
   const handleDeadlineUpdate = (newDate: Date | undefined) => {
-    updateProjectMutation.mutate({ deadline: newDate });
+    if (newDate) {
+      updateProjectMutation.mutate({ deadline: newDate.toISOString() });
+    } else {
+      updateProjectMutation.mutate({ deadline: null });
+    }
   };
 
   const handleTopicsUpdate = (newTopics: string) => {
@@ -96,19 +100,20 @@ const ProjectDashboard = () => {
   const activeComponent = menuItems.find(item => item.id === activeTab)?.component;
 
   return (
-    <div 
-      className="min-h-screen relative animate-fade-in"
-      onMouseEnter={() => setIsMenuVisible(true)}
-      onMouseLeave={() => setIsMenuVisible(false)}
-    >
+    <div className="min-h-screen relative animate-fade-in">
       {/* Vertical Menu */}
       <div 
-        className={cn(
-          "fixed left-0 top-0 h-screen bg-background/95 backdrop-blur-sm border-r transition-all duration-300 ease-in-out z-50 pt-20",
-          isMenuVisible ? "w-64 opacity-100" : "w-0 opacity-0"
-        )}
+        className="fixed left-0 top-0 h-screen z-50 pt-20"
+        onMouseEnter={() => setIsMenuVisible(true)}
+        onMouseLeave={() => setIsMenuVisible(false)}
       >
-        <div className="flex flex-col gap-2 p-4 h-full">
+        <div 
+          className={cn(
+            "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm border-r",
+            "transition-all duration-300 ease-in-out",
+            isMenuVisible ? "w-64" : "w-16"
+          )}
+        >
           {menuItems.map((item) => (
             <button
               key={item.id}
@@ -116,11 +121,19 @@ const ProjectDashboard = () => {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                 "hover:bg-accent/10 hover:text-accent",
-                activeTab === item.id ? "bg-accent/10 text-accent" : "text-foreground"
+                activeTab === item.id ? "bg-accent/10 text-accent" : "text-foreground",
+                !isMenuVisible && "justify-center"
               )}
             >
               {item.icon}
-              <span className="font-medium">{item.label}</span>
+              <span 
+                className={cn(
+                  "font-medium whitespace-nowrap transition-all duration-300",
+                  isMenuVisible ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                )}
+              >
+                {item.label}
+              </span>
             </button>
           ))}
         </div>
@@ -129,7 +142,7 @@ const ProjectDashboard = () => {
       {/* Main Content */}
       <div className={cn(
         "transition-all duration-300 ease-in-out",
-        isMenuVisible ? "ml-64" : "ml-0"
+        isMenuVisible ? "ml-64" : "ml-16"
       )}>
         <div className="p-8">
           <div className="space-y-2 mb-8">
