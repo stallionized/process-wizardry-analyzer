@@ -19,57 +19,79 @@ const Auth = () => {
   }, [session, navigate]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setErrorMessage("");
-        navigate('/');
-      } else if (event === 'SIGNED_OUT') {
-        // Prevent multiple error handling
-        if (errorHandled) return;
-        
-        // Get error details from URL if they exist
-        const params = new URLSearchParams(window.location.search);
-        const error = params.get('error');
-        const errorDescription = params.get('error_description');
-        
-        // If no error parameters exist, don't process further
-        if (!error && !errorDescription) {
-          setErrorMessage("");
-          return;
-        }
+    let subscription: { unsubscribe: () => void } | null = null;
 
-        // Set flag to prevent multiple handling
-        setErrorHandled(true);
-        
-        // Clear existing error message
-        setErrorMessage("");
-        
-        // Add a longer delay before setting the error message
-        setTimeout(() => {
-          // Handle specific error cases
-          switch (error) {
-            case 'invalid_grant':
-            case 'invalid_credentials':
-              setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-              break;
-            default:
-              // Only set a generic error if we have an error description and it's not about the body stream
-              if (errorDescription && !errorDescription.includes('body stream already read')) {
-                setErrorMessage('An error occurred during sign in. Please try again.');
-              }
-              break;
+    const setupAuthListener = () => {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setErrorMessage("");
+          navigate('/');
+        } else if (event === 'SIGNED_OUT') {
+          // Prevent multiple error handling
+          if (errorHandled) return;
+          
+          // Get error details from URL if they exist
+          const params = new URLSearchParams(window.location.search);
+          const error = params.get('error');
+          const errorDescription = params.get('error_description');
+          
+          // If no error parameters exist, don't process further
+          if (!error && !errorDescription) {
+            setErrorMessage("");
+            return;
+          }
+
+          // Set flag to prevent multiple handling
+          setErrorHandled(true);
+          
+          // Clear existing error message
+          setErrorMessage("");
+
+          // Unsubscribe from the current listener
+          if (subscription) {
+            subscription.unsubscribe();
+            subscription = null;
           }
           
-          // Reset the error handled flag after a delay
+          // Add a delay before setting the error message
           setTimeout(() => {
-            setErrorHandled(false);
-          }, 1000);
-        }, 500); // Increased from 100ms to 500ms
-      }
-    });
+            // Handle specific error cases
+            switch (error) {
+              case 'invalid_grant':
+              case 'invalid_credentials':
+                setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+                break;
+              default:
+                // Only set a generic error if we have an error description
+                if (errorDescription) {
+                  setErrorMessage('An error occurred during sign in. Please try again.');
+                }
+                break;
+            }
+            
+            // Reset the error handled flag and resubscribe after a delay
+            setTimeout(() => {
+              setErrorHandled(false);
+              // Resubscribe to the auth listener
+              if (!subscription) {
+                subscription = setupAuthListener();
+              }
+            }, 1000);
+          }, 500);
+        }
+      });
 
+      return data.subscription;
+    };
+
+    // Initial subscription
+    subscription = setupAuthListener();
+
+    // Cleanup
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, [navigate, errorHandled]);
 
