@@ -109,9 +109,9 @@ const ProjectDashboard = () => {
       >
         <div 
           className={cn(
-            "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm border-r",
+            "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm",
             "transition-all duration-300 ease-in-out",
-            isMenuVisible ? "w-64" : "w-16"
+            isMenuVisible ? "w-64 border-r" : "w-16"
           )}
         >
           {menuItems.map((item) => (
@@ -146,14 +146,7 @@ const ProjectDashboard = () => {
         "transition-all duration-300 ease-in-out",
         isMenuVisible ? "ml-64" : "ml-16"
       )}>
-        <div className="p-8">
-          <div className="space-y-2 mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Process Engineering Analysis</h1>
-            <p className="text-muted-foreground">
-              Manage your process engineering project and documentation
-            </p>
-          </div>
-          
+        <div className="pt-2 px-8">
           <div className="animate-fade-in">
             {activeComponent}
           </div>
