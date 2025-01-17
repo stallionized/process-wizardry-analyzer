@@ -121,7 +121,7 @@ const Auth = () => {
           <img 
             src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
             alt="ProcessAI Logo" 
-            className="mx-auto h-36 w-auto mb-8"
+            className="mx-auto h-[165px] w-auto mb-8"
           />
           <p className="text-sm text-muted-foreground">
             Sign in to start learning more about your business.
