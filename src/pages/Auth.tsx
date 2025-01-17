@@ -35,9 +35,17 @@ const Auth = () => {
 
   // Handle auth errors
   useEffect(() => {
-    const handleAuthError = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+    const handleAuthError = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'USER_DELETED' || event === 'SIGNED_OUT') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        if (error === 'invalid_grant') {
+          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+        } else if (errorDescription) {
+          setErrorMessage(errorDescription);
+        }
       }
     });
 
@@ -45,19 +53,6 @@ const Auth = () => {
       handleAuthError.data.subscription.unsubscribe();
     };
   }, []);
-
-  const handleAuthError = (error: AuthError) => {
-    switch (error.message) {
-      case 'Invalid login credentials':
-        setErrorMessage('Invalid email or password. Please try again.');
-        break;
-      case 'Email not confirmed':
-        setErrorMessage('Please verify your email address before signing in.');
-        break;
-      default:
-        setErrorMessage('An error occurred during authentication. Please try again.');
-    }
-  };
 
   if (isLoading) {
     return (
