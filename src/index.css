@@ -145,4 +145,9 @@
   .SelectItem {
     @apply bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800;
   }
+
+  /* Dialog Content specific styles */
+  .DialogContent {
+    @apply bg-white dark:bg-gray-900 !important;
+  }
 }
