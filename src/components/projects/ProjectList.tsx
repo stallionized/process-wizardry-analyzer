@@ -20,6 +20,10 @@ interface Project {
   client_name: string | null;
   deadline: string | null;
   status: ProjectStatus;
+  program_id: string | null;
+  programs?: {
+    program_name: string;
+  };
 }
 
 interface ProjectListProps {
@@ -103,6 +107,12 @@ const ProjectList = ({ projects, isLoading, onStatusChange }: ProjectListProps) 
                 <h3 className="font-medium truncate">{project.project_name || 'Untitled Project'}</h3>
                 <div className="text-sm text-muted-foreground">
                   <span>{project.client_name || 'No client'}</span>
+                  {project.programs?.program_name && (
+                    <>
+                      <span className="mx-2">•</span>
+                      <span>{project.programs.program_name}</span>
+                    </>
+                  )}
                   <span className="mx-2">•</span>
                   <span>Due {project.deadline ? format(new Date(project.deadline), 'PP') : 'No deadline'}</span>
                 </div>

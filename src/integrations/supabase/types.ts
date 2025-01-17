@@ -213,6 +213,51 @@ export type Database = {
         }
         Relationships: []
       }
+      programs: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          program_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          program_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          program_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           client_id: string | null
@@ -221,6 +266,7 @@ export type Database = {
           deadline: string | null
           deleted_at: string | null
           id: string
+          program_id: string | null
           project_name: string
           status: Database["public"]["Enums"]["project_status"] | null
           topics: string | null
@@ -234,6 +280,7 @@ export type Database = {
           deadline?: string | null
           deleted_at?: string | null
           id?: string
+          program_id?: string | null
           project_name: string
           status?: Database["public"]["Enums"]["project_status"] | null
           topics?: string | null
@@ -247,6 +294,7 @@ export type Database = {
           deadline?: string | null
           deleted_at?: string | null
           id?: string
+          program_id?: string | null
           project_name?: string
           status?: Database["public"]["Enums"]["project_status"] | null
           topics?: string | null
@@ -259,6 +307,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
         ]
