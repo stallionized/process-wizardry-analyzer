@@ -59,6 +59,7 @@ const Layout = () => {
                     <div className="w-48">
                       <NavLink to="/">Dashboard</NavLink>
                       <NavLink to="/users">User Management</NavLink>
+                      <NavLink to="/clients">Client Management</NavLink>
                     </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>

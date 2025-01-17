@@ -13,6 +13,7 @@ import Admin from "./pages/Admin";
 import Client from "./pages/Client";
 import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
+import ClientManagement from "./pages/ClientManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,11 @@ const App = () => (
               <Route path="/users" element={
                 <ProtectedRoute>
                   <UserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/clients" element={
+                <ProtectedRoute>
+                  <ClientManagement />
                 </ProtectedRoute>
               } />
             </Route>
