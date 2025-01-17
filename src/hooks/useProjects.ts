@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { useSessionContext } from '@supabase/auth-helpers-react';
 
 type ProjectStatus = Database['public']['Enums']['project_status'];
 type CreateProjectInput = {
@@ -12,18 +13,30 @@ type CreateProjectInput = {
 
 export const useProjects = () => {
   const queryClient = useQueryClient();
+  const { session } = useSessionContext();
 
-  const { data: projects = [], isLoading } = useQuery({
+  const { data: projects = [], isLoading, error } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
+      console.log('Fetching projects with session:', session?.user.id);
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          programs (
+            program_name
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching projects:', error);
+        throw error;
+      }
+      
+      return data || [];
     },
+    enabled: !!session, // Only run query if user is authenticated
   });
 
   const updateProjectMutation = useMutation({
@@ -59,7 +72,10 @@ export const useProjects = () => {
     mutationFn: async (input: CreateProjectInput) => {
       const { data, error } = await supabase
         .from('projects')
-        .insert(input)
+        .insert({
+          ...input,
+          status: 'Not Started' as ProjectStatus,
+        })
         .select()
         .single();
       
@@ -75,6 +91,7 @@ export const useProjects = () => {
   return {
     projects,
     isLoading,
+    error,
     updateProjectMutation,
     softDeleteMutation,
     createProjectMutation,
