@@ -76,15 +76,10 @@ const ProjectDetails = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
+    <Card className="p-6 animate-fade-in">
+      <div className="space-y-6">
         <h2 className="text-3xl font-bold tracking-tight">Project Details</h2>
-        <p className="text-muted-foreground">
-          Manage your project information and settings
-        </p>
-      </div>
-
-      <Card className="p-6 animate-fade-in">
+        
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="projectName">Project Name</Label>
@@ -141,8 +136,8 @@ const ProjectDetails = ({
             </Button>
           </div>
         </div>
-      </Card>
-    </div>
+      </div>
+    </Card>
   );
 };
 
