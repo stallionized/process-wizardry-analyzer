@@ -23,33 +23,34 @@ const Auth = () => {
         setErrorMessage("");
         navigate('/');
       } else if (event === 'SIGNED_OUT') {
-        try {
-          const urlParams = new URLSearchParams(window.location.search);
-          const error = urlParams.get('error');
-          const errorDescription = urlParams.get('error_description');
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
 
-          if (!error && !errorDescription) {
+        if (!error && !errorDescription) {
+          return;
+        }
+
+        // Handle authentication errors
+        if (error === 'invalid_grant') {
+          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+          return;
+        }
+
+        if (errorDescription) {
+          // Skip the error message if it's related to body stream
+          if (errorDescription.includes('body stream already read')) {
             return;
           }
 
-          // Skip error handling if it's the body stream error
-          if (errorDescription?.includes('body stream already read')) {
-            return;
-          }
-
-          // Handle invalid credentials and other authentication errors
-          if (error === 'invalid_grant' || 
-              errorDescription?.includes('invalid_credentials') ||
-              errorDescription?.includes('Invalid login credentials') ||
-              errorDescription?.includes('status 400') ||
-              errorDescription?.includes('failed to call url')) {
+          // Handle specific error cases
+          if (errorDescription.includes('invalid_credentials') || 
+              errorDescription.includes('Invalid login credentials') ||
+              errorDescription.includes('status 400')) {
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-          } else if (errorDescription) {
+          } else {
             setErrorMessage('An error occurred during sign in. Please try again.');
           }
-        } catch (error) {
-          console.error('Error handling authentication:', error);
-          setErrorMessage('An error occurred during sign in. Please try again.');
         }
       }
     });
