@@ -138,15 +138,15 @@ const ClientManagement = () => {
                 Add Client
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] p-4">
+            <DialogContent className="sm:max-w-[600px] p-3">
               <DialogHeader className="mb-2">
                 <DialogTitle className="text-center text-xl">
                   {editingClient ? 'Edit Client' : 'Add New Client'}
                 </DialogTitle>
               </DialogHeader>
               <Form {...clientForm}>
-                <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={clientForm.control}
                       name="name"
@@ -213,7 +213,7 @@ const ClientManagement = () => {
                       )}
                     />
                   </div>
-                  <div className="flex justify-end pt-2">
+                  <div className="flex justify-end">
                     <Button type="submit">
                       {editingClient ? 'Update Client' : 'Add Client'}
                     </Button>
