@@ -23,36 +23,29 @@ const Auth = () => {
         setErrorMessage("");
         navigate('/');
       } else if (event === 'SIGNED_OUT') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
-
-        // Clear any existing error messages first
+        // Clear any existing error messages
         setErrorMessage("");
-
-        // If no error parameters, don't process further
-        if (!error && !errorDescription) {
-          return;
-        }
-
-        // Handle invalid credentials first
-        if (error === 'invalid_grant') {
-          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-          return;
-        }
-
-        // Skip processing if we've already handled this error
-        if (!errorDescription || errorDescription.includes('body stream already read')) {
-          return;
-        }
-
-        // Set error message based on error description
-        if (errorDescription.includes('invalid_credentials') || 
-            errorDescription.includes('Invalid login credentials') ||
-            errorDescription.includes('status 400')) {
-          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-        } else {
-          setErrorMessage('An error occurred during sign in. Please try again.');
+        
+        // Get error details from URL if they exist
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const errorDescription = params.get('error_description');
+        
+        // If no error parameters exist, don't process further
+        if (!error && !errorDescription) return;
+        
+        // Handle specific error cases
+        switch (error) {
+          case 'invalid_grant':
+          case 'invalid_credentials':
+            setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+            break;
+          default:
+            // Only set a generic error if we have an error description and it's not about the body stream
+            if (errorDescription && !errorDescription.includes('body stream already read')) {
+              setErrorMessage('An error occurred during sign in. Please try again.');
+            }
+            break;
         }
       }
     });
