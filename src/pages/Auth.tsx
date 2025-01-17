@@ -10,6 +10,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { session, isLoading } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [errorHandled, setErrorHandled] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -23,8 +24,8 @@ const Auth = () => {
         setErrorMessage("");
         navigate('/');
       } else if (event === 'SIGNED_OUT') {
-        // Clear any existing error messages
-        setErrorMessage("");
+        // Prevent multiple error handling
+        if (errorHandled) return;
         
         // Get error details from URL if they exist
         const params = new URLSearchParams(window.location.search);
@@ -32,28 +33,45 @@ const Auth = () => {
         const errorDescription = params.get('error_description');
         
         // If no error parameters exist, don't process further
-        if (!error && !errorDescription) return;
-        
-        // Handle specific error cases
-        switch (error) {
-          case 'invalid_grant':
-          case 'invalid_credentials':
-            setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-            break;
-          default:
-            // Only set a generic error if we have an error description and it's not about the body stream
-            if (errorDescription && !errorDescription.includes('body stream already read')) {
-              setErrorMessage('An error occurred during sign in. Please try again.');
-            }
-            break;
+        if (!error && !errorDescription) {
+          setErrorMessage("");
+          return;
         }
+
+        // Set flag to prevent multiple handling
+        setErrorHandled(true);
+        
+        // Clear existing error message
+        setErrorMessage("");
+        
+        // Add a small delay before setting the error message
+        setTimeout(() => {
+          // Handle specific error cases
+          switch (error) {
+            case 'invalid_grant':
+            case 'invalid_credentials':
+              setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+              break;
+            default:
+              // Only set a generic error if we have an error description and it's not about the body stream
+              if (errorDescription && !errorDescription.includes('body stream already read')) {
+                setErrorMessage('An error occurred during sign in. Please try again.');
+              }
+              break;
+          }
+          
+          // Reset the error handled flag after a delay
+          setTimeout(() => {
+            setErrorHandled(false);
+          }, 1000);
+        }, 100);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, errorHandled]);
 
   if (isLoading) {
     return (
