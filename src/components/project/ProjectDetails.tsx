@@ -55,8 +55,10 @@ const ProjectDetails = ({
   const handleSave = () => {
     setProjectName(tempProjectName);
     
+    // If client name has changed, update it and invalidate the complaints query
     if (tempClientName !== clientName) {
       setClientName(tempClientName);
+      // Invalidate both the complaints query and any existing complaints
       queryClient.invalidateQueries({ queryKey: ['complaints'] });
     }
     
@@ -77,64 +79,60 @@ const ProjectDetails = ({
 
   return (
     <Card className="p-6 animate-fade-in">
-      <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Project Details</h2>
-        
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="projectName">Project Name</Label>
-            <Input
-              id="projectName"
-              value={tempProjectName}
-              onChange={(e) => setTempProjectName(e.target.value)}
-              placeholder="Enter project name"
-            />
-          </div>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="projectName">Project Name</Label>
+          <Input
+            id="projectName"
+            value={tempProjectName}
+            onChange={(e) => setTempProjectName(e.target.value)}
+            placeholder="Enter project name"
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="clientName">Client Name</Label>
-            <Input
-              id="clientName"
-              value={tempClientName}
-              onChange={(e) => setTempClientName(e.target.value)}
-              placeholder="Enter client name"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="clientName">Client Name</Label>
+          <Input
+            id="clientName"
+            value={tempClientName}
+            onChange={(e) => setTempClientName(e.target.value)}
+            placeholder="Enter client name"
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="topics">Topics</Label>
-            <Textarea
-              id="topics"
-              value={tempTopics}
-              onChange={(e) => setTempTopics(e.target.value)}
-              placeholder="Enter project topics (separate with commas)"
-              className="min-h-[100px]"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="topics">Topics</Label>
+          <Textarea
+            id="topics"
+            value={tempTopics}
+            onChange={(e) => setTempTopics(e.target.value)}
+            placeholder="Enter project topics (separate with commas)"
+            className="min-h-[100px]"
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label>Project Deadline</Label>
-            <Input
-              type="date"
-              value={dateInput}
-              onChange={handleDateInputChange}
-              className="flex-1"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>Project Deadline</Label>
+          <Input
+            type="date"
+            value={dateInput}
+            onChange={handleDateInputChange}
+            className="flex-1"
+          />
+        </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-            >
-              Save
-            </Button>
-          </div>
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+          >
+            Save
+          </Button>
         </div>
       </div>
     </Card>
