@@ -138,20 +138,20 @@ const ClientManagement = () => {
                 Add Client
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] p-2">
-              <DialogHeader className="-mb-180">
+            <DialogContent className="sm:max-w-[800px]">
+              <DialogHeader>
                 <DialogTitle className="text-center text-xl">
                   {editingClient ? 'Edit Client' : 'Add New Client'}
                 </DialogTitle>
               </DialogHeader>
               <Form {...clientForm}>
-                <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={clientForm.control}
                       name="name"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
+                        <FormItem>
                           <FormLabel>Client Name</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter client name" {...field} />
@@ -164,7 +164,7 @@ const ClientManagement = () => {
                       control={clientForm.control}
                       name="contact_person"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
+                        <FormItem>
                           <FormLabel>Contact Person</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter contact person's name" {...field} />
@@ -177,7 +177,7 @@ const ClientManagement = () => {
                       control={clientForm.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
+                        <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="client@example.com" {...field} />
@@ -190,7 +190,7 @@ const ClientManagement = () => {
                       control={clientForm.control}
                       name="phone"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
+                        <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter phone number" {...field} />
@@ -203,7 +203,7 @@ const ClientManagement = () => {
                       control={clientForm.control}
                       name="address"
                       render={({ field }) => (
-                        <FormItem className="col-span-2 space-y-1">
+                        <FormItem className="col-span-2">
                           <FormLabel>Address</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter client address" {...field} />
