@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, X } from 'lucide-react';
-import Image from 'next/image';
 
 interface LogoUploadProps {
   currentLogo?: string | null;
