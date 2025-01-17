@@ -33,18 +33,15 @@ const Auth = () => {
         } else if (event === 'SIGNED_OUT') {
           console.log('Processing sign out or error state');
           
-          // Prevent multiple error handling
           if (errorHandled) {
             console.log('Error already being handled, skipping');
             return;
           }
           
-          // Get error details from URL if they exist
           const params = new URLSearchParams(window.location.search);
           const error = params.get('error');
           const errorDescription = params.get('error_description');
           
-          // If no error parameters exist, don't process further
           if (!error && !errorDescription) {
             console.log('No error parameters found');
             setErrorMessage("");
@@ -53,10 +50,8 @@ const Auth = () => {
 
           console.log('Error detected:', error, errorDescription);
           
-          // Set flag to prevent multiple handling
           setErrorHandled(true);
           
-          // Clear existing error message and unsubscribe from listener
           setErrorMessage("");
           if (subscription) {
             console.log('Unsubscribing from current listener');
@@ -64,11 +59,9 @@ const Auth = () => {
             subscription = null;
           }
           
-          // Add a longer delay before setting the error message
           console.log('Setting up error message with delay');
           setTimeout(() => {
             console.log('Processing error after delay');
-            // Handle specific error cases
             switch (error) {
               case 'invalid_grant':
               case 'invalid_credentials':
@@ -84,12 +77,10 @@ const Auth = () => {
                 break;
             }
             
-            // Reset the error handled flag and resubscribe after a longer delay
             setTimeout(() => {
               console.log('Resetting error state and resubscribing');
               setErrorHandled(false);
               
-              // Resubscribe to the auth listener
               if (!subscription) {
                 console.log('Reestablishing auth listener');
                 subscription = setupAuthListener();
@@ -102,10 +93,8 @@ const Auth = () => {
       return data.subscription;
     };
 
-    // Initial subscription
     subscription = setupAuthListener();
 
-    // Cleanup
     return () => {
       if (subscription) {
         console.log('Cleaning up auth listener');
@@ -129,10 +118,11 @@ const Auth = () => {
     <div className="container max-w-md mx-auto py-12">
       <div className="space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">Welcome to ProcessAI</h1>
-          <p className="text-muted-foreground">
-            Sign in to your account to continue
-          </p>
+          <img 
+            src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
+            alt="ProcessAI Logo" 
+            className="mx-auto h-16 w-auto mb-4"
+          />
         </div>
 
         {errorMessage && (
