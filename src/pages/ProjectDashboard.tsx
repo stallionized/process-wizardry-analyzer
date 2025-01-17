@@ -146,7 +146,7 @@ const ProjectDashboard = () => {
         "transition-all duration-300 ease-in-out",
         isMenuVisible ? "ml-64" : "ml-16"
       )}>
-        <div className="p-8">
+        <div className="pt-2 px-8">
           <div className="animate-fade-in">
             {activeComponent}
           </div>
