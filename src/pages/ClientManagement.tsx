@@ -138,7 +138,7 @@ const ClientManagement = () => {
                 Add Client
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] p-2">
+            <DialogContent className="sm:max-w-[800px] p-2">
               <DialogHeader className="-mb-180">
                 <DialogTitle className="text-center text-xl">
                   {editingClient ? 'Edit Client' : 'Add New Client'}
