@@ -32,30 +32,19 @@ const Auth = () => {
             return;
           }
 
-          // Try to parse the error description as JSON
-          let parsedError = null;
-          try {
-            if (errorDescription) {
-              parsedError = JSON.parse(errorDescription);
-            }
-          } catch {
-            // If parsing fails, use the original error description
-            parsedError = null;
+          // Skip error handling if it's the body stream error
+          if (errorDescription?.includes('body stream already read')) {
+            return;
           }
 
-          // Check for invalid credentials or authentication errors
+          // Handle invalid credentials and other authentication errors
           if (error === 'invalid_grant' || 
-              (parsedError && typeof parsedError === 'object' && 
-               (parsedError.code === 'invalid_credentials' || 
-                parsedError.message?.includes('Invalid login credentials'))) ||
-              (errorDescription && (
-                errorDescription.includes('status 400') ||
-                errorDescription.includes('failed to call url') ||
-                errorDescription.includes('invalid_credentials') ||
-                errorDescription.includes('Invalid login credentials')
-              ))) {
+              errorDescription?.includes('invalid_credentials') ||
+              errorDescription?.includes('Invalid login credentials') ||
+              errorDescription?.includes('status 400') ||
+              errorDescription?.includes('failed to call url')) {
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-          } else if (errorDescription && !errorDescription.includes('body stream already read')) {
+          } else if (errorDescription) {
             setErrorMessage('An error occurred during sign in. Please try again.');
           }
         } catch (error) {
