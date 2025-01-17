@@ -12,12 +12,12 @@ import RecycleBin from "./pages/RecycleBin";
 import Admin from "./pages/Admin";
 import Client from "./pages/Client";
 import Auth from "./pages/Auth";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error: any) => {
-        // Don't retry on 403 (session) errors
         if (error?.status === 403) return false;
         return failureCount < 3;
       },
@@ -80,6 +80,11 @@ const App = () => (
               <Route path="/client" element={
                 <ProtectedRoute>
                   <Client />
+                </ProtectedRoute>
+              } />
+              <Route path="/users" element={
+                <ProtectedRoute>
+                  <UserManagement />
                 </ProtectedRoute>
               } />
             </Route>

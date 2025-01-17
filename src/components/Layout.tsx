@@ -5,6 +5,13 @@ import { cn } from '@/lib/utils';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) => {
   const location = useLocation();
@@ -43,7 +50,19 @@ const Layout = () => {
         <div className="container flex h-14 items-center">
           <Link to="/" className="font-bold text-xl">ProcessAI</Link>
           <div className="ml-auto flex items-center space-x-4">
-            <NavLink to="/">Admin</NavLink>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-48 p-2">
+                      <NavLink to="/">Dashboard</NavLink>
+                      <NavLink to="/users">User Management</NavLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
             <NavLink to="/client">Client Portal</NavLink>
             <Button
               variant="ghost"
