@@ -49,7 +49,13 @@ const Layout = () => {
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
-          <Link to="/" className="font-bold text-xl">ProcessAI</Link>
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/ee4534c9-695e-4998-8504-8583fe9bb774.png" 
+              alt="AI Process Engineer Logo" 
+              className="h-10 w-auto"
+            />
+          </Link>
           <div className="ml-auto flex items-center space-x-4">
             <NavigationMenu>
               <NavigationMenuList>
