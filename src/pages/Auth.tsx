@@ -44,7 +44,7 @@ const Auth = () => {
         // Clear existing error message
         setErrorMessage("");
         
-        // Add a small delay before setting the error message
+        // Add a longer delay before setting the error message
         setTimeout(() => {
           // Handle specific error cases
           switch (error) {
@@ -64,7 +64,7 @@ const Auth = () => {
           setTimeout(() => {
             setErrorHandled(false);
           }, 1000);
-        }, 100);
+        }, 500); // Increased from 100ms to 500ms
       }
     });
 
