@@ -27,30 +27,32 @@ const Auth = () => {
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
 
+        // Clear any existing error messages first
+        setErrorMessage("");
+
+        // If no error parameters, don't process further
         if (!error && !errorDescription) {
           return;
         }
 
-        // Handle authentication errors
+        // Handle invalid credentials first
         if (error === 'invalid_grant') {
           setErrorMessage('Invalid email or password. Please check your credentials and try again.');
           return;
         }
 
-        if (errorDescription) {
-          // Skip the error message if it's related to body stream
-          if (errorDescription.includes('body stream already read')) {
-            return;
-          }
+        // Skip processing if we've already handled this error
+        if (!errorDescription || errorDescription.includes('body stream already read')) {
+          return;
+        }
 
-          // Handle specific error cases
-          if (errorDescription.includes('invalid_credentials') || 
-              errorDescription.includes('Invalid login credentials') ||
-              errorDescription.includes('status 400')) {
-            setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-          } else {
-            setErrorMessage('An error occurred during sign in. Please try again.');
-          }
+        // Set error message based on error description
+        if (errorDescription.includes('invalid_credentials') || 
+            errorDescription.includes('Invalid login credentials') ||
+            errorDescription.includes('status 400')) {
+          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+        } else {
+          setErrorMessage('An error occurred during sign in. Please try again.');
         }
       }
     });
