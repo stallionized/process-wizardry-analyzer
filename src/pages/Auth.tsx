@@ -39,17 +39,16 @@ const Auth = () => {
             parsedError = errorDescription;
           }
 
-          // Check for various error conditions that indicate invalid credentials
-          if (
-            error === 'invalid_grant' || 
-            (parsedError && typeof parsedError === 'string' && parsedError.includes('invalid_credentials')) ||
-            (parsedError && typeof parsedError === 'object' && 
-              (parsedError.code === 'invalid_credentials' || 
-               parsedError.message?.includes('Invalid login credentials')))
-          ) {
+          // Check for HTTP client error with invalid credentials
+          if (error === 'invalid_grant' || 
+              (parsedError && typeof parsedError === 'string' && parsedError.includes('invalid_credentials')) ||
+              (parsedError && typeof parsedError === 'object' && 
+                (parsedError.code === 'invalid_credentials' || 
+                 parsedError.message?.includes('Invalid login credentials'))) ||
+              (errorDescription?.includes('status 400')) ||
+              (errorDescription?.includes('failed to call url'))) {
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
           } else if (errorDescription?.includes('body stream already read')) {
-            // Handle the body stream already read error
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
           } else if (errorDescription) {
             setErrorMessage('An error occurred during sign in. Please try again.');
