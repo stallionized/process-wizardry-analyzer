@@ -22,8 +22,13 @@ interface UserFormData {
   password: string;
 }
 
+interface UserData {
+  id: string;
+  email: string;
+}
+
 const UserManagement = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [error, setError] = useState<string>('');
   const form = useForm<UserFormData>();
 
@@ -33,12 +38,16 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*');
+      const { data: { users }, error: usersError } = await adminSupabase.auth.admin.listUsers();
       
-      if (error) throw error;
-      setUsers(profiles || []);
+      if (usersError) throw usersError;
+      
+      const formattedUsers = users.map(user => ({
+        id: user.id,
+        email: user.email || 'No email'
+      }));
+      
+      setUsers(formattedUsers);
     } catch (error: any) {
       toast.error('Error fetching users');
       console.error('Error:', error.message);
@@ -49,7 +58,6 @@ const UserManagement = () => {
     try {
       setError('');
       
-      // Use admin client to create user
       const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
         email: data.email,
         password: data.password,
@@ -60,7 +68,7 @@ const UserManagement = () => {
 
       toast.success('User created successfully');
       form.reset();
-      fetchUsers();
+      fetchUsers(); // Refresh the users list after creating a new user
     } catch (error: any) {
       setError(error.message);
       toast.error('Error creating user');
@@ -70,15 +78,12 @@ const UserManagement = () => {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      const { error } = await adminSupabase.auth.admin.deleteUser(userId);
 
       if (error) throw error;
 
       toast.success('User deleted successfully');
-      fetchUsers();
+      fetchUsers(); // Refresh the users list after deleting a user
     } catch (error: any) {
       toast.error('Error deleting user');
       console.error('Error:', error.message);
@@ -144,7 +149,7 @@ const UserManagement = () => {
         <div className="space-y-4">
           {users.map((user) => (
             <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <span>{user.id}</span>
+              <span>{user.email}</span>
               <Button
                 variant="destructive"
                 size="icon"
