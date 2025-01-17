@@ -5,26 +5,43 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
-import { AuthError } from '@supabase/supabase-js';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { session, isLoading } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Redirect to projects if session exists
   useEffect(() => {
     if (session) {
       navigate('/');
     }
   }, [session, navigate]);
 
-  // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        setErrorMessage(""); // Clear any error messages on successful sign in
+        setErrorMessage("");
         navigate('/');
+      } else if (event === 'SIGNED_OUT') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        if (error === 'invalid_grant') {
+          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+        } else if (errorDescription) {
+          // Clone the response if we need to read it multiple times
+          try {
+            const errorDescriptionObj = JSON.parse(errorDescription);
+            if (errorDescriptionObj.message) {
+              setErrorMessage(errorDescriptionObj.message);
+            } else {
+              setErrorMessage(errorDescription);
+            }
+          } catch {
+            setErrorMessage(errorDescription);
+          }
+        }
       }
     });
 
@@ -32,27 +49,6 @@ const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
-
-  // Handle auth errors
-  useEffect(() => {
-    const handleAuthError = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
-        
-        if (error === 'invalid_grant') {
-          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-        } else if (errorDescription) {
-          setErrorMessage(errorDescription);
-        }
-      }
-    });
-
-    return () => {
-      handleAuthError.data.subscription.unsubscribe();
-    };
-  }, []);
 
   if (isLoading) {
     return (
