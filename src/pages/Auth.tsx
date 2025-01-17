@@ -5,7 +5,6 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
-import { AuthError } from '@supabase/supabase-js';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,30 +20,25 @@ const Auth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const handleAuthChange = (event: string) => {
-      if (event === 'SIGNED_IN') {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
       }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+    });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
 
-  // Handle auth errors separately
+  // Handle auth errors
   useEffect(() => {
-    const handleAuthError = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN') {
-        const { error } = await supabase.auth.getSession();
-        if (error) {
-          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-        }
+    const handleAuthError = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY_ERROR' || event === 'USER_NOT_FOUND' || event === 'AUTH_ERROR') {
+        setErrorMessage('Invalid email or password. Please check your credentials and try again.');
       }
     });
 
