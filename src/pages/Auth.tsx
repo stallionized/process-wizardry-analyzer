@@ -28,26 +28,32 @@ const Auth = () => {
           const error = urlParams.get('error');
           const errorDescription = urlParams.get('error_description');
 
-          // Handle the case where error description might be a stringified JSON
-          let parsedError: string | Record<string, any> | null = errorDescription;
+          if (!error && !errorDescription) {
+            return;
+          }
+
+          // Try to parse the error description as JSON
+          let parsedError = null;
           try {
             if (errorDescription) {
               parsedError = JSON.parse(errorDescription);
             }
           } catch {
             // If parsing fails, use the original error description
-            parsedError = errorDescription;
+            parsedError = null;
           }
 
-          // Check for HTTP client error with invalid credentials
+          // Check for invalid credentials or authentication errors
           if (error === 'invalid_grant' || 
-              (parsedError && typeof parsedError === 'string' && parsedError.includes('invalid_credentials')) ||
               (parsedError && typeof parsedError === 'object' && 
-                (parsedError.code === 'invalid_credentials' || 
-                 parsedError.message?.includes('Invalid login credentials'))) ||
-              (errorDescription?.includes('status 400')) ||
-              (errorDescription?.includes('failed to call url')) ||
-              (errorDescription?.includes('body stream already read'))) {
+               (parsedError.code === 'invalid_credentials' || 
+                parsedError.message?.includes('Invalid login credentials'))) ||
+              (errorDescription && (
+                errorDescription.includes('status 400') ||
+                errorDescription.includes('failed to call url') ||
+                errorDescription.includes('invalid_credentials') ||
+                errorDescription.includes('Invalid login credentials')
+              ))) {
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
           } else if (errorDescription && !errorDescription.includes('body stream already read')) {
             setErrorMessage('An error occurred during sign in. Please try again.');
