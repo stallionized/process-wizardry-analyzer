@@ -29,12 +29,10 @@ const Auth = () => {
         setErrorMessage("");
       }
       // Handle authentication errors
-      if (!session && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+      if (!session && event === 'SIGNED_IN') {
         const { error } = await supabase.auth.getSession();
-        if (error instanceof AuthApiError && error.status === 400) {
+        if (error instanceof AuthApiError) {
           setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-        } else if (error) {
-          setErrorMessage(getErrorMessage(error));
         }
       }
     };
@@ -45,22 +43,6 @@ const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
-
-  const getErrorMessage = (error: AuthError) => {
-    if (error instanceof AuthApiError) {
-      switch (error.status) {
-        case 400:
-          return 'Invalid email or password. Please check your credentials and try again.';
-        case 422:
-          return 'Please enter a valid email address.';
-        case 401:
-          return 'Invalid credentials. Please check your email and password.';
-        default:
-          return 'An error occurred during authentication. Please try again.';
-      }
-    }
-    return 'An unexpected error occurred. Please try again.';
-  };
 
   if (isLoading) {
     return (
