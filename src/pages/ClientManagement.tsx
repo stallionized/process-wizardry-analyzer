@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { UserPlus, Trash2, Edit } from 'lucide-react';
+import { UserPlus, Trash2, Edit, Phone } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -229,7 +229,12 @@ const ClientManagement = () => {
               <div className="space-y-1">
                 <h3 className="font-medium">{client.name}</h3>
                 <p className="text-sm text-muted-foreground">{client.email}</p>
-                <p className="text-sm text-muted-foreground">{client.phone}</p>
+                {client.phone && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {client.phone}
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button
