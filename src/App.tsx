@@ -13,7 +13,18 @@ import Admin from "./pages/Admin";
 import Client from "./pages/Client";
 import Auth from "./pages/Auth";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on 403 (session) errors
+        if (error?.status === 403) return false;
+        return failureCount < 3;
+      },
+      staleTime: 5000,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, isLoading } = useSessionContext();
@@ -38,7 +49,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SessionContextProvider supabaseClient={supabase}>
+    <SessionContextProvider supabaseClient={supabase} initialSession={null}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
