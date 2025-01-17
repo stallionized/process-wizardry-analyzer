@@ -82,17 +82,6 @@
     @apply p-8 h-full bg-white dark:bg-gray-900;
   }
 
-  [role="dialog"] .matrix-container {
-    @apply bg-white dark:bg-gray-900;
-    height: min(800px, calc(99.5vh - 12rem));
-    width: min(1600px, calc(99.5vw - 6rem));
-  }
-
-  [role="dialog"] button[aria-label="Close"] {
-    @apply absolute right-8 top-8 opacity-70 hover:opacity-100 transition-opacity;
-    z-index: 51;
-  }
-
   /* Dropdown and Menu Styles */
   [role="menu"],
   [role="listbox"],
@@ -116,6 +105,23 @@
   /* Alert Dialog Content */
   .AlertDialogContent {
     @apply bg-white dark:bg-gray-900 !important;
+  }
+
+  /* Dialog Content specific styles */
+  .DialogContent,
+  [data-radix-dialog-content],
+  [data-state="open"].DialogContent {
+    @apply bg-white dark:bg-gray-900 !important;
+  }
+
+  /* Dialog Overlay */
+  [data-radix-dialog-overlay] {
+    @apply bg-black/50;
+  }
+
+  /* Dialog Form Container */
+  [data-radix-dialog-content] form {
+    @apply bg-white dark:bg-gray-900 p-6 rounded-lg;
   }
 
   /* Hover States */
@@ -144,10 +150,5 @@
   /* SelectItem specific styles */
   .SelectItem {
     @apply bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800;
-  }
-
-  /* Dialog Content specific styles */
-  [data-radix-dialog-content] {
-    @apply bg-white dark:bg-gray-900 !important;
   }
 }
