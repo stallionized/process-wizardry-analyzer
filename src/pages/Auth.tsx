@@ -21,28 +21,23 @@ const Auth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const handleAuthChange = async (event: string) => {
+    const handleAuthChange = async (event: string, session: any) => {
       if (event === 'SIGNED_IN') {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
         setErrorMessage("");
       }
+      // Handle authentication errors
+      if (!session && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+        setErrorMessage('Invalid email or password. Please try again.');
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Set up error handling for sign-in
-    const authListener = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && !session) {
-        setErrorMessage('Invalid email or password. Please try again.');
-      }
-    });
-
-    // Clean up subscriptions
     return () => {
       subscription.unsubscribe();
-      authListener.data.subscription.unsubscribe();
     };
   }, [navigate]);
 
@@ -105,9 +100,6 @@ const Auth = () => {
             }}
             providers={[]}
             redirectTo={window.location.origin}
-            onError={(error) => {
-              setErrorMessage(getErrorMessage(error));
-            }}
           />
         </div>
       </div>
