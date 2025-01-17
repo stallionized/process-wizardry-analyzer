@@ -28,23 +28,34 @@ const Auth = () => {
           const error = urlParams.get('error');
           const errorDescription = urlParams.get('error_description');
 
-          if (error === 'invalid_grant' || (errorDescription && errorDescription.includes('invalid_credentials'))) {
+          // Handle the case where error description might be a stringified JSON
+          let parsedError = errorDescription;
+          try {
+            if (errorDescription) {
+              parsedError = JSON.parse(errorDescription);
+            }
+          } catch {
+            // If parsing fails, use the original error description
+            parsedError = errorDescription;
+          }
+
+          // Check for various error conditions that indicate invalid credentials
+          if (
+            error === 'invalid_grant' || 
+            (typeof parsedError === 'string' && parsedError.includes('invalid_credentials')) ||
+            (parsedError && typeof parsedError === 'object' && 
+              (parsedError.code === 'invalid_credentials' || 
+               parsedError.message?.includes('Invalid login credentials')))
+          ) {
+            setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+          } else if (errorDescription?.includes('body stream already read')) {
+            // Handle the body stream already read error
             setErrorMessage('Invalid email or password. Please check your credentials and try again.');
           } else if (errorDescription) {
-            try {
-              const errorObj = JSON.parse(errorDescription);
-              if (errorObj.code === 'invalid_credentials' || errorObj.message.includes('Invalid login credentials')) {
-                setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-              } else {
-                setErrorMessage('An error occurred during sign in. Please try again.');
-              }
-            } catch {
-              // If error description is not JSON, use it directly
-              setErrorMessage('An error occurred during sign in. Please try again.');
-            }
+            setErrorMessage('An error occurred during sign in. Please try again.');
           }
         } catch (error) {
-          console.error('Error parsing authentication error:', error);
+          console.error('Error handling authentication:', error);
           setErrorMessage('An error occurred during sign in. Please try again.');
         }
       }
