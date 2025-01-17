@@ -29,7 +29,7 @@ const Auth = () => {
           const errorDescription = urlParams.get('error_description');
 
           // Handle the case where error description might be a stringified JSON
-          let parsedError = errorDescription;
+          let parsedError: string | Record<string, any> | null = errorDescription;
           try {
             if (errorDescription) {
               parsedError = JSON.parse(errorDescription);
@@ -42,7 +42,7 @@ const Auth = () => {
           // Check for various error conditions that indicate invalid credentials
           if (
             error === 'invalid_grant' || 
-            (typeof parsedError === 'string' && parsedError.includes('invalid_credentials')) ||
+            (parsedError && typeof parsedError === 'string' && parsedError.includes('invalid_credentials')) ||
             (parsedError && typeof parsedError === 'object' && 
               (parsedError.code === 'invalid_credentials' || 
                parsedError.message?.includes('Invalid login credentials')))
