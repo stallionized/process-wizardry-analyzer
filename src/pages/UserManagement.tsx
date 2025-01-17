@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
+import { adminSupabase } from '@/integrations/supabase/adminClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -48,11 +49,11 @@ const UserManagement = () => {
     try {
       setError('');
       
-      // Use admin API to create user
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      // Use admin client to create user
+      const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
         email: data.email,
         password: data.password,
-        email_confirm: true // Automatically confirm the email
+        email_confirm: true
       });
 
       if (createError) throw createError;
