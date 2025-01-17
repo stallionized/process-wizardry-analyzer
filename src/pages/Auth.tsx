@@ -23,24 +23,29 @@ const Auth = () => {
         setErrorMessage("");
         navigate('/');
       } else if (event === 'SIGNED_OUT') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const error = urlParams.get('error');
+          const errorDescription = urlParams.get('error_description');
 
-        if (error === 'invalid_grant') {
-          setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-        } else if (errorDescription) {
-          // Clone the response if we need to read it multiple times
-          try {
-            const errorDescriptionObj = JSON.parse(errorDescription);
-            if (errorDescriptionObj.message) {
-              setErrorMessage(errorDescriptionObj.message);
-            } else {
-              setErrorMessage(errorDescription);
+          if (error === 'invalid_grant' || (errorDescription && errorDescription.includes('invalid_credentials'))) {
+            setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+          } else if (errorDescription) {
+            try {
+              const errorObj = JSON.parse(errorDescription);
+              if (errorObj.code === 'invalid_credentials' || errorObj.message.includes('Invalid login credentials')) {
+                setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+              } else {
+                setErrorMessage('An error occurred during sign in. Please try again.');
+              }
+            } catch {
+              // If error description is not JSON, use it directly
+              setErrorMessage('An error occurred during sign in. Please try again.');
             }
-          } catch {
-            setErrorMessage(errorDescription);
           }
+        } catch (error) {
+          console.error('Error parsing authentication error:', error);
+          setErrorMessage('An error occurred during sign in. Please try again.');
         }
       }
     });
