@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useProjects } from '@/hooks/useProjects';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePrograms } from '@/hooks/usePrograms';
+import { toast } from 'sonner';
 
 interface CreateProjectFormData {
   project_name: string;
@@ -20,17 +21,28 @@ interface CreateProjectDialogProps {
 const CreateProjectDialog = ({ clientId }: CreateProjectDialogProps) => {
   const { createProjectMutation } = useProjects();
   const { programs } = usePrograms(clientId);
-  const { register, handleSubmit, reset } = useForm<CreateProjectFormData>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateProjectFormData>();
   const [isOpen, setIsOpen] = React.useState(false);
 
   const onSubmit = async (data: CreateProjectFormData) => {
-    await createProjectMutation.mutateAsync({
-      project_name: data.project_name,
-      program_id: data.program_id,
-      client_id: clientId,
-    });
-    setIsOpen(false);
-    reset();
+    try {
+      if (!data.project_name?.trim()) {
+        toast.error('Project name is required');
+        return;
+      }
+
+      await createProjectMutation.mutateAsync({
+        project_name: data.project_name.trim(),
+        program_id: data.program_id,
+        client_id: clientId,
+      });
+      
+      setIsOpen(false);
+      reset();
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast.error('Failed to create project');
+    }
   };
 
   return (
@@ -48,7 +60,11 @@ const CreateProjectDialog = ({ clientId }: CreateProjectDialogProps) => {
             <Input
               id="project_name"
               {...register('project_name', { required: true })}
+              className={errors.project_name ? 'border-red-500' : ''}
             />
+            {errors.project_name && (
+              <p className="text-sm text-red-500">Project name is required</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="program_id">Program</Label>
