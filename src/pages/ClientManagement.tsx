@@ -154,24 +154,6 @@ const ClientManagement = () => {
               <Form {...clientForm}>
                 <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <FormField
-                        control={clientForm.control}
-                        name="logo_url"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Logo</FormLabel>
-                            <FormControl>
-                              <LogoUpload
-                                currentLogo={field.value}
-                                onUpload={handleLogoUpload}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
                     <FormField
                       control={clientForm.control}
                       name="name"
@@ -232,6 +214,22 @@ const ClientManagement = () => {
                           <FormLabel>Address</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter client address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={clientForm.control}
+                      name="logo_url"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Logo</FormLabel>
+                          <FormControl>
+                            <LogoUpload
+                              currentLogo={field.value}
+                              onUpload={handleLogoUpload}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
