@@ -53,7 +53,7 @@ const Layout = () => {
             <img 
               src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
               alt="AI Process Engineer Logo" 
-              className="h-[70.4px] w-[81.50px]"
+              className="h-[70.4px] w-auto"
             />
           </Link>
           <div className="ml-auto flex items-center space-x-4">
