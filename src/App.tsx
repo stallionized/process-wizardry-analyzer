@@ -13,7 +13,14 @@ import Admin from "./pages/Admin";
 import Client from "./pages/Client";
 import Auth from "./pages/Auth";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      retry: 1,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, isLoading } = useSessionContext();
@@ -36,47 +43,49 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <SessionContextProvider supabaseClient={supabase}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route element={<Layout />}>
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Landing />
-                </ProtectedRoute>
-              } />
-              <Route path="/project/:id" element={
-                <ProtectedRoute>
-                  <ProjectDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/recycle-bin" element={
-                <ProtectedRoute>
-                  <RecycleBin />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/client" element={
-                <ProtectedRoute>
-                  <Client />
-                </ProtectedRoute>
-              } />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </SessionContextProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <SessionContextProvider supabaseClient={supabase}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route element={<Layout />}>
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Landing />
+                  </ProtectedRoute>
+                } />
+                <Route path="/project/:id" element={
+                  <ProtectedRoute>
+                    <ProjectDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/recycle-bin" element={
+                  <ProtectedRoute>
+                    <RecycleBin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/client" element={
+                  <ProtectedRoute>
+                    <Client />
+                  </ProtectedRoute>
+                } />
+              </Route>
+            </Routes>
+          </TooltipProvider>
+        </SessionContextProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
+  );
+};
 
 export default App;
