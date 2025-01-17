@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { UserPlus, Trash2 } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserFormData {
   email: string;
@@ -22,6 +23,7 @@ interface UserFormData {
 
 const UserManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
+  const [error, setError] = useState<string>('');
   const form = useForm<UserFormData>();
 
   React.useEffect(() => {
@@ -44,17 +46,22 @@ const UserManagement = () => {
 
   const onSubmit = async (data: UserFormData) => {
     try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      setError('');
+      
+      // Use admin API to create user
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: data.email,
         password: data.password,
+        email_confirm: true // Automatically confirm the email
       });
 
-      if (signUpError) throw signUpError;
+      if (createError) throw createError;
 
       toast.success('User created successfully');
       form.reset();
       fetchUsers();
     } catch (error: any) {
+      setError(error.message);
       toast.error('Error creating user');
       console.error('Error:', error.message);
     }
@@ -89,6 +96,12 @@ const UserManagement = () => {
       <Card className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <FormField
               control={form.control}
               name="email"
