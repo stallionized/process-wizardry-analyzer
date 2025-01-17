@@ -17,7 +17,7 @@ const ProjectDashboard = () => {
   
   if (!id) return <div>Project ID is required</div>;
 
-  const { project, isLoadingProject } = useProjectManagement(id);
+  const { project, isLoadingProject, updateProjectMutation } = useProjectManagement(id);
 
   if (isLoadingProject) {
     return <div>Loading project details...</div>;
@@ -27,6 +27,22 @@ const ProjectDashboard = () => {
     return <div>Project not found</div>;
   }
 
+  const handleProjectNameUpdate = (newName: string) => {
+    updateProjectMutation.mutate({ project_name: newName });
+  };
+
+  const handleClientNameUpdate = (newName: string) => {
+    updateProjectMutation.mutate({ client_name: newName });
+  };
+
+  const handleDeadlineUpdate = (newDate: Date | undefined) => {
+    updateProjectMutation.mutate({ deadline: newDate });
+  };
+
+  const handleTopicsUpdate = (newTopics: string) => {
+    updateProjectMutation.mutate({ topics: newTopics });
+  };
+
   const menuItems = [
     {
       id: 'project',
@@ -35,9 +51,13 @@ const ProjectDashboard = () => {
       component: (
         <ProjectDetails
           projectName={project.project_name}
+          setProjectName={handleProjectNameUpdate}
           clientName={project.client_name || ''}
+          setClientName={handleClientNameUpdate}
           deadline={project.deadline ? new Date(project.deadline) : undefined}
+          setDeadline={handleDeadlineUpdate}
           topics={project.topics || ''}
+          setTopics={handleTopicsUpdate}
         />
       )
     },
