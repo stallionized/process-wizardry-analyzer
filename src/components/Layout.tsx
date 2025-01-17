@@ -51,7 +51,7 @@ const Layout = () => {
         <div className="container flex h-32 items-center">
           <Link to="/" className="flex items-center">
             <img 
-              src="/lovable-uploads/ee4534c9-695e-4998-8504-8583fe9bb774.png" 
+              src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
               alt="AI Process Engineer Logo" 
               className="h-32 w-auto"
             />
