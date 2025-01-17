@@ -147,7 +147,7 @@
   }
 
   /* Dialog Content specific styles */
-  .DialogContent {
+  [data-radix-dialog-content] {
     @apply bg-white dark:bg-gray-900 !important;
   }
 }
