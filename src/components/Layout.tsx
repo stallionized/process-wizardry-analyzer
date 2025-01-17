@@ -54,8 +54,8 @@ const Layout = () => {
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="w-48 p-2">
+                  <NavigationMenuContent className="bg-white dark:bg-gray-900 min-w-[8rem] p-2">
+                    <div className="w-48">
                       <NavLink to="/">Dashboard</NavLink>
                       <NavLink to="/users">User Management</NavLink>
                     </div>
