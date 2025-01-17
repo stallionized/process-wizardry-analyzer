@@ -102,7 +102,7 @@ const Auth = () => {
             }}
             providers={[]}
             redirectTo={window.location.origin}
-            onError={(error) => {
+            onAuthError={(error) => {
               handleAuthError(error);
             }}
           />
