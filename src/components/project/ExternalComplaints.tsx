@@ -54,9 +54,9 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         .from('scraping_urls')
         .select('*')
         .eq('project_id', projectId)
-        .single();
+        .maybeSingle();  // Changed from .single() to .maybeSingle()
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching URLs:', error);
         throw error;
       }
