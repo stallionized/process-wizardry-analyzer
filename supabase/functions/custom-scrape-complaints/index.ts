@@ -6,116 +6,191 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ScrapeRequest {
+  clientName: string;
+  projectId: string;
+  page?: number;
+}
+
+interface ComplaintData {
+  source_url: string;
+  complaint_text: string;
+  category: string;
+  date: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { clientName, projectId } = await req.json();
-    
-    if (!clientName) {
-      throw new Error('Client name is required');
+    const { clientName, projectId, page = 1 } = await req.json() as ScrapeRequest;
+    console.log(`Starting scrape for client: ${clientName}, project: ${projectId}, page: ${page}`);
+
+    if (!clientName || !projectId) {
+      throw new Error('Client name and project ID are required');
     }
 
-    console.log(`Starting scraping for ${clientName}`);
-    
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
-    }
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const complaints: ComplaintData[] = [];
+    const resultsPerPage = 10;
+    const startIndex = (page - 1) * resultsPerPage;
 
-    // Generate variations of the company name for better search coverage
-    const nameVariations = [
-      clientName,
-      clientName.toLowerCase(),
-      clientName.replace(/\s+/g, ''),  // Remove spaces
-      clientName.replace(/[^a-zA-Z0-9]/g, ''), // Remove special characters
-    ];
+    // Format company names for different review sites
+    const formattedCompanyName = clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
-    const complaints = [];
+    // Define review sources to scrape
     const sources = [
       {
-        name: 'BBB',
-        baseUrl: 'https://www.bbb.org/search?find_text=',
-        category: 'BBB Review'
+        name: 'Trustpilot',
+        url: `https://www.trustpilot.com/review/${formattedCompanyName}`,
+        selector: '.styles_reviewContent__0Q2Tg'
       },
       {
-        name: 'Trustpilot',
-        baseUrl: 'https://www.trustpilot.com/review/',
-        category: 'Trustpilot Review'
+        name: 'BBB',
+        url: `https://www.bbb.org/us/mo/st-louis/profile/beer-distributors/${formattedCompanyName}`,
+        selector: '.dtm-review'
       },
       {
         name: 'ConsumerAffairs',
-        baseUrl: 'https://www.consumeraffairs.com/search?query=',
-        category: 'Consumer Affairs Review'
+        url: `https://www.consumeraffairs.com/food/budweiser.html`,
+        selector: '.rvw-bd'
       }
     ];
 
-    // Mock data for demonstration (replace with actual scraping logic)
-    const mockComplaints = [
+    for (const source of sources) {
+      console.log(`Scraping ${source.name} at URL: ${source.url}`);
+      
+      const prompt = `
+      Visit this webpage: ${source.url}
+      Extract real customer reviews/complaints about ${clientName}. For each review, provide:
+      1. The complete review/complaint text
+      2. The date of the review (if available, otherwise use current date)
+      3. A category that best describes the complaint (e.g., "Product Quality", "Customer Service", "Delivery", etc.)
+      
+      Format the data as a JSON array with objects containing:
       {
-        text: "Product quality has declined significantly over the past year. The taste is inconsistent.",
-        date: new Date().toISOString(),
-        source: "Consumer Review",
-        category: "Product Quality"
-      },
-      {
-        text: "Customer service was unresponsive when I tried to report a quality issue with my purchase.",
-        date: new Date().toISOString(),
-        source: "Customer Feedback",
-        category: "Customer Service"
-      },
-      {
-        text: "Packaging was damaged upon delivery and the company took weeks to address the issue.",
-        date: new Date().toISOString(),
-        source: "Product Review",
-        category: "Shipping & Handling"
+        "text": "the complete review text",
+        "date": "the review date in ISO format",
+        "category": "the complaint category"
       }
-    ];
+      
+      Only include actual reviews/complaints from the page. If you can't access the page or find reviews, return an empty array.
+      `;
 
-    // Store complaints in the database
-    if (mockComplaints.length > 0) {
-      const { error: insertError } = await supabase
-        .from('complaints')
-        .upsert(
-          mockComplaints.map(complaint => ({
-            complaint_text: complaint.text,
-            source_url: `https://example.com/review/${Math.random().toString(36).substring(7)}`,
-            theme: complaint.category,
-            trend: 'Recent',
-            project_id: projectId,
-            created_at: complaint.date
-          }))
-        );
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GEMINI_API_KEY}`
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            topK: 1,
+            topP: 1,
+          }
+        })
+      });
 
-      if (insertError) {
-        console.error('Error storing complaints:', insertError);
-        throw insertError;
+      if (!response.ok) {
+        console.error(`Error response from Gemini AI for ${source.name}:`, await response.text());
+        continue;
+      }
+
+      const result = await response.json();
+      console.log(`Raw Gemini AI response for ${source.name}:`, JSON.stringify(result));
+
+      try {
+        const textContent = result.candidates[0].content.parts[0].text;
+        const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const reviews = JSON.parse(jsonMatch[0]);
+          
+          for (const review of reviews) {
+            const complaint: ComplaintData = {
+              source_url: source.url,
+              complaint_text: review.text,
+              category: review.category || `${source.name} Review`,
+              date: new Date(review.date || new Date()).toISOString()
+            };
+
+            complaints.push(complaint);
+            
+            // Store in database
+            const { error: insertError } = await supabaseAdmin
+              .from('complaints')
+              .insert({
+                project_id: projectId,
+                complaint_text: complaint.complaint_text,
+                source_url: complaint.source_url,
+                theme: complaint.category,
+                trend: 'Recent'
+              });
+
+            if (insertError) {
+              console.error(`Error storing ${source.name} complaint:`, insertError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error parsing ${source.name} response:`, error);
       }
     }
 
+    // Sort complaints by date (newest first) and apply pagination
+    const sortedComplaints = complaints
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(startIndex, startIndex + resultsPerPage);
+
+    console.log(`Successfully processed ${sortedComplaints.length} complaints`);
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        complaintsCount: mockComplaints.length,
-        complaints: mockComplaints
+      JSON.stringify({ 
+        complaints: sortedComplaints,
+        message: `Successfully scraped ${sortedComplaints.length} complaints from page ${page}`,
+        hasMore: complaints.length > (startIndex + resultsPerPage)
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        } 
+      }
     );
 
   } catch (error) {
-    console.error('Error in custom-scrape-complaints function:', error);
+    console.error('Scraping error:', error);
     return new Response(
-      JSON.stringify({ error: error.message, success: false }),
+      JSON.stringify({ 
+        error: error.message,
+        complaints: [] 
+      }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     );
   }
