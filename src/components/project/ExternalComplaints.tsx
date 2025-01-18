@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -22,6 +23,7 @@ interface Complaint {
 
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch project details first
@@ -108,24 +110,38 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
   // Add a function to manually refetch complaints
   const handleRefresh = async () => {
-    console.log('Manually refreshing complaints...');
-    // Delete existing complaints for this project
-    const { error: deleteError } = await supabase
-      .from('complaints')
-      .delete()
-      .eq('project_id', projectId);
-    
-    if (deleteError) {
-      console.error('Error deleting existing complaints:', deleteError);
-      return;
+    try {
+      setIsRefreshing(true);
+      console.log('Manually refreshing complaints...');
+      
+      // Delete existing complaints for this project
+      const { error: deleteError } = await supabase
+        .from('complaints')
+        .delete()
+        .eq('project_id', projectId);
+      
+      if (deleteError) {
+        console.error('Error deleting existing complaints:', deleteError);
+        toast.error('Failed to refresh complaints');
+        return;
+      }
+
+      // Force refetch both queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
+        queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      ]);
+
+      // Explicitly call refetch after invalidation
+      await refetch();
+      
+      toast.success('Complaints refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing complaints:', error);
+      toast.error('Failed to refresh complaints');
+    } finally {
+      setIsRefreshing(false);
     }
-    
-    // Force refetch both queries
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
-      queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
-      refetch()
-    ]);
   };
 
   if (isLoadingProject || isLoading) {
@@ -165,9 +181,9 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         <Button 
           variant="outline" 
           onClick={handleRefresh}
-          disabled={isFetching}
+          disabled={isRefreshing || isFetching}
         >
-          {isFetching ? 'Refreshing...' : 'Refresh Complaints'}
+          {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
         </Button>
       </div>
       
