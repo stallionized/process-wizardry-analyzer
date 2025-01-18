@@ -37,7 +37,6 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY is not configured');
     }
 
-    // Initialize Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -47,60 +46,46 @@ serve(async (req) => {
     const resultsPerPage = 10;
     const startIndex = (page - 1) * resultsPerPage;
 
-    // Format company names for different review sites
-    const companyVariations = [
-      clientName.toLowerCase(),
-      clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      clientName.toLowerCase().replace(/[^a-z0-9]+/g, ''),
-      'budweiser', // Specific for Budweiser
-      'anheuser-busch', // Parent company
-      'ab-inbev' // Parent company
-    ];
-
-    // Define review sources to scrape with specific URLs for Budweiser
-    const sources = [
+    // Format search URLs for different review sites
+    const searchUrls = [
       {
         name: 'Trustpilot',
-        url: 'https://www.trustpilot.com/review/budweiser.com',
+        url: `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`,
         selector: '.styles_reviewContent__0Q2Tg'
       },
       {
         name: 'BBB',
-        url: 'https://www.bbb.org/us/mo/st-louis/profile/breweries/anheuser-busch-companies-llc-0734-110193/complaints',
+        url: `https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`,
         selector: '.dtm-review'
       },
       {
         name: 'ConsumerAffairs',
-        url: 'https://www.consumeraffairs.com/food/budweiser.html',
+        url: `https://www.consumeraffairs.com/search?query=${encodeURIComponent(clientName)}`,
         selector: '.rvw-bd'
       }
     ];
 
-    for (const source of sources) {
-      console.log(`Scraping ${source.name} at URL: ${source.url}`);
+    for (const source of searchUrls) {
+      console.log(`Scraping ${source.name} with search URL: ${source.url}`);
       
       const prompt = `
-      Visit this webpage: ${source.url}
-      Extract real customer reviews/complaints about ${clientName}. For each review, provide:
-      1. The complete review/complaint text
-      2. The date of the review (if available, otherwise use current date)
-      3. A category that best describes the complaint (e.g., "Product Quality", "Customer Service", "Delivery", etc.)
+      First, visit this search URL: ${source.url}
+      1. Find the first relevant result page for ${clientName} from the search results
+      2. Visit that result page and extract customer complaints/reviews. For each review, provide:
+         - The complete review/complaint text
+         - The date of the review (if available, otherwise use current date)
+         - A category that best describes the complaint (e.g., "Product Quality", "Customer Service", etc.)
       
       Format the data as a JSON array with objects containing:
       {
         "text": "the complete review text",
         "date": "the review date in ISO format",
-        "category": "the complaint category"
+        "category": "the complaint category",
+        "url": "the URL of the review page"
       }
       
-      Only include actual reviews/complaints from the page. If you can't access the page or find reviews, return an empty array.
-      Focus on negative reviews and complaints rather than positive reviews.
-      For Budweiser specifically, look for complaints about:
-      - Product quality
-      - Packaging issues
-      - Distribution problems
-      - Customer service
-      - Marketing concerns
+      Focus on negative reviews and complaints rather than positive ones.
+      If you can't find relevant reviews or access the pages, return an empty array.
       `;
 
       const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
@@ -139,7 +124,7 @@ serve(async (req) => {
           
           for (const review of reviews) {
             const complaint: ComplaintData = {
-              source_url: source.url,
+              source_url: review.url || source.url,
               complaint_text: review.text,
               category: review.category || `${source.name} Review`,
               date: new Date(review.date || new Date()).toISOString()
