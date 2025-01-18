@@ -21,7 +21,6 @@ serve(async (req) => {
       throw new Error('Client name and project ID are required')
     }
 
-    // First search for the company on Trustpilot
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`
     console.log('Searching Trustpilot at:', searchUrl)
 
@@ -30,10 +29,10 @@ serve(async (req) => {
       throw new Error('JINA_API_KEY is not configured')
     }
 
-    // Get search results with proper headers and error handling
+    // Updated Jina AI endpoint and headers
     let searchResponse
     try {
-      searchResponse = await fetch('https://reader.jina.ai/api/reader', {
+      searchResponse = await fetch('https://api.jina.ai/v1/reader', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${JINA_API_KEY}`,
@@ -73,7 +72,6 @@ serve(async (req) => {
       throw new Error('Failed to parse search results HTML')
     }
 
-    // Find all business cards/links in search results
     const businessCards = searchDoc.querySelectorAll('a[href^="/review/"]')
     console.log(`Found ${businessCards.length} business results`)
 
@@ -88,7 +86,6 @@ serve(async (req) => {
       )
     }
 
-    // Find the business card with the most reviews
     let bestMatch = null
     let maxReviews = -1
 
@@ -107,23 +104,21 @@ serve(async (req) => {
       throw new Error('Could not find a valid company profile')
     }
 
-    // Get the company profile URL
     const companyPath = bestMatch.getAttribute('href')
     console.log('Best match company path:', companyPath)
     
     const reviewsUrl = `https://www.trustpilot.com${companyPath}?page=${page}`
     console.log('Fetching reviews from:', reviewsUrl)
 
-    // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Use Jina to get the reviews page
+    // Updated Jina endpoint for reviews page
     let response
     try {
-      response = await fetch('https://reader.jina.ai/api/reader', {
+      response = await fetch('https://api.jina.ai/v1/reader', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${JINA_API_KEY}`,
@@ -159,19 +154,15 @@ serve(async (req) => {
     const resultsPerPage = 10
     const startIndex = (page - 1) * resultsPerPage
 
-    // Process the extracted content
-    // Split the content into reviews using Trustpilot's review content class
     const reviewPattern = /(?:★{1,5}|⭐{1,5})\s*([\s\S]*?)(?=(?:★{1,5}|⭐{1,5})|$)/g
     const reviews = results.text.match(reviewPattern) || []
     console.log(`Found ${reviews.length} reviews in content`)
     
-    // Process each review segment
     for (const reviewText of reviews.slice(startIndex, startIndex + resultsPerPage)) {
       if (!reviewText.trim()) continue
 
-      // Extract star rating from review text
       const stars = (reviewText.match(/★|⭐/g) || []).length
-      if (stars > 2) continue // Skip positive reviews (3+ stars)
+      if (stars > 2) continue
 
       const complaint = {
         source_url: reviewsUrl,
@@ -182,7 +173,6 @@ serve(async (req) => {
 
       complaints.push(complaint)
       
-      // Store in database
       const { error: insertError } = await supabaseAdmin
         .from('complaints')
         .insert({
