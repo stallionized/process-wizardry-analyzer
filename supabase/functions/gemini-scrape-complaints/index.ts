@@ -20,7 +20,6 @@ interface ComplaintData {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -38,9 +37,6 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY is not configured')
     }
 
-    console.log('GEMINI_API_KEY is configured, proceeding with API call')
-
-    // Create Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -50,111 +46,123 @@ serve(async (req) => {
     const resultsPerPage = 10
     const startIndex = (page - 1) * resultsPerPage
 
-    // Format company name for Trustpilot URL
+    // Format company names for different review sites
     const formattedCompanyName = clientName
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
-      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
-    // Construct Trustpilot URL
-    const searchUrl = `https://www.trustpilot.com/review/${formattedCompanyName}`;
-    console.log('Constructed Trustpilot URL:', searchUrl);
-    
-    // Use the Gemini API to extract structured data from the webpage
-    const prompt = `
-    Visit this webpage: ${searchUrl}
-    Extract customer reviews in a structured format. For each review, provide:
-    1. The review text
-    2. The date of the review
-    3. The rating (if available)
-    
-    Format the data as a JSON array with objects containing:
-    {
-      "text": "the review text",
-      "date": "the review date",
-      "rating": "the rating (1-5)"
-    }
-    
-    Only include actual reviews from the page. If you can't access the page or find reviews, return an empty array.
-    `;
-
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
+    // Define review sources to scrape
+    const sources = [
+      {
+        name: 'Trustpilot',
+        url: `https://www.trustpilot.com/review/${formattedCompanyName}`,
+        selector: '.styles_reviewContent__0Q2Tg'
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topK: 1,
-          topP: 1,
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response from Gemini AI:', errorText);
-      throw new Error(`Gemini AI API returned status ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('Raw Gemini AI response:', JSON.stringify(result));
-
-    // Parse the response and extract reviews
-    let reviews = [];
-    try {
-      const textContent = result.candidates[0].content.parts[0].text;
-      // Extract the JSON array from the response
-      const jsonMatch = textContent.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        reviews = JSON.parse(jsonMatch[0]);
+      {
+        name: 'BBB',
+        url: `https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`,
+        selector: '.complaint-text'
       }
-    } catch (error) {
-      console.error('Error parsing Gemini response:', error);
-      reviews = [];
-    }
+    ];
 
-    // Process each review
-    for (const review of reviews.slice(startIndex, startIndex + resultsPerPage)) {
-      const complaint: ComplaintData = {
-        source_url: searchUrl,
-        complaint_text: review.text,
-        category: `Trustpilot Review (${review.rating} stars)`,
-        date: new Date(review.date).toISOString()
-      };
-
-      complaints.push(complaint);
+    for (const source of sources) {
+      console.log(`Scraping ${source.name} at URL: ${source.url}`);
       
-      // Store in database
-      const { error: insertError } = await supabaseAdmin
-        .from('complaints')
-        .insert({
-          project_id: projectId,
-          complaint_text: complaint.complaint_text,
-          source_url: complaint.source_url,
-          theme: complaint.category,
-          trend: 'neutral'
-        });
+      const prompt = `
+      Visit this webpage: ${source.url}
+      Extract customer reviews/complaints in a structured format. For each review, provide:
+      1. The complete review/complaint text
+      2. The exact date of the review/complaint (in ISO format if possible)
+      3. Any rating given (1-5 stars or similar)
+      
+      Format the data as a JSON array with objects containing:
+      {
+        "text": "the complete review/complaint text",
+        "date": "the review/complaint date",
+        "rating": "the rating if available"
+      }
+      
+      Only include actual reviews/complaints from the page. If you can't access the page or find reviews, return an empty array.
+      `;
 
-      if (insertError) {
-        console.error('Error storing complaint:', insertError);
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GEMINI_API_KEY}`
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            topK: 1,
+            topP: 1,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        console.error(`Error response from Gemini AI for ${source.name}:`, await response.text());
+        continue; // Skip to next source if this one fails
+      }
+
+      const result = await response.json();
+      console.log(`Raw Gemini AI response for ${source.name}:`, JSON.stringify(result));
+
+      try {
+        const textContent = result.candidates[0].content.parts[0].text;
+        const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const reviews = JSON.parse(jsonMatch[0]);
+          
+          for (const review of reviews) {
+            const complaint: ComplaintData = {
+              source_url: source.url,
+              complaint_text: review.text,
+              category: `${source.name} Review${review.rating ? ` (${review.rating} stars)` : ''}`,
+              date: new Date(review.date).toISOString()
+            };
+
+            complaints.push(complaint);
+            
+            // Store in database
+            const { error: insertError } = await supabaseAdmin
+              .from('complaints')
+              .insert({
+                project_id: projectId,
+                complaint_text: complaint.complaint_text,
+                source_url: complaint.source_url,
+                theme: complaint.category,
+                trend: 'neutral'
+              });
+
+            if (insertError) {
+              console.error(`Error storing ${source.name} complaint:`, insertError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error parsing ${source.name} response:`, error);
       }
     }
 
-    console.log(`Successfully processed ${complaints.length} complaints`);
+    // Sort complaints by date (newest first) and apply pagination
+    const sortedComplaints = complaints
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(startIndex, startIndex + resultsPerPage);
+
+    console.log(`Successfully processed ${sortedComplaints.length} complaints`);
 
     return new Response(
       JSON.stringify({ 
-        complaints,
-        message: `Successfully scraped ${complaints.length} complaints from page ${page}`,
-        hasMore: complaints.length === resultsPerPage
+        complaints: sortedComplaints,
+        message: `Successfully scraped ${sortedComplaints.length} complaints from page ${page}`,
+        hasMore: complaints.length > (startIndex + resultsPerPage)
       }),
       { 
         headers: { 
