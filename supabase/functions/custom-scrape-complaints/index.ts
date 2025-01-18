@@ -36,11 +36,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const geminiHeaders = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GEMINI_API_KEY}`
-    };
-
     // Step 1: Search for company on Trustpilot
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
     const searchPrompt = `
@@ -52,39 +47,18 @@ serve(async (req) => {
     `;
 
     console.log('Sending search prompt to Gemini');
-    const searchResponse = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
+    const searchResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
       method: 'POST',
-      headers: geminiHeaders,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GEMINI_API_KEY}`
+      },
       body: JSON.stringify({
         contents: [{
           parts: [{
             text: searchPrompt
           }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topP: 1,
-          topK: 1,
-          maxOutputTokens: 100,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_NONE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_NONE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_NONE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_NONE"
-          }
-        ]
+        }]
       })
     });
 
@@ -137,39 +111,18 @@ serve(async (req) => {
     `;
 
     console.log('Sending scrape prompt to Gemini');
-    const scrapeResponse = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
+    const scrapeResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
       method: 'POST',
-      headers: geminiHeaders,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GEMINI_API_KEY}`
+      },
       body: JSON.stringify({
         contents: [{
           parts: [{
             text: scrapePrompt
           }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topP: 1,
-          topK: 1,
-          maxOutputTokens: 2048,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_NONE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_NONE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_NONE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_NONE"
-          }
-        ]
+        }]
       })
     });
 
