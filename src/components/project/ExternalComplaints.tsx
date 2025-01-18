@@ -24,7 +24,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
 
-  const { data: project } = useQuery({
+  // Fetch project details first
+  const { data: project, isLoading: isLoadingProject } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -47,11 +48,16 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   };
 
+  // Fetch complaints with dependencies on project and currentPage
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ['complaints', projectId, project?.client_name, currentPage],
     queryFn: async () => {
       console.log('Fetching complaints for:', project?.client_name);
       
+      if (!project?.client_name) {
+        throw new Error('Client name is required');
+      }
+
       // First try to get complaints from database
       const { data: existingComplaints, error: complaintsError } = await supabase
         .from('complaints')
@@ -74,13 +80,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         };
       }
 
-      // If no complaints in database, fetch new ones
-      if (!project?.client_name) {
-        throw new Error('Client name is required');
-      }
-
       console.log('Fetching new complaints for:', project.client_name);
-      const response = await supabase.functions.invoke('gemini-scrape-complaints', {
+      const response = await supabase.functions.invoke('custom-scrape-complaints', {
         body: { 
           clientName: project.client_name,
           projectId: projectId,
@@ -100,12 +101,20 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       };
     },
     enabled: !!projectId && !!project?.client_name,
+    // Add staleTime: 0 to ensure the query is always refetched when dependencies change
+    staleTime: 0,
+    // Add refetchOnWindowFocus: false to prevent unnecessary refetches
+    refetchOnWindowFocus: false
   });
 
-  const complaints = data?.complaints || [];
-  const hasMore = data?.hasMore || false;
+  // Add a function to manually refetch complaints
+  const handleRefresh = () => {
+    // Invalidate both the complaints and project queries
+    queryClient.invalidateQueries({ queryKey: ['complaints', projectId] });
+    queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+  };
 
-  if (isLoading) {
+  if (isLoadingProject || isLoading) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
@@ -132,9 +141,21 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     );
   }
 
+  const complaints = data?.complaints || [];
+  const hasMore = data?.hasMore || false;
+
   return (
     <Card className="p-6">
-      <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">External Complaints Analysis</h2>
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh}
+          disabled={isFetching}
+        >
+          Refresh Complaints
+        </Button>
+      </div>
       
       <div className="mb-4">
         <h3 className="text-lg font-medium mb-2">Complaints ({complaints.length})</h3>
