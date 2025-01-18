@@ -21,32 +21,72 @@ serve(async (req) => {
       throw new Error('Client name and project ID are required');
     }
 
-    // Format company name for URL
-    const formattedCompanyName = clientName.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    // Construct Trustpilot URL with pagination
-    const reviewsUrl = `https://www.trustpilot.com/review/${formattedCompanyName}?page=${page}`;
-    console.log('Fetching reviews from:', reviewsUrl);
-
-    // Fetch the page
-    const response = await fetch(reviewsUrl);
-    const html = await response.text();
+    // First, search for the company on Trustpilot
+    const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
+    console.log('Searching Trustpilot at:', searchUrl);
     
-    // Parse HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    if (!doc) {
-      throw new Error('Failed to parse HTML');
+    const searchResponse = await fetch(searchUrl);
+    const searchHtml = await searchResponse.text();
+    const searchParser = new DOMParser();
+    const searchDoc = searchParser.parseFromString(searchHtml, 'text/html');
+
+    if (!searchDoc) {
+      throw new Error('Failed to parse search results HTML');
     }
+
+    // Find all business cards/links in search results
+    const businessCards = searchDoc.querySelectorAll('a[href^="/review/"]');
+    console.log(`Found ${businessCards.length} business results`);
+
+    if (businessCards.length === 0) {
+      return new Response(
+        JSON.stringify({
+          complaints: [],
+          hasMore: false,
+          error: 'No companies found'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Find the business card with the most reviews
+    let bestMatch = null;
+    let maxReviews = -1;
+
+    for (const card of businessCards) {
+      const reviewCountText = card.textContent?.match(/\d+\s+reviews?/)?.[0] || '';
+      const reviewCount = parseInt(reviewCountText.match(/\d+/)?.[0] || '0');
+      
+      if (reviewCount > maxReviews) {
+        maxReviews = reviewCount;
+        bestMatch = card;
+      }
+    }
+
+    if (!bestMatch) {
+      throw new Error('Could not find a valid company profile');
+    }
+
+    // Get the company profile URL
+    const companyPath = bestMatch.getAttribute('href');
+    const reviewsUrl = `https://www.trustpilot.com${companyPath}?page=${page}`;
+    console.log('Fetching reviews from:', reviewsUrl);
 
     // Initialize Supabase client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Fetch the reviews page
+    const response = await fetch(reviewsUrl);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    if (!doc) {
+      throw new Error('Failed to parse reviews HTML');
+    }
 
     // Find all review cards
     const reviewCards = doc.querySelectorAll('[data-service-review-card-paper]');
