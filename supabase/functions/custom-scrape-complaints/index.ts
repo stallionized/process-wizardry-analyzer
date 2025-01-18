@@ -92,11 +92,12 @@ serve(async (req) => {
       Return a JSON array of objects containing:
       {
         "url": "the exact review page URL",
-        "reviewCount": number of reviews (as a number)
+        "reviewCount": number of reviews (as a number),
+        "companyName": "the exact company name as shown on Trustpilot"
       }
       Sort by reviewCount in descending order.
       Only include exact matches or very close matches to "${clientName}".
-      If none found, return empty array.
+      Make sure to parse reviewCount as a number, not a string.
       Important: Return ONLY the JSON array, nothing else.
     `;
 
@@ -106,6 +107,9 @@ serve(async (req) => {
     
     try {
       searchResults = JSON.parse(searchResultsJson);
+      // Sort by reviewCount in descending order to ensure we get the most reviewed page
+      searchResults.sort((a: any, b: any) => b.reviewCount - a.reviewCount);
+      console.log('Sorted search results:', searchResults);
     } catch (error) {
       console.error('Error parsing search results:', error);
       searchResults = [];
@@ -120,14 +124,16 @@ serve(async (req) => {
     }
 
     // Use the URL with the most reviews and add sorting parameter
-    const baseUrl = searchResults[0].url;
+    const mostReviewedResult = searchResults[0];
+    console.log(`Selected company with most reviews: ${mostReviewedResult.companyName} (${mostReviewedResult.reviewCount} reviews)`);
+    const baseUrl = mostReviewedResult.url;
     const mostReviewedPage = `${baseUrl}?sort=recency&page=${page}`;
     console.log(`Selected most reviewed page with sorting: ${mostReviewedPage}`);
 
     // Step 2: Scrape reviews from the selected page
     const scrapePrompt = `
       Visit this Trustpilot URL: ${mostReviewedPage}
-      Find and extract negative customer reviews (1-2 stars) about ${clientName}.
+      Find and extract negative customer reviews (1-2 stars) about ${mostReviewedResult.companyName}.
       The reviews are already sorted by most recent.
       For each review:
       1. Extract the complete review text
@@ -161,8 +167,8 @@ serve(async (req) => {
     try {
       const parsedData = JSON.parse(reviewsJson);
       // Remove the hasNextPage field from the array and store it
-      hasNextPage = parsedData.find(item => 'hasNextPage' in item)?.hasNextPage || false;
-      reviews = parsedData.filter(item => !('hasNextPage' in item));
+      hasNextPage = parsedData.find((item: any) => 'hasNextPage' in item)?.hasNextPage || false;
+      reviews = parsedData.filter((item: any) => !('hasNextPage' in item));
     } catch (error) {
       console.error('Error parsing reviews JSON:', error);
       reviews = [];
