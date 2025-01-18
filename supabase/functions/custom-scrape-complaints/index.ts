@@ -119,14 +119,16 @@ serve(async (req) => {
       );
     }
 
-    // Use the URL with the most reviews
-    const mostReviewedPage = searchResults[0].url;
-    console.log(`Selected most reviewed page: ${mostReviewedPage}`);
+    // Use the URL with the most reviews and add sorting parameter
+    const baseUrl = searchResults[0].url;
+    const mostReviewedPage = `${baseUrl}?sort=recency&page=${page}`;
+    console.log(`Selected most reviewed page with sorting: ${mostReviewedPage}`);
 
     // Step 2: Scrape reviews from the selected page
     const scrapePrompt = `
-      Visit this Trustpilot URL: ${mostReviewedPage}?page=${page}
+      Visit this Trustpilot URL: ${mostReviewedPage}
       Find and extract negative customer reviews (1-2 stars) about ${clientName}.
+      The reviews are already sorted by most recent.
       For each review:
       1. Extract the complete review text
       2. Get the exact review date
