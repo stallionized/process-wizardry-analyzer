@@ -44,78 +44,126 @@ serve(async (req) => {
       trend: string;
     }> = [];
 
-    // Function to scrape Trustpilot
-    async function scrapeTrustpilot(url: string) {
-      if (!url) return;
+    // Function to scrape Trustpilot with pagination
+    async function scrapeTrustpilot(baseUrl: string) {
+      if (!baseUrl) return;
       
-      console.log('Scraping Trustpilot:', url);
-      const response = await fetch(url);
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      
-      if (!doc) return;
+      let currentPage = 1;
+      let hasMorePages = true;
+      const maxPages = 50; // Safety limit to prevent infinite loops
 
-      const reviews = doc.querySelectorAll('[data-service-review-text]');
-      const ratings = doc.querySelectorAll('[data-service-review-rating]');
+      while (hasMorePages && currentPage <= maxPages) {
+        const url = currentPage === 1 ? baseUrl : `${baseUrl}?page=${currentPage}`;
+        console.log(`Scraping Trustpilot page ${currentPage}:`, url);
+        
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            console.error(`Failed to fetch page ${currentPage}:`, response.status);
+            break;
+          }
 
-      reviews.forEach((review, index) => {
-        const rating = parseInt(ratings[index]?.textContent?.trim() || '5');
-        if (rating <= 2) { // Only process negative reviews
-          complaints.push({
-            source_url: url,
-            complaint_text: review.textContent?.trim() || '',
-            theme: 'Customer Service',
-            trend: 'Negative'
+          const html = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          
+          if (!doc) {
+            console.error('Failed to parse HTML');
+            break;
+          }
+
+          const reviews = doc.querySelectorAll('[data-service-review-text]');
+          const ratings = doc.querySelectorAll('[data-service-review-rating]');
+          const dates = doc.querySelectorAll('time[datetime]');
+
+          if (reviews.length === 0) {
+            console.log('No more reviews found');
+            hasMorePages = false;
+            break;
+          }
+
+          let foundNegativeReviews = false;
+          reviews.forEach((review, index) => {
+            const rating = parseInt(ratings[index]?.getAttribute('data-service-review-rating') || '5');
+            if (rating <= 2) { // Only process negative reviews
+              foundNegativeReviews = true;
+              const date = dates[index]?.getAttribute('datetime') || new Date().toISOString();
+              complaints.push({
+                source_url: url,
+                complaint_text: review.textContent?.trim() || '',
+                theme: 'Customer Service',
+                trend: 'Negative'
+              });
+            }
           });
+
+          // Check if there's a next page
+          const nextPageButton = doc.querySelector('[data-pagination-button-next]');
+          if (!nextPageButton || !foundNegativeReviews) {
+            hasMorePages = false;
+          } else {
+            currentPage++;
+          }
+
+        } catch (error) {
+          console.error(`Error scraping page ${currentPage}:`, error);
+          hasMorePages = false;
         }
-      });
+      }
     }
 
-    // Function to scrape BBB
+    // Function to scrape BBB with pagination
     async function scrapeBBB(url: string) {
       if (!url) return;
       
       console.log('Scraping BBB:', url);
-      const response = await fetch(url);
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      
-      if (!doc) return;
+      try {
+        const response = await fetch(url);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        if (!doc) return;
 
-      const reviews = doc.querySelectorAll('.complaint-detail');
-      reviews.forEach((review) => {
-        complaints.push({
-          source_url: url,
-          complaint_text: review.textContent?.trim() || '',
-          theme: 'BBB Complaint',
-          trend: 'Negative'
+        const reviews = doc.querySelectorAll('.complaint-detail');
+        reviews.forEach((review) => {
+          complaints.push({
+            source_url: url,
+            complaint_text: review.textContent?.trim() || '',
+            theme: 'BBB Complaint',
+            trend: 'Negative'
+          });
         });
-      });
+      } catch (error) {
+        console.error('Error scraping BBB:', error);
+      }
     }
 
-    // Function to scrape Pissed Consumer
+    // Function to scrape Pissed Consumer with pagination
     async function scrapePissedConsumer(url: string) {
       if (!url) return;
       
       console.log('Scraping Pissed Consumer:', url);
-      const response = await fetch(url);
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      
-      if (!doc) return;
+      try {
+        const response = await fetch(url);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        if (!doc) return;
 
-      const reviews = doc.querySelectorAll('.review-content');
-      reviews.forEach((review) => {
-        complaints.push({
-          source_url: url,
-          complaint_text: review.textContent?.trim() || '',
-          theme: 'Consumer Complaint',
-          trend: 'Negative'
+        const reviews = doc.querySelectorAll('.review-content');
+        reviews.forEach((review) => {
+          complaints.push({
+            source_url: url,
+            complaint_text: review.textContent?.trim() || '',
+            theme: 'Consumer Complaint',
+            trend: 'Negative'
+          });
         });
-      });
+      } catch (error) {
+        console.error('Error scraping Pissed Consumer:', error);
+      }
     }
 
     // Scrape all configured URLs
