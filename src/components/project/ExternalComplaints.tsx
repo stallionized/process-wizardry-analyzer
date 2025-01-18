@@ -80,7 +80,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       }
 
       console.log('Fetching new complaints for:', project.client_name);
-      const response = await supabase.functions.invoke('jina-scrape-complaints', {
+      const response = await supabase.functions.invoke('gemini-scrape-complaints', {
         body: { 
           clientName: project.client_name,
           projectId: projectId,
