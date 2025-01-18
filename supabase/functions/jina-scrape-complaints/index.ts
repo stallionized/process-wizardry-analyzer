@@ -25,22 +25,23 @@ serve(async (req) => {
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`
     console.log('Searching Trustpilot at:', searchUrl)
 
-    // Use Jina to get the search results page
     const JINA_API_KEY = Deno.env.get('JINA_API_KEY')
     if (!JINA_API_KEY) {
       throw new Error('JINA_API_KEY is not configured')
     }
 
-    // Get search results
-    const searchResponse = await fetch('https://r.jina.ai/reader', {
+    // Get search results with proper headers and error handling
+    const searchResponse = await fetch('https://api.jina.ai/v1/reader', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         url: searchUrl,
-        mode: 'article'
+        mode: 'article',
+        wait_for_selector: '.styles_businessTitle__2Eet1'
       })
     })
 
@@ -108,17 +109,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Use Jina to get the reviews page
-    const response = await fetch('https://r.jina.ai/reader', {
+    // Use Jina to get the reviews page with proper headers and error handling
+    const response = await fetch('https://api.jina.ai/v1/reader', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         url: reviewsUrl,
         mode: 'article',
-        wait_for_selector: '.styles_reviewContent__0Q2Tg'
+        wait_for_selector: '.styles_reviewContent__0Q2Tg',
+        javascript: true
       })
     })
 
