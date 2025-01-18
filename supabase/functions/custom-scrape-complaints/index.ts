@@ -20,7 +20,7 @@ serve(async (req) => {
       throw new Error('Client name and project ID are required');
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key for database operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -38,6 +38,7 @@ serve(async (req) => {
     }
 
     const complaints: Array<{
+      project_id: string;
       source_url: string;
       complaint_text: string;
       theme: string;
@@ -50,7 +51,7 @@ serve(async (req) => {
       
       let currentPage = 1;
       let hasMorePages = true;
-      const maxPages = 50; // Safety limit to prevent infinite loops
+      const maxPages = 50; // Safety limit
 
       while (hasMorePages && currentPage <= maxPages) {
         const url = currentPage === 1 ? baseUrl : `${baseUrl}?page=${currentPage}`;
@@ -74,7 +75,6 @@ serve(async (req) => {
 
           const reviews = doc.querySelectorAll('[data-service-review-text]');
           const ratings = doc.querySelectorAll('[data-service-review-rating]');
-          const dates = doc.querySelectorAll('time[datetime]');
 
           if (reviews.length === 0) {
             console.log('No more reviews found');
@@ -87,8 +87,8 @@ serve(async (req) => {
             const rating = parseInt(ratings[index]?.getAttribute('data-service-review-rating') || '5');
             if (rating <= 2) { // Only process negative reviews
               foundNegativeReviews = true;
-              const date = dates[index]?.getAttribute('datetime') || new Date().toISOString();
               complaints.push({
+                project_id: projectId,
                 source_url: url,
                 complaint_text: review.textContent?.trim() || '',
                 theme: 'Customer Service',
@@ -112,7 +112,7 @@ serve(async (req) => {
       }
     }
 
-    // Function to scrape BBB with pagination
+    // Function to scrape BBB
     async function scrapeBBB(url: string) {
       if (!url) return;
       
@@ -128,6 +128,7 @@ serve(async (req) => {
         const reviews = doc.querySelectorAll('.complaint-detail');
         reviews.forEach((review) => {
           complaints.push({
+            project_id: projectId,
             source_url: url,
             complaint_text: review.textContent?.trim() || '',
             theme: 'BBB Complaint',
@@ -139,7 +140,7 @@ serve(async (req) => {
       }
     }
 
-    // Function to scrape Pissed Consumer with pagination
+    // Function to scrape Pissed Consumer
     async function scrapePissedConsumer(url: string) {
       if (!url) return;
       
@@ -155,6 +156,7 @@ serve(async (req) => {
         const reviews = doc.querySelectorAll('.review-content');
         reviews.forEach((review) => {
           complaints.push({
+            project_id: projectId,
             source_url: url,
             complaint_text: review.textContent?.trim() || '',
             theme: 'Consumer Complaint',
@@ -179,23 +181,25 @@ serve(async (req) => {
     }
 
     await Promise.all(scrapePromises);
-    console.log(`Found ${complaints.length} complaints`);
+    console.log(`Found ${complaints.length} complaints, saving to database...`);
 
-    // Store complaints in database
+    // Store complaints in database using upsert to avoid duplicates
     if (complaints.length > 0) {
       const { error: insertError } = await supabaseAdmin
         .from('complaints')
-        .insert(
-          complaints.map(complaint => ({
-            ...complaint,
-            project_id: projectId
-          }))
+        .upsert(
+          complaints,
+          { 
+            onConflict: 'project_id,source_url,complaint_text',
+            ignoreDuplicates: true 
+          }
         );
 
       if (insertError) {
         console.error('Error storing complaints:', insertError);
         throw insertError;
       }
+      console.log('Successfully saved complaints to database');
     }
 
     return new Response(
