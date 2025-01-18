@@ -31,7 +31,7 @@ serve(async (req) => {
     }
 
     // Get search results with proper headers and error handling
-    const searchResponse = await fetch('https://api.jina.ai/v1/reader', {
+    const searchResponse = await fetch('https://reader.jina.ai/api/reader', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
@@ -41,7 +41,8 @@ serve(async (req) => {
       body: JSON.stringify({
         url: searchUrl,
         mode: 'article',
-        wait_for_selector: '.styles_businessTitle__2Eet1'
+        wait_for_selector: '.styles_businessTitle__2Eet1',
+        javascript: true
       })
     })
 
@@ -110,7 +111,7 @@ serve(async (req) => {
     )
 
     // Use Jina to get the reviews page with proper headers and error handling
-    const response = await fetch('https://api.jina.ai/v1/reader', {
+    const response = await fetch('https://reader.jina.ai/api/reader', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
