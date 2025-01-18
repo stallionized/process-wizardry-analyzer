@@ -133,7 +133,7 @@ serve(async (req) => {
     // Step 2: Scrape reviews from the selected page
     const scrapePrompt = `
       Visit this Trustpilot URL: ${mostReviewedPage}
-      Find and extract negative customer reviews (1-2 stars) about ${mostReviewedResult.companyName}.
+      Find and extract ALL negative customer reviews (1-2 stars) about ${mostReviewedResult.companyName}.
       The reviews are already sorted by most recent.
       For each review:
       1. Extract the complete review text
@@ -141,7 +141,7 @@ serve(async (req) => {
       3. Categorize the review (e.g., "Customer Service", "Product Quality", etc.)
       4. Get the star rating (1-5)
       
-      Return the data as a JSON array with objects containing:
+      Return ALL reviews on the page as a JSON array with objects containing:
       {
         "text": "the complete review text",
         "date": "date in ISO format",
@@ -156,6 +156,7 @@ serve(async (req) => {
       - Focus on negative reviews (1-2 stars)
       - Include full review text
       - Return valid JSON array only
+      - Make sure to return ALL reviews on the page
       - If you can't access the page, return []
     `;
 
