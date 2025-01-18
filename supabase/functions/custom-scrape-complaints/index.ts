@@ -88,17 +88,30 @@ serve(async (req) => {
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
     const searchPrompt = `
       Visit this URL: ${searchUrl}
-      Find ${clientName}'s Trustpilot review pages.
-      Return a JSON array of objects containing:
+      
+      IMPORTANT INSTRUCTIONS:
+      1. Look at ALL companies in the search results for "${clientName}".
+      2. For EACH company found, collect:
+         - The exact company name as shown on Trustpilot
+         - The exact URL to their review page
+         - The TOTAL NUMBER of reviews (parse this as a number, not text)
+      3. Compare the review counts for ALL companies found.
+      4. Select the company that has the HIGHEST number of reviews.
+      
+      Return a JSON array containing objects for ALL companies found:
       {
-        "url": "the exact review page URL",
-        "reviewCount": number of reviews (as a number),
-        "companyName": "the exact company name as shown on Trustpilot"
+        "url": "full Trustpilot review page URL",
+        "reviewCount": exact number of reviews (as number),
+        "companyName": "exact company name from Trustpilot"
       }
-      Sort by reviewCount in descending order.
-      Only include exact matches or very close matches to "${clientName}".
-      Make sure to parse reviewCount as a number, not a string.
-      Important: Return ONLY the JSON array, nothing else.
+      
+      CRITICAL REQUIREMENTS:
+      - Include ALL companies that match or closely match "${clientName}"
+      - Parse reviewCount as a number, not a string
+      - Return ONLY the JSON array, no other text
+      - Make sure URLs are complete and valid
+      - Double check that you've found ALL matching companies
+      - Verify you've correctly identified the company with the most reviews
     `;
 
     console.log('Sending search prompt to Gemini');
