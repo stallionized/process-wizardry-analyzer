@@ -42,73 +42,91 @@ serve(async (req) => {
       throw new Error('Failed to fetch scraping URLs');
     }
 
-    const complaints = [];
-    const resultsPerPage = 10;
-    const startIndex = (page - 1) * resultsPerPage;
+    console.log('Retrieved URLs:', JSON.stringify(scrapingUrls, null, 2));
 
     // Function to scrape a single URL using OpenAI
     async function scrapeUrl(url: string, source: string) {
-      if (!url) return [];
-
-      console.log(`Scraping ${source} at URL: ${url}`);
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{
-            role: 'system',
-            content: 'You are a web scraping assistant. Extract only real customer reviews from the provided webpage URL. Do not generate or fabricate any reviews.'
-          }, {
-            role: 'user',
-            content: `Visit this webpage: ${url}
-              Extract customer reviews/complaints that have ratings of 3 stars or less. For each review, provide:
-              1. The complete review/complaint text
-              2. The exact date of the review/complaint (in ISO format if possible)
-              3. The rating given (1-5 stars)
-              4. The source URL
-
-              Format the data as a JSON array with objects containing:
-              {
-                "text": "the complete review/complaint text",
-                "date": "the review/complaint date",
-                "rating": "the rating (1-5)",
-                "source_url": "${url}"
-              }
-
-              Only include reviews with ratings of 3 stars or less. If you can't access the page or find reviews, return an empty array.
-              Include pagination information if available.`
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        console.error(`Error response from OpenAI for ${source}:`, await response.text());
+      if (!url) {
+        console.log(`No URL provided for ${source}, skipping...`);
         return [];
       }
 
-      const result = await response.json();
-      console.log(`Raw OpenAI response for ${source}:`, JSON.stringify(result));
+      console.log(`Starting to scrape ${source} at URL: ${url}`);
 
       try {
-        const content = result.choices[0].message.content;
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        
-        if (jsonMatch) {
-          const reviews = JSON.parse(jsonMatch[0]);
-          console.log(`Found ${reviews.length} reviews from ${source}`);
-          return reviews;
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{
+              role: 'system',
+              content: `You are a web scraping assistant. Your task is to visit the provided URL and extract ONLY REAL customer reviews that exist on that page. DO NOT generate or fabricate any reviews.
+              
+              If you cannot access the page or if there are no reviews, return an empty array.
+              
+              Focus only on negative reviews (3 stars or less).`
+            }, {
+              role: 'user',
+              content: `Visit this webpage: ${url}
+                Extract only real customer reviews/complaints with ratings of 3 stars or less.
+                For each review, provide:
+                1. The exact review/complaint text as it appears on the page
+                2. The exact date of the review (in ISO format if possible)
+                3. The rating (1-5 stars)
+                4. The source URL
+
+                Format as a JSON array with objects:
+                {
+                  "text": "exact review text",
+                  "date": "review date",
+                  "rating": "rating number",
+                  "source_url": "${url}"
+                }
+
+                Only include real reviews with ratings of 3 stars or less.
+                If you can't access the page or find reviews, return an empty array.`
+            }]
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Error response from OpenAI for ${source}:`, errorText);
+          return [];
+        }
+
+        const result = await response.json();
+        console.log(`Raw OpenAI response for ${source}:`, JSON.stringify(result, null, 2));
+
+        try {
+          const content = result.choices[0].message.content;
+          console.log(`Parsed content for ${source}:`, content);
+          
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const reviews = JSON.parse(jsonMatch[0]);
+            console.log(`Found ${reviews.length} reviews from ${source}`);
+            return reviews;
+          } else {
+            console.log(`No JSON array found in response for ${source}`);
+            return [];
+          }
+        } catch (error) {
+          console.error(`Error parsing ${source} response:`, error);
+          return [];
         }
       } catch (error) {
-        console.error(`Error parsing ${source} response:`, error);
+        console.error(`Error scraping ${source}:`, error);
+        return [];
       }
-
-      return [];
     }
+
+    const resultsPerPage = 10;
+    const startIndex = (page - 1) * resultsPerPage;
 
     // Scrape all configured sources
     const scrapingPromises = [
@@ -117,9 +135,10 @@ serve(async (req) => {
       scrapingUrls.pissed_customer_url && scrapeUrl(scrapingUrls.pissed_customer_url, 'Pissed Consumer')
     ].filter(Boolean);
 
+    console.log('Starting to scrape URLs...');
     const results = await Promise.all(scrapingPromises);
     const allReviews = results.flat();
-    console.log(`Total reviews found: ${allReviews.length}`);
+    console.log(`Total reviews found across all sources: ${allReviews.length}`);
 
     // Store reviews in database
     for (const review of allReviews) {
