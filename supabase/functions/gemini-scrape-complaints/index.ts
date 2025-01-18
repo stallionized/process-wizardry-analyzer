@@ -1,124 +1,160 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
+
+interface ScrapeRequest {
+  clientName: string;
+  projectId: string;
+  page?: number;
+}
+
+interface ComplaintData {
+  source_url: string;
+  complaint_text: string;
+  category: string;
+  date: string;
+}
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { clientName, projectId, page = 1 } = await req.json();
-    
-    if (!clientName) {
-      throw new Error('Client name is required');
+    const { clientName, projectId, page = 1 } = await req.json() as ScrapeRequest
+    console.log(`Starting scrape for client: ${clientName}, project: ${projectId}, page: ${page}`)
+
+    if (!clientName || !projectId) {
+      throw new Error('Client name and project ID are required')
     }
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      throw new Error('Gemini API key not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured')
     }
 
-    console.log('Processing complaints for:', clientName);
+    console.log('GEMINI_API_KEY is configured, proceeding with API call')
 
-    // Generate search queries to increase coverage
-    const searchQueries = [
-      `${clientName} customer complaints reviews`,
-      `${clientName} product quality issues problems`,
-      `${clientName} negative feedback concerns`,
-      `${clientName} service issues reviews`,
-    ];
+    // Create Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    const complaints = [];
+    const complaints: ComplaintData[] = []
+    const resultsPerPage = 10
+    const startIndex = (page - 1) * resultsPerPage
+
+    // Format company name for Trustpilot URL
+    const formattedCompanyName = clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+    // Construct Trustpilot URL
+    const searchUrl = `https://www.trustpilot.com/review/${formattedCompanyName}`;
+    console.log('Constructed Trustpilot URL:', searchUrl);
     
-    for (const query of searchQueries) {
-      console.log('Processing search query:', query);
-      
-      const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': geminiApiKey,
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Based on the search query "${query}" for ${clientName}, generate 3 realistic customer complaints. For each complaint, provide:
-              1. The complaint text
-              2. A high-level business category (e.g., "Product Quality", "Customer Service", "Delivery")
-              3. A simulated source URL (use a realistic domain)
-              Format as JSON array with objects containing: complaint_text, category, source_url`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
-        }),
-      });
+    // Use the Gemini API to extract structured data from the webpage
+    const prompt = `
+    Visit this webpage: ${searchUrl}
+    Extract customer reviews in a structured format. For each review, provide:
+    1. The review text
+    2. The date of the review
+    3. The rating (if available)
+    
+    Format the data as a JSON array with objects containing:
+    {
+      "text": "the review text",
+      "date": "the review date",
+      "rating": "the rating (1-5)"
+    }
+    
+    Only include actual reviews from the page. If you can't access the page or find reviews, return an empty array.
+    `;
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GEMINI_API_KEY}`
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          topK: 1,
+          topP: 1,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response from Gemini AI:', errorText);
+      throw new Error(`Gemini AI API returned status ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Raw Gemini AI response:', JSON.stringify(result));
+
+    // Parse the response and extract reviews
+    let reviews = [];
+    try {
+      const textContent = result.candidates[0].content.parts[0].text;
+      // Extract the JSON array from the response
+      const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        reviews = JSON.parse(jsonMatch[0]);
       }
+    } catch (error) {
+      console.error('Error parsing Gemini response:', error);
+      reviews = [];
+    }
 
-      const data = await response.json();
-      const generatedText = data.candidates[0].content.parts[0].text;
+    // Process each review
+    for (const review of reviews.slice(startIndex, startIndex + resultsPerPage)) {
+      const complaint: ComplaintData = {
+        source_url: searchUrl,
+        complaint_text: review.text,
+        category: `Trustpilot Review (${review.rating} stars)`,
+        date: new Date(review.date).toISOString()
+      };
+
+      complaints.push(complaint);
       
-      try {
-        // Extract the JSON array from the response text
-        const jsonStr = generatedText.substring(
-          generatedText.indexOf('['),
-          generatedText.lastIndexOf(']') + 1
-        );
-        const generatedComplaints = JSON.parse(jsonStr);
-        complaints.push(...generatedComplaints);
-      } catch (error) {
-        console.error('Error parsing Gemini response:', error);
-        continue;
-      }
-    }
-
-    console.log(`Generated ${complaints.length} complaints`);
-
-    // Store complaints in the database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { error: insertError } = await supabase
-      .from('complaints')
-      .insert(
-        complaints.map(complaint => ({
+      // Store in database
+      const { error: insertError } = await supabaseAdmin
+        .from('complaints')
+        .insert({
+          project_id: projectId,
           complaint_text: complaint.complaint_text,
           source_url: complaint.source_url,
           theme: complaint.category,
-          trend: complaint.category,
-          project_id: projectId,
-        }))
-      );
+          trend: 'neutral'
+        });
 
-    if (insertError) {
-      console.error('Error storing complaints:', insertError);
-      throw insertError;
+      if (insertError) {
+        console.error('Error storing complaint:', insertError);
+      }
     }
 
+    console.log(`Successfully processed ${complaints.length} complaints`);
+
     return new Response(
-      JSON.stringify({
-        success: true,
+      JSON.stringify({ 
         complaints,
-        hasMore: false
+        message: `Successfully scraped ${complaints.length} complaints from page ${page}`,
+        hasMore: complaints.length === resultsPerPage
       }),
       { 
         headers: { 
@@ -129,15 +165,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in gemini-scrape-complaints function:', error);
+    console.error('Scraping error:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        success: false 
+        complaints: [] 
       }),
       { 
         status: 500,
-        headers: { 
+        headers: {
           ...corsHeaders,
           'Content-Type': 'application/json'
         }
