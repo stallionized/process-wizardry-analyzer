@@ -31,29 +31,39 @@ serve(async (req) => {
     }
 
     // Get search results with proper headers and error handling
-    const searchResponse = await fetch('https://reader.jina.ai/api/reader', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        mode: 'article',
-        wait_for_selector: '.styles_businessTitle__2Eet1',
-        javascript: true
+    let searchResponse
+    try {
+      searchResponse = await fetch('https://reader.jina.ai/api/reader', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${JINA_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          url: searchUrl,
+          mode: 'article',
+          wait_for_selector: '.styles_businessTitle__2Eet1',
+          javascript: true
+        })
       })
-    })
+    } catch (error) {
+      console.error('Network error when calling Jina API:', error)
+      throw new Error(`Failed to connect to Jina API: ${error.message}`)
+    }
 
     if (!searchResponse.ok) {
       const errorText = await searchResponse.text()
       console.error('Error from Jina AI search:', errorText)
-      throw new Error(`Jina AI API returned status ${searchResponse.status}`)
+      throw new Error(`Jina AI API returned status ${searchResponse.status}: ${errorText}`)
     }
 
     const searchResults = await searchResponse.json()
     console.log('Search results HTML length:', searchResults.text?.length || 0)
+
+    if (!searchResults.text) {
+      throw new Error('No content returned from Jina API')
+    }
 
     // Parse the search results to find company links
     const parser = new DOMParser()
@@ -72,7 +82,7 @@ serve(async (req) => {
         JSON.stringify({
           complaints: [],
           hasMore: false,
-          error: 'No companies found'
+          message: 'No companies found'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -110,73 +120,81 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Use Jina to get the reviews page with proper headers and error handling
-    const response = await fetch('https://reader.jina.ai/api/reader', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        url: reviewsUrl,
-        mode: 'article',
-        wait_for_selector: '.styles_reviewContent__0Q2Tg',
-        javascript: true
+    // Use Jina to get the reviews page
+    let response
+    try {
+      response = await fetch('https://reader.jina.ai/api/reader', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${JINA_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          url: reviewsUrl,
+          mode: 'article',
+          wait_for_selector: '.styles_reviewContent__0Q2Tg',
+          javascript: true
+        })
       })
-    })
+    } catch (error) {
+      console.error('Network error when fetching reviews:', error)
+      throw new Error(`Failed to fetch reviews: ${error.message}`)
+    }
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Error from Jina AI:', errorText)
-      throw new Error(`Jina AI API returned status ${response.status}`)
+      console.error('Error from Jina AI reviews:', errorText)
+      throw new Error(`Jina AI API returned status ${response.status} when fetching reviews: ${errorText}`)
     }
 
     const results = await response.json()
     console.log('Raw Jina AI response length:', results.text?.length || 0)
+
+    if (!results.text) {
+      throw new Error('No review content returned from Jina API')
+    }
 
     const complaints = []
     const resultsPerPage = 10
     const startIndex = (page - 1) * resultsPerPage
 
     // Process the extracted content
-    if (results.text) {
-      // Split the content into reviews using Trustpilot's review content class
-      const reviewPattern = /(?:★{1,5}|⭐{1,5})\s*([\s\S]*?)(?=(?:★{1,5}|⭐{1,5})|$)/g
-      const reviews = results.text.match(reviewPattern) || []
-      console.log(`Found ${reviews.length} reviews in content`)
+    // Split the content into reviews using Trustpilot's review content class
+    const reviewPattern = /(?:★{1,5}|⭐{1,5})\s*([\s\S]*?)(?=(?:★{1,5}|⭐{1,5})|$)/g
+    const reviews = results.text.match(reviewPattern) || []
+    console.log(`Found ${reviews.length} reviews in content`)
+    
+    // Process each review segment
+    for (const reviewText of reviews.slice(startIndex, startIndex + resultsPerPage)) {
+      if (!reviewText.trim()) continue
+
+      // Extract star rating from review text
+      const stars = (reviewText.match(/★|⭐/g) || []).length
+      if (stars > 2) continue // Skip positive reviews (3+ stars)
+
+      const complaint = {
+        source_url: reviewsUrl,
+        complaint_text: reviewText.replace(/[★⭐]/g, '').trim(),
+        category: 'Trustpilot Review',
+        date: new Date().toISOString()
+      }
+
+      complaints.push(complaint)
       
-      // Process each review segment
-      for (const reviewText of reviews.slice(startIndex, startIndex + resultsPerPage)) {
-        if (!reviewText.trim()) continue
+      // Store in database
+      const { error: insertError } = await supabaseAdmin
+        .from('complaints')
+        .insert({
+          project_id: projectId,
+          complaint_text: complaint.complaint_text,
+          source_url: complaint.source_url,
+          theme: complaint.category,
+          trend: 'Negative'
+        })
 
-        // Extract star rating from review text
-        const stars = (reviewText.match(/★|⭐/g) || []).length
-        if (stars > 2) continue // Skip positive reviews (3+ stars)
-
-        const complaint = {
-          source_url: reviewsUrl,
-          complaint_text: reviewText.replace(/[★⭐]/g, '').trim(),
-          category: 'Trustpilot Review',
-          date: new Date().toISOString()
-        }
-
-        complaints.push(complaint)
-        
-        // Store in database
-        const { error: insertError } = await supabaseAdmin
-          .from('complaints')
-          .insert({
-            project_id: projectId,
-            complaint_text: complaint.complaint_text,
-            source_url: complaint.source_url,
-            theme: complaint.category,
-            trend: 'Negative'
-          })
-
-        if (insertError) {
-          console.error('Error storing complaint:', insertError)
-        }
+      if (insertError) {
+        console.error('Error storing complaint:', insertError)
       }
     }
 
