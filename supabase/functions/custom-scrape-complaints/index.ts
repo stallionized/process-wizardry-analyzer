@@ -46,49 +46,37 @@ serve(async (req) => {
     const resultsPerPage = 10;
     const startIndex = (page - 1) * resultsPerPage;
 
-    // Format search URLs for different review sites
-    const searchUrls = [
+    const reviewSites = [
       {
         name: 'Trustpilot',
-        url: `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`,
-        selector: '.styles_reviewContent__0Q2Tg'
+        searchUrl: `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`,
       },
       {
         name: 'BBB',
-        url: `https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`,
-        selector: '.dtm-review'
+        searchUrl: `https://www.bbb.org/search?find_text=${encodeURIComponent(clientName)}`,
       },
       {
         name: 'ConsumerAffairs',
-        url: `https://www.consumeraffairs.com/search?query=${encodeURIComponent(clientName)}`,
-        selector: '.rvw-bd'
+        searchUrl: `https://www.consumeraffairs.com/search?query=${encodeURIComponent(clientName)}`,
       }
     ];
 
-    for (const source of searchUrls) {
-      console.log(`Scraping ${source.name} with search URL: ${source.url}`);
+    for (const site of reviewSites) {
+      console.log(`Processing ${site.name} for ${clientName}`);
       
-      const prompt = `
-      First, visit this search URL: ${source.url}
-      1. Find the first relevant result page for ${clientName} from the search results
-      2. Visit that result page and extract customer complaints/reviews. For each review, provide:
-         - The complete review/complaint text
-         - The date of the review (if available, otherwise use current date)
-         - A category that best describes the complaint (e.g., "Product Quality", "Customer Service", etc.)
-      
-      Format the data as a JSON array with objects containing:
-      {
-        "text": "the complete review text",
-        "date": "the review date in ISO format",
-        "category": "the complaint category",
-        "url": "the URL of the review page"
-      }
-      
-      Focus on negative reviews and complaints rather than positive ones.
-      If you can't find relevant reviews or access the pages, return an empty array.
+      // Step 1: Find the correct review page URL
+      const searchPrompt = `
+        Visit this search URL: ${site.searchUrl}
+        
+        1. Search for "${clientName}" on the page
+        2. Find and return ONLY the URL of the FIRST relevant review/profile page for this company
+        3. Make sure the URL leads directly to reviews or complaints
+        4. If you can't find a relevant result, return null
+        
+        Return ONLY the URL, nothing else. If no relevant URL is found, return null.
       `;
 
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+      const searchResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +85,7 @@ serve(async (req) => {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: prompt
+              text: searchPrompt
             }]
           }],
           generationConfig: {
@@ -108,25 +96,89 @@ serve(async (req) => {
         })
       });
 
-      if (!response.ok) {
-        console.error(`Error response from Gemini AI for ${source.name}:`, await response.text());
+      if (!searchResponse.ok) {
+        console.error(`Error response from Gemini AI for ${site.name} search:`, await searchResponse.text());
         continue;
       }
 
-      const result = await response.json();
-      console.log(`Raw Gemini AI response for ${source.name}:`, JSON.stringify(result));
+      const searchResult = await searchResponse.json();
+      const reviewPageUrl = searchResult.candidates[0].content.parts[0].text.trim();
+      
+      if (!reviewPageUrl || reviewPageUrl === 'null') {
+        console.log(`No relevant review page found for ${clientName} on ${site.name}`);
+        continue;
+      }
+
+      console.log(`Found review page for ${clientName} on ${site.name}: ${reviewPageUrl}`);
+
+      // Step 2: Scrape the reviews from the found URL
+      const scrapePrompt = `
+        Visit this URL: ${reviewPageUrl}
+        
+        Extract customer complaints and negative reviews about ${clientName}. For each complaint:
+        1. Extract the complete complaint text
+        2. Note the date (use current date if not available)
+        3. Categorize the complaint (e.g., "Product Quality", "Customer Service", etc.)
+        
+        Format as JSON array with objects:
+        {
+          "text": "complete complaint text",
+          "date": "date in ISO format",
+          "category": "complaint category",
+          "url": "${reviewPageUrl}"
+        }
+        
+        Important:
+        - Focus ONLY on negative reviews and complaints
+        - Include detailed complaint text
+        - If you can't access the page, return an empty array
+        - Look for issues about:
+          * Product quality/taste
+          * Packaging problems
+          * Customer service
+          * Distribution issues
+          * Marketing concerns
+      `;
+
+      const scrapeResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GEMINI_API_KEY}`
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: scrapePrompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            topK: 1,
+            topP: 1,
+          }
+        })
+      });
+
+      if (!scrapeResponse.ok) {
+        console.error(`Error response from Gemini AI for ${site.name} scraping:`, await scrapeResponse.text());
+        continue;
+      }
+
+      const scrapeResult = await scrapeResponse.json();
+      console.log(`Raw Gemini AI response for ${site.name}:`, JSON.stringify(scrapeResult));
 
       try {
-        const textContent = result.candidates[0].content.parts[0].text;
+        const textContent = scrapeResult.candidates[0].content.parts[0].text;
         const jsonMatch = textContent.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const reviews = JSON.parse(jsonMatch[0]);
           
           for (const review of reviews) {
             const complaint: ComplaintData = {
-              source_url: review.url || source.url,
+              source_url: review.url,
               complaint_text: review.text,
-              category: review.category || `${source.name} Review`,
+              category: review.category || `${site.name} Review`,
               date: new Date(review.date || new Date()).toISOString()
             };
 
@@ -144,12 +196,12 @@ serve(async (req) => {
               });
 
             if (insertError) {
-              console.error(`Error storing ${source.name} complaint:`, insertError);
+              console.error(`Error storing ${site.name} complaint:`, insertError);
             }
           }
         }
       } catch (error) {
-        console.error(`Error parsing ${source.name} response:`, error);
+        console.error(`Error parsing ${site.name} response:`, error);
       }
     }
 
