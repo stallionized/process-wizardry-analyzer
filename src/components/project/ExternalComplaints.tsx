@@ -123,18 +123,18 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   };
 
-  // Fetch complaints with dependencies on project and currentPage
-  const { data, isLoading, error, isFetching, refetch } = useQuery({
+  // Check if any URLs are configured
+  const hasConfiguredUrls = scrapingUrls && (
+    scrapingUrls.trustpilot_url || 
+    scrapingUrls.bbb_url || 
+    scrapingUrls.pissed_customer_url
+  );
+
+  // Only fetch complaints if URLs are configured
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['complaints', projectId, project?.client_name, currentPage],
     queryFn: async () => {
-      console.log('Starting complaints fetch for:', {
-        projectId,
-        clientName: project?.client_name,
-        page: currentPage
-      });
-      
       if (!project?.client_name) {
-        console.error('Client name is missing');
         throw new Error('Client name is required');
       }
 
@@ -145,15 +145,11 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         .eq('project_id', projectId);
 
       if (complaintsError) {
-        console.error('Error fetching existing complaints:', complaintsError);
         throw complaintsError;
       }
 
-      console.log('Existing complaints:', existingComplaints);
-
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
-        console.log('Using existing complaints from database:', existingComplaints.length);
         return {
           complaints: existingComplaints.map(c => ({
             source_url: c.source_url,
@@ -165,7 +161,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         };
       }
 
-      console.log('No existing complaints found, fetching new ones');
       const response = await supabase.functions.invoke('jina-scrape-complaints', {
         body: { 
           clientName: project.client_name,
@@ -175,17 +170,15 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       });
 
       if (response.error) {
-        console.error('Error from scraping function:', response.error);
         throw response.error;
       }
       
-      console.log('Scraping response:', response.data);
       return {
         complaints: response.data.complaints || [],
         hasMore: response.data.hasMore || false
       };
     },
-    enabled: !!projectId && !!project?.client_name,
+    enabled: !!projectId && !!project?.client_name && !!hasConfiguredUrls,
     staleTime: 0,
     refetchOnWindowFocus: false,
     retry: false
@@ -195,7 +188,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
-      console.log('Starting manual refresh...');
       
       // Delete existing complaints for this project
       const { error: deleteError } = await supabase
@@ -208,8 +200,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         toast.error('Failed to refresh complaints');
         return;
       }
-
-      console.log('Successfully deleted existing complaints');
 
       // Force refetch both queries
       await Promise.all([
@@ -229,7 +219,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   };
 
-  if (isLoadingProject || isLoading) {
+  if (isLoadingProject) {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
@@ -238,20 +228,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-5/6" />
         </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load complaints: {error.message}
-          </AlertDescription>
-        </Alert>
       </Card>
     );
   }
@@ -339,7 +315,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           <Button 
             variant="outline" 
             onClick={handleRefresh}
-            disabled={isRefreshing || isFetching}
+            disabled={isRefreshing || isFetching || !hasConfiguredUrls}
           >
             {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
           </Button>
@@ -352,7 +328,14 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
       <ScrollArea className="h-[500px] rounded-md border">
         <div className="p-4 space-y-4">
-          {complaints.length > 0 ? (
+          {!hasConfiguredUrls ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <Info className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">
+                Configure URLs for complaint sources to start fetching complaints.
+              </p>
+            </div>
+          ) : complaints.length > 0 ? (
             <>
               {complaints.map((complaint, index) => (
                 <div key={index} className="p-4 rounded-lg bg-muted/50">
@@ -387,7 +370,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Info className="h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                No complaints found for this company. Configure the URLs and refresh to fetch complaints.
+                No complaints found. Click refresh to fetch new complaints.
               </p>
             </div>
           )}
