@@ -13,6 +13,38 @@ interface ScrapeRequest {
   page?: number;
 }
 
+async function makeGeminiRequest(prompt: string, apiKey: string) {
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Gemini API error response:', errorText);
+    throw new Error(`Gemini API error: ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log('Gemini API response:', result);
+
+  if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
+    throw new Error('Invalid response format from Gemini API');
+  }
+
+  return result.candidates[0].content.parts[0].text.trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -47,35 +79,7 @@ serve(async (req) => {
     `;
 
     console.log('Sending search prompt to Gemini');
-    const searchResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: searchPrompt
-          }]
-        }]
-      })
-    });
-
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${errorText}`);
-    }
-
-    const searchResult = await searchResponse.json();
-    console.log('Search result:', searchResult);
-
-    if (!searchResult.candidates?.[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid response format from Gemini API');
-    }
-
-    const reviewPageUrl = searchResult.candidates[0].content.parts[0].text.trim();
+    const reviewPageUrl = await makeGeminiRequest(searchPrompt, GEMINI_API_KEY);
     
     if (!reviewPageUrl || reviewPageUrl === 'null') {
       console.log(`No Trustpilot page found for ${clientName}`);
@@ -111,35 +115,7 @@ serve(async (req) => {
     `;
 
     console.log('Sending scrape prompt to Gemini');
-    const scrapeResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: scrapePrompt
-          }]
-        }]
-      })
-    });
-
-    if (!scrapeResponse.ok) {
-      const errorText = await scrapeResponse.text();
-      console.error('Gemini scrape error:', errorText);
-      throw new Error(`Gemini scrape error: ${errorText}`);
-    }
-
-    const scrapeResult = await scrapeResponse.json();
-    console.log('Raw Gemini response:', scrapeResult);
-
-    if (!scrapeResult.candidates?.[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid scrape response format from Gemini API');
-    }
-
-    const textContent = scrapeResult.candidates[0].content.parts[0].text;
+    const textContent = await makeGeminiRequest(scrapePrompt, GEMINI_API_KEY);
     const jsonMatch = textContent.match(/\[[\s\S]*\]/);
     
     if (!jsonMatch) {
