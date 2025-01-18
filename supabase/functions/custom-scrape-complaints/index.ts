@@ -8,52 +8,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ScrapeRequest {
-  clientName: string;
-  projectId: string;
-  page?: number;
-}
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-async function fetchAndParse(url: string) {
-  console.log('Fetching URL:', url);
-  const response = await fetch(url);
-  const html = await response.text();
-  const parser = new DOMParser();
-  return parser.parseFromString(html, 'text/html');
-}
-
-async function scrapeReviews(url: string) {
   try {
-    const document = await fetchAndParse(url);
-    if (!document) {
-      console.error('Failed to parse document');
-      return { reviews: [], hasNextPage: false };
+    const { clientName, projectId, page = 1 } = await req.json();
+    console.log(`Starting scrape for client: ${clientName}, project: ${projectId}, page: ${page}`);
+
+    if (!clientName || !projectId) {
+      throw new Error('Client name and project ID are required');
     }
 
-    // Find all review cards
-    const reviewElements = document.querySelectorAll('[data-service-review-card-paper]');
-    const reviews = [];
+    // Format company name for URL
+    const formattedCompanyName = clientName.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
 
-    for (const reviewElement of reviewElements) {
+    // Construct Trustpilot URL with pagination
+    const reviewsUrl = `https://www.trustpilot.com/review/${formattedCompanyName}?page=${page}`;
+    console.log('Fetching reviews from:', reviewsUrl);
+
+    // Fetch the page
+    const response = await fetch(reviewsUrl);
+    const html = await response.text();
+    
+    // Parse HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    if (!doc) {
+      throw new Error('Failed to parse HTML');
+    }
+
+    // Initialize Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Find all review cards
+    const reviewCards = doc.querySelectorAll('[data-service-review-card-paper]');
+    console.log(`Found ${reviewCards.length} review cards`);
+
+    const complaints = [];
+
+    for (const card of reviewCards) {
       try {
-        // Get rating
-        const ratingText = reviewElement.querySelector('[data-service-review-rating]')?.textContent || '';
+        // Get rating (1-5 stars)
+        const ratingText = card.querySelector('[data-service-review-rating]')?.textContent || '';
         const rating = parseInt(ratingText.trim());
         
         // Only process negative reviews (1-2 stars)
         if (rating > 2) continue;
 
         // Get review text
-        const textElement = reviewElement.querySelector('[data-service-review-text]');
-        const text = textElement?.textContent?.trim() || '';
+        const reviewText = card.querySelector('[data-service-review-text]')?.textContent?.trim() || '';
+        if (!reviewText) continue;
 
         // Get date
-        const dateElement = reviewElement.querySelector('time');
+        const dateElement = card.querySelector('time');
         const date = dateElement?.getAttribute('datetime') || new Date().toISOString();
 
-        // Get category based on common complaint themes
+        // Determine category based on content
         let category = 'General';
-        const lowerText = text.toLowerCase();
+        const lowerText = reviewText.toLowerCase();
         if (lowerText.includes('delivery') || lowerText.includes('shipping')) {
           category = 'Delivery';
         } else if (lowerText.includes('quality') || lowerText.includes('defective')) {
@@ -64,131 +84,44 @@ async function scrapeReviews(url: string) {
           category = 'Pricing';
         }
 
-        reviews.push({
-          text,
-          date,
-          category,
-          rating
-        });
-      } catch (error) {
-        console.error('Error processing review element:', error);
-      }
-    }
-
-    // Check for next page
-    const nextButton = document.querySelector('[data-pagination-button-next]');
-    const hasNextPage = nextButton !== null && !nextButton.hasAttribute('disabled');
-
-    console.log(`Scraped ${reviews.length} negative reviews, hasNextPage: ${hasNextPage}`);
-    return { reviews, hasNextPage };
-  } catch (error) {
-    console.error('Error scraping reviews:', error);
-    return { reviews: [], hasNextPage: false };
-  }
-}
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { clientName, projectId, page = 1 } = await req.json() as ScrapeRequest;
-    console.log(`Starting Trustpilot scrape for client: ${clientName}, project: ${projectId}`);
-
-    if (!clientName || !projectId) {
-      throw new Error('Client name and project ID are required');
-    }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Search for company on Trustpilot
-    const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
-    const searchDoc = await fetchAndParse(searchUrl);
-    
-    if (!searchDoc) {
-      throw new Error('Failed to parse search results');
-    }
-
-    // Find all company results
-    const companyElements = searchDoc.querySelectorAll('[data-business-unit-card-paper]');
-    let bestMatch = null;
-    let maxReviews = 0;
-
-    for (const element of companyElements) {
-      try {
-        const nameElement = element.querySelector('h2');
-        const reviewCountElement = element.querySelector('[data-reviews-count-typography]');
-        const linkElement = element.querySelector('a');
-
-        if (nameElement && reviewCountElement && linkElement) {
-          const companyName = nameElement.textContent?.trim() || '';
-          const reviewCountText = reviewCountElement.textContent?.trim() || '0';
-          const reviewCount = parseInt(reviewCountText.replace(/[^0-9]/g, ''));
-          const url = linkElement.getAttribute('href') || '';
-
-          if (reviewCount > maxReviews) {
-            maxReviews = reviewCount;
-            bestMatch = {
-              name: companyName,
-              url: `https://www.trustpilot.com${url}`,
-              reviewCount
-            };
-          }
-        }
-      } catch (error) {
-        console.error('Error processing company element:', error);
-      }
-    }
-
-    if (!bestMatch) {
-      console.log(`No Trustpilot pages found for ${clientName}`);
-      return new Response(
-        JSON.stringify({ complaints: [], hasMore: false }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Selected company: ${bestMatch.name} (${bestMatch.reviewCount} reviews)`);
-    const reviewsUrl = `${bestMatch.url}?sort=recency&page=${page}`;
-    const { reviews, hasNextPage } = await scrapeReviews(reviewsUrl);
-
-    // Store reviews in database
-    const complaints = [];
-    for (const review of reviews) {
-      try {
-        const { data: insertedComplaint, error: insertError } = await supabaseAdmin
+        // Store complaint in database
+        const { data: complaint, error: insertError } = await supabaseAdmin
           .from('complaints')
           .insert({
             project_id: projectId,
-            complaint_text: review.text,
+            complaint_text: reviewText,
             source_url: reviewsUrl,
-            theme: review.category,
+            theme: category,
             trend: 'Negative',
-            created_at: review.date
+            created_at: date
           })
           .select()
           .single();
 
         if (insertError) {
           console.error('Error storing complaint:', insertError);
-        } else {
+          continue;
+        }
+
+        if (complaint) {
           complaints.push({
             source_url: reviewsUrl,
-            complaint_text: review.text,
-            category: review.category,
-            date: review.date
+            complaint_text: reviewText,
+            category,
+            date
           });
         }
       } catch (error) {
-        console.error('Error processing review:', error);
+        console.error('Error processing review card:', error);
       }
     }
 
-    console.log(`Returning ${complaints.length} complaints for page ${page}`);
+    // Check for next page
+    const nextButton = doc.querySelector('[data-pagination-button-next]');
+    const hasNextPage = nextButton !== null && !nextButton.hasAttribute('disabled');
+
+    console.log(`Successfully processed ${complaints.length} complaints, hasNextPage: ${hasNextPage}`);
+
     return new Response(
       JSON.stringify({
         complaints,
