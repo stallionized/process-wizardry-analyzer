@@ -43,7 +43,24 @@ async function makeGeminiRequest(prompt: string, apiKey: string) {
     throw new Error('Invalid response format from Gemini API');
   }
 
-  return result.candidates[0].content.parts[0].text.trim();
+  const text = result.candidates[0].content.parts[0].text.trim();
+  console.log('Extracted text from Gemini response:', text);
+  
+  // Try to find a JSON array in the response
+  try {
+    const jsonMatch = text.match(/\[\s*{[\s\S]*}\s*\]/);
+    if (!jsonMatch) {
+      console.log('No JSON array found in response');
+      return '[]';
+    }
+    
+    // Validate that the extracted text is valid JSON
+    const parsed = JSON.parse(jsonMatch[0]);
+    return JSON.stringify(parsed);
+  } catch (error) {
+    console.error('Error parsing JSON from response:', error);
+    return '[]';
+  }
 }
 
 serve(async (req) => {
@@ -82,7 +99,7 @@ serve(async (req) => {
     console.log('Sending search prompt to Gemini');
     const reviewPageUrl = await makeGeminiRequest(searchPrompt, GEMINI_API_KEY);
     
-    if (!reviewPageUrl || reviewPageUrl === 'null') {
+    if (!reviewPageUrl || reviewPageUrl === 'null' || reviewPageUrl === '[]') {
       console.log(`No Trustpilot page found for ${clientName}`);
       return new Response(
         JSON.stringify({ complaints: [], hasMore: false }),
@@ -116,18 +133,16 @@ serve(async (req) => {
     `;
 
     console.log('Sending scrape prompt to Gemini');
-    const textContent = await makeGeminiRequest(scrapePrompt, GEMINI_API_KEY);
-    const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+    const reviewsJson = await makeGeminiRequest(scrapePrompt, GEMINI_API_KEY);
+    let reviews = [];
     
-    if (!jsonMatch) {
-      console.log('No JSON array found in response');
-      return new Response(
-        JSON.stringify({ complaints: [], hasMore: false }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    try {
+      reviews = JSON.parse(reviewsJson);
+    } catch (error) {
+      console.error('Error parsing reviews JSON:', error);
+      reviews = [];
     }
-
-    const reviews = JSON.parse(jsonMatch[0]);
+    
     console.log(`Parsed ${reviews.length} reviews`);
 
     const complaints = [];
