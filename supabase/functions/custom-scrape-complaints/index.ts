@@ -26,11 +26,19 @@ serve(async (req) => {
     console.log('Searching Trustpilot at:', searchUrl);
     
     const searchResponse = await fetch(searchUrl);
+    if (!searchResponse.ok) {
+      console.error('Search request failed:', searchResponse.status, searchResponse.statusText);
+      throw new Error('Failed to fetch search results');
+    }
+
     const searchHtml = await searchResponse.text();
+    console.log('Received search HTML length:', searchHtml.length);
+    
     const searchParser = new DOMParser();
     const searchDoc = searchParser.parseFromString(searchHtml, 'text/html');
 
     if (!searchDoc) {
+      console.error('Failed to parse search results HTML');
       throw new Error('Failed to parse search results HTML');
     }
 
@@ -39,6 +47,7 @@ serve(async (req) => {
     console.log(`Found ${businessCards.length} business results`);
 
     if (businessCards.length === 0) {
+      console.log('Search HTML snippet:', searchHtml.substring(0, 500));
       return new Response(
         JSON.stringify({
           complaints: [],
@@ -54,8 +63,12 @@ serve(async (req) => {
     let maxReviews = -1;
 
     for (const card of businessCards) {
+      const cardHtml = card.outerHTML;
+      console.log('Processing card:', cardHtml);
+      
       const reviewCountText = card.textContent?.match(/\d+\s+reviews?/)?.[0] || '';
       const reviewCount = parseInt(reviewCountText.match(/\d+/)?.[0] || '0');
+      console.log(`Found card with ${reviewCount} reviews`);
       
       if (reviewCount > maxReviews) {
         maxReviews = reviewCount;
@@ -64,11 +77,14 @@ serve(async (req) => {
     }
 
     if (!bestMatch) {
+      console.error('No valid company profile found among results');
       throw new Error('Could not find a valid company profile');
     }
 
     // Get the company profile URL
     const companyPath = bestMatch.getAttribute('href');
+    console.log('Best match company path:', companyPath);
+    
     const reviewsUrl = `https://www.trustpilot.com${companyPath}?page=${page}`;
     console.log('Fetching reviews from:', reviewsUrl);
 
@@ -80,11 +96,19 @@ serve(async (req) => {
 
     // Fetch the reviews page
     const response = await fetch(reviewsUrl);
+    if (!response.ok) {
+      console.error('Reviews request failed:', response.status, response.statusText);
+      throw new Error('Failed to fetch reviews page');
+    }
+
     const html = await response.text();
+    console.log('Received reviews HTML length:', html.length);
+    
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
     if (!doc) {
+      console.error('Failed to parse reviews HTML');
       throw new Error('Failed to parse reviews HTML');
     }
 
@@ -99,13 +123,17 @@ serve(async (req) => {
         // Get rating (1-5 stars)
         const ratingText = card.querySelector('[data-service-review-rating]')?.textContent || '';
         const rating = parseInt(ratingText.trim());
+        console.log(`Processing review with rating: ${rating}`);
         
         // Only process negative reviews (1-2 stars)
         if (rating > 2) continue;
 
         // Get review text
         const reviewText = card.querySelector('[data-service-review-text]')?.textContent?.trim() || '';
-        if (!reviewText) continue;
+        if (!reviewText) {
+          console.log('Skipping review with no text');
+          continue;
+        }
 
         // Get date
         const dateElement = card.querySelector('time');
@@ -123,6 +151,8 @@ serve(async (req) => {
         } else if (lowerText.includes('price') || lowerText.includes('expensive')) {
           category = 'Pricing';
         }
+
+        console.log(`Storing complaint in category: ${category}`);
 
         // Store complaint in database
         const { data: complaint, error: insertError } = await supabaseAdmin
