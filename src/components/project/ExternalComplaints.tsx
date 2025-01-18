@@ -98,7 +98,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       }
 
       console.log('No existing complaints found, fetching new ones');
-      const response = await supabase.functions.invoke('custom-scrape-complaints', {
+      const response = await supabase.functions.invoke('jina-scrape-complaints', {
         body: { 
           clientName: project.client_name,
           projectId: projectId,

@@ -1,44 +1,106 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface ScrapeRequest {
-  clientName: string;
-  projectId: string;
-  page?: number;
-}
-
-interface ComplaintData {
-  source_url: string;
-  complaint_text: string;
-  category: string;
-  date: string;
-}
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { clientName, projectId, page = 1 } = await req.json() as ScrapeRequest
-    console.log(`Starting scrape for client: ${clientName}, project: ${projectId}, page: ${page}`)
+    const { clientName, projectId, page = 1 } = await req.json()
+    console.log(`Starting Jina scrape for client: ${clientName}, project: ${projectId}, page: ${page}`)
 
     if (!clientName || !projectId) {
       throw new Error('Client name and project ID are required')
     }
 
+    // First search for the company on Trustpilot
+    const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`
+    console.log('Searching Trustpilot at:', searchUrl)
+
+    // Use Jina to get the search results page
     const JINA_API_KEY = Deno.env.get('JINA_API_KEY')
     if (!JINA_API_KEY) {
       throw new Error('JINA_API_KEY is not configured')
     }
 
-    console.log('JINA_API_KEY is configured, proceeding with API call')
+    // Get search results
+    const searchResponse = await fetch('https://r.jina.ai/reader', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${JINA_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: searchUrl,
+        mode: 'article'
+      })
+    })
+
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text()
+      console.error('Error from Jina AI search:', errorText)
+      throw new Error(`Jina AI API returned status ${searchResponse.status}`)
+    }
+
+    const searchResults = await searchResponse.json()
+    console.log('Search results HTML length:', searchResults.text?.length || 0)
+
+    // Parse the search results to find company links
+    const parser = new DOMParser()
+    const searchDoc = parser.parseFromString(searchResults.text, 'text/html')
+    
+    if (!searchDoc) {
+      throw new Error('Failed to parse search results HTML')
+    }
+
+    // Find all business cards/links in search results
+    const businessCards = searchDoc.querySelectorAll('a[href^="/review/"]')
+    console.log(`Found ${businessCards.length} business results`)
+
+    if (businessCards.length === 0) {
+      return new Response(
+        JSON.stringify({
+          complaints: [],
+          hasMore: false,
+          error: 'No companies found'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Find the business card with the most reviews
+    let bestMatch = null
+    let maxReviews = -1
+
+    for (const card of businessCards) {
+      const reviewCountText = card.textContent?.match(/\d+\s+reviews?/)?.[0] || ''
+      const reviewCount = parseInt(reviewCountText.match(/\d+/)?.[0] || '0')
+      console.log(`Found card with ${reviewCount} reviews`)
+      
+      if (reviewCount > maxReviews) {
+        maxReviews = reviewCount
+        bestMatch = card
+      }
+    }
+
+    if (!bestMatch) {
+      throw new Error('Could not find a valid company profile')
+    }
+
+    // Get the company profile URL
+    const companyPath = bestMatch.getAttribute('href')
+    console.log('Best match company path:', companyPath)
+    
+    const reviewsUrl = `https://www.trustpilot.com${companyPath}?page=${page}`
+    console.log('Fetching reviews from:', reviewsUrl)
 
     // Create Supabase client
     const supabaseAdmin = createClient(
@@ -46,68 +108,56 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const complaints: ComplaintData[] = []
-    const resultsPerPage = 10
-    const startIndex = (page - 1) * resultsPerPage
-
-    // Format company name for Trustpilot URL
-    const formattedCompanyName = clientName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
-      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-
-    // Construct Trustpilot URL
-    const searchUrl = `https://www.trustpilot.com/review/${formattedCompanyName}`;
-    console.log('Constructed Trustpilot URL:', searchUrl);
-    
-    // Use the Reader API endpoint for web content extraction
-    const baseUrl = 'https://r.jina.ai/reader';
-    
-    console.log('Making request to Jina Reader API for URL:', searchUrl);
-    
-    const response = await fetch(baseUrl, {
+    // Use Jina to get the reviews page
+    const response = await fetch('https://r.jina.ai/reader', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${JINA_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        url: searchUrl,
+        url: reviewsUrl,
         mode: 'article',
-        wait_for_selector: '.styles_reviewContent__0Q2Tg' // Trustpilot review content class
+        wait_for_selector: '.styles_reviewContent__0Q2Tg'
       })
-    });
+    })
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response from Jina AI:', errorText);
-      throw new Error(`Jina AI API returned status ${response.status}: ${errorText}`);
+      const errorText = await response.text()
+      console.error('Error from Jina AI:', errorText)
+      throw new Error(`Jina AI API returned status ${response.status}`)
     }
 
-    const results = await response.json();
-    console.log('Raw Jina AI response:', JSON.stringify(results));
+    const results = await response.json()
+    console.log('Raw Jina AI response length:', results.text?.length || 0)
+
+    const complaints = []
+    const resultsPerPage = 10
+    const startIndex = (page - 1) * resultsPerPage
 
     // Process the extracted content
     if (results.text) {
       // Split the content into reviews using Trustpilot's review content class
-      const reviewPattern = /(?:★{1,5}|⭐{1,5})\s*([\s\S]*?)(?=(?:★{1,5}|⭐{1,5})|$)/g;
-      const reviews = results.text.match(reviewPattern) || [];
+      const reviewPattern = /(?:★{1,5}|⭐{1,5})\s*([\s\S]*?)(?=(?:★{1,5}|⭐{1,5})|$)/g
+      const reviews = results.text.match(reviewPattern) || []
+      console.log(`Found ${reviews.length} reviews in content`)
       
       // Process each review segment
       for (const reviewText of reviews.slice(startIndex, startIndex + resultsPerPage)) {
-        if (!reviewText.trim()) {
-          continue;
-        }
+        if (!reviewText.trim()) continue
 
-        const complaint: ComplaintData = {
-          source_url: searchUrl,
-          complaint_text: reviewText.trim(),
+        // Extract star rating from review text
+        const stars = (reviewText.match(/★|⭐/g) || []).length
+        if (stars > 2) continue // Skip positive reviews (3+ stars)
+
+        const complaint = {
+          source_url: reviewsUrl,
+          complaint_text: reviewText.replace(/[★⭐]/g, '').trim(),
           category: 'Trustpilot Review',
           date: new Date().toISOString()
-        };
+        }
 
-        complaints.push(complaint);
+        complaints.push(complaint)
         
         // Store in database
         const { error: insertError } = await supabaseAdmin
@@ -117,21 +167,20 @@ serve(async (req) => {
             complaint_text: complaint.complaint_text,
             source_url: complaint.source_url,
             theme: complaint.category,
-            trend: 'neutral'
-          });
+            trend: 'Negative'
+          })
 
         if (insertError) {
-          console.error('Error storing complaint:', insertError);
+          console.error('Error storing complaint:', insertError)
         }
       }
     }
 
-    console.log(`Successfully processed ${complaints.length} complaints`);
+    console.log(`Successfully processed ${complaints.length} complaints`)
 
     return new Response(
       JSON.stringify({ 
         complaints,
-        message: `Successfully scraped ${complaints.length} complaints from page ${page}`,
         hasMore: complaints.length === resultsPerPage
       }),
       { 
@@ -140,10 +189,10 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         } 
       }
-    );
+    )
 
   } catch (error) {
-    console.error('Scraping error:', error);
+    console.error('Scraping error:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -156,6 +205,6 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         }
       }
-    );
+    )
   }
-});
+})
