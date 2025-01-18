@@ -30,13 +30,18 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const { data: project, isLoading: isLoadingProject } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
+      console.log('Fetching project with ID:', projectId);
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching project:', error);
+        throw error;
+      }
+      console.log('Project data:', data);
       return data;
     },
   });
@@ -54,9 +59,14 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey: ['complaints', projectId, project?.client_name, currentPage],
     queryFn: async () => {
-      console.log('Fetching complaints for:', project?.client_name);
+      console.log('Starting complaints fetch for:', {
+        projectId,
+        clientName: project?.client_name,
+        page: currentPage
+      });
       
       if (!project?.client_name) {
+        console.error('Client name is missing');
         throw new Error('Client name is required');
       }
 
@@ -66,11 +76,16 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         .select('*')
         .eq('project_id', projectId);
 
-      if (complaintsError) throw complaintsError;
+      if (complaintsError) {
+        console.error('Error fetching existing complaints:', complaintsError);
+        throw complaintsError;
+      }
+
+      console.log('Existing complaints count:', existingComplaints?.length || 0);
 
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
-        console.log('Found existing complaints:', existingComplaints.length);
+        console.log('Using existing complaints from database');
         return {
           complaints: existingComplaints.map(c => ({
             source_url: c.source_url,
@@ -82,7 +97,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         };
       }
 
-      console.log('Fetching new complaints for:', project.client_name);
+      console.log('No existing complaints found, fetching new ones');
       const response = await supabase.functions.invoke('custom-scrape-complaints', {
         body: { 
           clientName: project.client_name,
@@ -112,7 +127,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
-      console.log('Manually refreshing complaints...');
+      console.log('Starting manual refresh...');
       
       // Delete existing complaints for this project
       const { error: deleteError } = await supabase
@@ -125,6 +140,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         toast.error('Failed to refresh complaints');
         return;
       }
+
+      console.log('Successfully deleted existing complaints');
 
       // Force refetch both queries
       await Promise.all([
