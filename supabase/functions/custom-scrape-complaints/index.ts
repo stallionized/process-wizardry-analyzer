@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,51 +14,76 @@ interface ScrapeRequest {
   page?: number;
 }
 
-async function makeGeminiRequest(prompt: string, apiKey: string) {
-  console.log('Making Gemini request with prompt:', prompt);
-  
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }]
-    })
-  });
+async function fetchAndParse(url: string) {
+  console.log('Fetching URL:', url);
+  const response = await fetch(url);
+  const html = await response.text();
+  const parser = new DOMParser();
+  return parser.parseFromString(html, 'text/html');
+}
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Gemini API error response:', errorText);
-    throw new Error(`Gemini API error: ${errorText}`);
-  }
-
-  const result = await response.json();
-  console.log('Gemini API response:', result);
-
-  if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
-    throw new Error('Invalid response format from Gemini API');
-  }
-
-  const text = result.candidates[0].content.parts[0].text.trim();
-  console.log('Extracted text from Gemini response:', text);
-  
+async function scrapeReviews(url: string) {
   try {
-    const jsonMatch = text.match(/\[\s*{[\s\S]*}\s*\]/);
-    if (!jsonMatch) {
-      console.log('No JSON array found in response');
-      return '[]';
+    const document = await fetchAndParse(url);
+    if (!document) {
+      console.error('Failed to parse document');
+      return { reviews: [], hasNextPage: false };
     }
-    
-    const parsed = JSON.parse(jsonMatch[0]);
-    return JSON.stringify(parsed);
+
+    // Find all review cards
+    const reviewElements = document.querySelectorAll('[data-service-review-card-paper]');
+    const reviews = [];
+
+    for (const reviewElement of reviewElements) {
+      try {
+        // Get rating
+        const ratingText = reviewElement.querySelector('[data-service-review-rating]')?.textContent || '';
+        const rating = parseInt(ratingText.trim());
+        
+        // Only process negative reviews (1-2 stars)
+        if (rating > 2) continue;
+
+        // Get review text
+        const textElement = reviewElement.querySelector('[data-service-review-text]');
+        const text = textElement?.textContent?.trim() || '';
+
+        // Get date
+        const dateElement = reviewElement.querySelector('time');
+        const date = dateElement?.getAttribute('datetime') || new Date().toISOString();
+
+        // Get category based on common complaint themes
+        let category = 'General';
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes('delivery') || lowerText.includes('shipping')) {
+          category = 'Delivery';
+        } else if (lowerText.includes('quality') || lowerText.includes('defective')) {
+          category = 'Product Quality';
+        } else if (lowerText.includes('service') || lowerText.includes('support')) {
+          category = 'Customer Service';
+        } else if (lowerText.includes('price') || lowerText.includes('expensive')) {
+          category = 'Pricing';
+        }
+
+        reviews.push({
+          text,
+          date,
+          category,
+          rating
+        });
+      } catch (error) {
+        console.error('Error processing review element:', error);
+      }
+    }
+
+    // Check for next page
+    const nextButton = document.querySelector('[data-pagination-button-next]');
+    const hasNextPage = nextButton !== null && !nextButton.hasAttribute('disabled');
+
+    console.log(`Scraped ${reviews.length} negative reviews, hasNextPage: ${hasNextPage}`);
+    return { reviews, hasNextPage };
   } catch (error) {
-    console.error('Error parsing JSON from response:', error);
-    return '[]';
+    console.error('Error scraping reviews:', error);
+    return { reviews: [], hasNextPage: false };
   }
 }
 
@@ -74,61 +100,51 @@ serve(async (req) => {
       throw new Error('Client name and project ID are required');
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured');
-    }
-
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Step 1: Search for company and find the most reviewed page
+    // Search for company on Trustpilot
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
-    const searchPrompt = `
-      Visit this URL: ${searchUrl}
-      
-      IMPORTANT INSTRUCTIONS:
-      1. Look at ALL companies in the search results for "${clientName}".
-      2. For EACH company found, collect:
-         - The exact company name as shown on Trustpilot
-         - The exact URL to their review page
-         - The TOTAL NUMBER of reviews (parse this as a number, not text)
-      3. Compare the review counts for ALL companies found.
-      4. Select the company that has the HIGHEST number of reviews.
-      
-      Return a JSON array containing objects for ALL companies found:
-      {
-        "url": "full Trustpilot review page URL",
-        "reviewCount": exact number of reviews (as number),
-        "companyName": "exact company name from Trustpilot"
-      }
-      
-      CRITICAL REQUIREMENTS:
-      - Include ALL companies that match or closely match "${clientName}"
-      - Parse reviewCount as a number, not a string
-      - Return ONLY the JSON array, no other text
-      - Make sure URLs are complete and valid
-      - Double check that you've found ALL matching companies
-      - Verify you've correctly identified the company with the most reviews
-    `;
-
-    console.log('Sending search prompt to Gemini');
-    const searchResultsJson = await makeGeminiRequest(searchPrompt, GEMINI_API_KEY);
-    let searchResults = [];
+    const searchDoc = await fetchAndParse(searchUrl);
     
-    try {
-      searchResults = JSON.parse(searchResultsJson);
-      // Sort by reviewCount in descending order to ensure we get the most reviewed page
-      searchResults.sort((a: any, b: any) => b.reviewCount - a.reviewCount);
-      console.log('Sorted search results:', searchResults);
-    } catch (error) {
-      console.error('Error parsing search results:', error);
-      searchResults = [];
+    if (!searchDoc) {
+      throw new Error('Failed to parse search results');
     }
 
-    if (!searchResults.length) {
+    // Find all company results
+    const companyElements = searchDoc.querySelectorAll('[data-business-unit-card-paper]');
+    let bestMatch = null;
+    let maxReviews = 0;
+
+    for (const element of companyElements) {
+      try {
+        const nameElement = element.querySelector('h2');
+        const reviewCountElement = element.querySelector('[data-reviews-count-typography]');
+        const linkElement = element.querySelector('a');
+
+        if (nameElement && reviewCountElement && linkElement) {
+          const companyName = nameElement.textContent?.trim() || '';
+          const reviewCountText = reviewCountElement.textContent?.trim() || '0';
+          const reviewCount = parseInt(reviewCountText.replace(/[^0-9]/g, ''));
+          const url = linkElement.getAttribute('href') || '';
+
+          if (reviewCount > maxReviews) {
+            maxReviews = reviewCount;
+            bestMatch = {
+              name: companyName,
+              url: `https://www.trustpilot.com${url}`,
+              reviewCount
+            };
+          }
+        }
+      } catch (error) {
+        console.error('Error processing company element:', error);
+      }
+    }
+
+    if (!bestMatch) {
       console.log(`No Trustpilot pages found for ${clientName}`);
       return new Response(
         JSON.stringify({ complaints: [], hasMore: false }),
@@ -136,60 +152,11 @@ serve(async (req) => {
       );
     }
 
-    // Use the URL with the most reviews and add sorting parameter
-    const mostReviewedResult = searchResults[0];
-    console.log(`Selected company with most reviews: ${mostReviewedResult.companyName} (${mostReviewedResult.reviewCount} reviews)`);
-    const baseUrl = mostReviewedResult.url;
-    const mostReviewedPage = `${baseUrl}?sort=recency&page=${page}`;
-    console.log(`Selected most reviewed page with sorting: ${mostReviewedPage}`);
+    console.log(`Selected company: ${bestMatch.name} (${bestMatch.reviewCount} reviews)`);
+    const reviewsUrl = `${bestMatch.url}?sort=recency&page=${page}`;
+    const { reviews, hasNextPage } = await scrapeReviews(reviewsUrl);
 
-    // Step 2: Scrape reviews from the selected page
-    const scrapePrompt = `
-      Visit this Trustpilot URL: ${mostReviewedPage}
-      Find and extract ALL negative customer reviews (1-2 stars) about ${mostReviewedResult.companyName}.
-      The reviews are already sorted by most recent.
-      For each review:
-      1. Extract the complete review text
-      2. Get the exact review date
-      3. Categorize the review (e.g., "Customer Service", "Product Quality", etc.)
-      4. Get the star rating (1-5)
-      
-      Return ALL reviews on the page as a JSON array with objects containing:
-      {
-        "text": "the complete review text",
-        "date": "date in ISO format",
-        "category": "review category",
-        "rating": number
-      }
-      
-      Also check if there's a "Next" button enabled, indicating more pages.
-      Add a field at the end of the JSON array: { "hasNextPage": true/false }
-      
-      Important:
-      - Focus on negative reviews (1-2 stars)
-      - Include full review text
-      - Return valid JSON array only
-      - Make sure to return ALL reviews on the page
-      - If you can't access the page, return []
-    `;
-
-    console.log('Sending scrape prompt to Gemini');
-    const reviewsJson = await makeGeminiRequest(scrapePrompt, GEMINI_API_KEY);
-    let reviews = [];
-    let hasNextPage = false;
-    
-    try {
-      const parsedData = JSON.parse(reviewsJson);
-      // Remove the hasNextPage field from the array and store it
-      hasNextPage = parsedData.find((item: any) => 'hasNextPage' in item)?.hasNextPage || false;
-      reviews = parsedData.filter((item: any) => !('hasNextPage' in item));
-    } catch (error) {
-      console.error('Error parsing reviews JSON:', error);
-      reviews = [];
-    }
-    
-    console.log(`Parsed ${reviews.length} reviews, hasNextPage: ${hasNextPage}`);
-
+    // Store reviews in database
     const complaints = [];
     for (const review of reviews) {
       try {
@@ -198,10 +165,10 @@ serve(async (req) => {
           .insert({
             project_id: projectId,
             complaint_text: review.text,
-            source_url: mostReviewedPage,
-            theme: review.category || 'Trustpilot Review',
-            trend: review.rating <= 2 ? 'Negative' : 'Neutral',
-            created_at: review.date ? new Date(review.date).toISOString() : new Date().toISOString()
+            source_url: reviewsUrl,
+            theme: review.category,
+            trend: 'Negative',
+            created_at: review.date
           })
           .select()
           .single();
@@ -210,10 +177,10 @@ serve(async (req) => {
           console.error('Error storing complaint:', insertError);
         } else {
           complaints.push({
-            source_url: mostReviewedPage,
+            source_url: reviewsUrl,
             complaint_text: review.text,
-            category: review.category || 'Trustpilot Review',
-            date: review.date || new Date().toISOString()
+            category: review.category,
+            date: review.date
           });
         }
       } catch (error) {
