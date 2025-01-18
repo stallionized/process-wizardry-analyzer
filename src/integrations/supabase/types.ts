@@ -333,6 +333,44 @@ export type Database = {
           },
         ]
       }
+      scraping_urls: {
+        Row: {
+          bbb_url: string | null
+          created_at: string | null
+          id: string
+          pissed_customer_url: string | null
+          project_id: string
+          trustpilot_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bbb_url?: string | null
+          created_at?: string | null
+          id?: string
+          pissed_customer_url?: string | null
+          project_id: string
+          trustpilot_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bbb_url?: string | null
+          created_at?: string | null
+          id?: string
+          pissed_customer_url?: string | null
+          project_id?: string
+          trustpilot_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scraping_urls_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       admin_cache: {

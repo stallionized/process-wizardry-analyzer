@@ -5,10 +5,19 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Info } from 'lucide-react';
+import { AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ExternalComplaintsProps {
   projectId: string;
@@ -21,10 +30,48 @@ interface Complaint {
   category: string;
 }
 
+interface ScrapingUrls {
+  trustpilot_url: string | null;
+  bbb_url: string | null;
+  pissed_customer_url: string | null;
+}
+
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [urls, setUrls] = useState<ScrapingUrls>({
+    trustpilot_url: '',
+    bbb_url: '',
+    pissed_customer_url: ''
+  });
   const queryClient = useQueryClient();
+
+  // Fetch URLs
+  const { data: scrapingUrls } = useQuery({
+    queryKey: ['scraping-urls', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('scraping_urls')
+        .select('*')
+        .eq('project_id', projectId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching URLs:', error);
+        throw error;
+      }
+
+      if (data) {
+        setUrls({
+          trustpilot_url: data.trustpilot_url || '',
+          bbb_url: data.bbb_url || '',
+          pissed_customer_url: data.pissed_customer_url || ''
+        });
+      }
+
+      return data;
+    }
+  });
 
   // Fetch project details first
   const { data: project, isLoading: isLoadingProject } = useQuery({
@@ -45,6 +92,27 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       return data;
     },
   });
+
+  const handleUrlSubmit = async () => {
+    try {
+      const { error } = await supabase
+        .from('scraping_urls')
+        .upsert({
+          project_id: projectId,
+          ...urls
+        }, {
+          onConflict: 'project_id'
+        });
+
+      if (error) throw error;
+
+      toast.success('URLs saved successfully');
+      queryClient.invalidateQueries({ queryKey: ['scraping-urls', projectId] });
+    } catch (error) {
+      console.error('Error saving URLs:', error);
+      toast.error('Failed to save URLs');
+    }
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -195,13 +263,87 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     <Card className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold">External Complaints Analysis</h2>
-        <Button 
-          variant="outline" 
-          onClick={handleRefresh}
-          disabled={isRefreshing || isFetching}
-        >
-          {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">Configure URLs</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white">
+              <DialogHeader>
+                <DialogTitle>Configure Scraping URLs</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="trustpilot">Trustpilot</Label>
+                    <a 
+                      href="https://www.trustpilot.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-600"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+                  <Input
+                    id="trustpilot"
+                    value={urls.trustpilot_url || ''}
+                    onChange={(e) => setUrls(prev => ({ ...prev, trustpilot_url: e.target.value }))}
+                    placeholder="Enter Trustpilot URL"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="bbb">Better Business Bureau</Label>
+                    <a 
+                      href="https://www.bbb.org" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-600"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+                  <Input
+                    id="bbb"
+                    value={urls.bbb_url || ''}
+                    onChange={(e) => setUrls(prev => ({ ...prev, bbb_url: e.target.value }))}
+                    placeholder="Enter BBB URL"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="pissed">Pissed Consumer</Label>
+                    <a 
+                      href="https://www.pissedconsumer.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-600"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+                  <Input
+                    id="pissed"
+                    value={urls.pissed_customer_url || ''}
+                    onChange={(e) => setUrls(prev => ({ ...prev, pissed_customer_url: e.target.value }))}
+                    placeholder="Enter Pissed Consumer URL"
+                  />
+                </div>
+                <Button onClick={handleUrlSubmit} className="w-full">
+                  Save URLs
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={isRefreshing || isFetching}
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
+          </Button>
+        </div>
       </div>
       
       <div className="mb-4">
@@ -245,7 +387,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Info className="h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                No complaints found for this company. This could mean either there are no recorded complaints or the search needs to be refined.
+                No complaints found for this company. Configure the URLs and refresh to fetch complaints.
               </p>
             </div>
           )}
