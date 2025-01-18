@@ -58,20 +58,23 @@ serve(async (req) => {
           parts: [{
             text: searchPrompt
           }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topK: 1,
-          topP: 1,
-        }
+        }]
       })
     });
 
     if (!searchResponse.ok) {
-      throw new Error(`Gemini search error: ${await searchResponse.text()}`);
+      const errorText = await searchResponse.text();
+      console.error('Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${errorText}`);
     }
 
     const searchResult = await searchResponse.json();
+    console.log('Search result:', searchResult);
+
+    if (!searchResult.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response format from Gemini API');
+    }
+
     const reviewPageUrl = searchResult.candidates[0].content.parts[0].text.trim();
     
     if (!reviewPageUrl || reviewPageUrl === 'null') {
@@ -84,13 +87,13 @@ serve(async (req) => {
 
     console.log(`Found Trustpilot page: ${reviewPageUrl}`);
 
-    // Step 2: Scrape reviews from the found page
+    // Step 2: Scrape reviews
     const scrapePrompt = `
       Visit this Trustpilot URL: ${reviewPageUrl}
-      
-      Find and extract customer reviews about ${clientName}. For each review:
+      Find and extract negative customer reviews about ${clientName}.
+      For each review:
       1. Extract the complete review text
-      2. Get the exact review date (use current date if not available)
+      2. Get the exact review date
       3. Categorize the review (e.g., "Customer Service", "Product Quality", etc.)
       
       Return the data as a JSON array with objects containing:
@@ -119,25 +122,26 @@ serve(async (req) => {
           parts: [{
             text: scrapePrompt
           }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topK: 1,
-          topP: 1,
-        }
+        }]
       })
     });
 
     if (!scrapeResponse.ok) {
-      throw new Error(`Gemini scrape error: ${await scrapeResponse.text()}`);
+      const errorText = await scrapeResponse.text();
+      console.error('Gemini scrape error:', errorText);
+      throw new Error(`Gemini scrape error: ${errorText}`);
     }
 
     const scrapeResult = await scrapeResponse.json();
-    const textContent = scrapeResult.candidates[0].content.parts[0].text;
-    console.log('Raw Gemini response:', textContent);
+    console.log('Raw Gemini response:', scrapeResult);
 
-    // Extract JSON array from response
+    if (!scrapeResult.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid scrape response format from Gemini API');
+    }
+
+    const textContent = scrapeResult.candidates[0].content.parts[0].text;
     const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+    
     if (!jsonMatch) {
       console.log('No JSON array found in response');
       return new Response(
@@ -152,7 +156,6 @@ serve(async (req) => {
     const complaints = [];
     for (const review of reviews) {
       try {
-        // Store in database
         const { data: insertedComplaint, error: insertError } = await supabaseAdmin
           .from('complaints')
           .insert({
@@ -169,7 +172,6 @@ serve(async (req) => {
         if (insertError) {
           console.error('Error storing complaint:', insertError);
         } else {
-          console.log('Successfully stored complaint:', insertedComplaint);
           complaints.push({
             source_url: reviewPageUrl,
             complaint_text: review.text,
