@@ -49,7 +49,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   };
 
   // Fetch complaints with dependencies on project and currentPage
-  const { data, isLoading, error, isFetching } = useQuery({
+  const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey: ['complaints', projectId, project?.client_name, currentPage],
     queryFn: async () => {
       console.log('Fetching complaints for:', project?.client_name);
@@ -101,17 +101,31 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       };
     },
     enabled: !!projectId && !!project?.client_name,
-    // Add staleTime: 0 to ensure the query is always refetched when dependencies change
     staleTime: 0,
-    // Add refetchOnWindowFocus: false to prevent unnecessary refetches
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: false
   });
 
   // Add a function to manually refetch complaints
-  const handleRefresh = () => {
-    // Invalidate both the complaints and project queries
-    queryClient.invalidateQueries({ queryKey: ['complaints', projectId] });
-    queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+  const handleRefresh = async () => {
+    console.log('Manually refreshing complaints...');
+    // Delete existing complaints for this project
+    const { error: deleteError } = await supabase
+      .from('complaints')
+      .delete()
+      .eq('project_id', projectId);
+    
+    if (deleteError) {
+      console.error('Error deleting existing complaints:', deleteError);
+      return;
+    }
+    
+    // Force refetch both queries
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
+      refetch()
+    ]);
   };
 
   if (isLoadingProject || isLoading) {
@@ -153,7 +167,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           onClick={handleRefresh}
           disabled={isFetching}
         >
-          Refresh Complaints
+          {isFetching ? 'Refreshing...' : 'Refresh Complaints'}
         </Button>
       </div>
       
