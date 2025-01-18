@@ -12,13 +12,6 @@ interface ScrapeRequest {
   page?: number;
 }
 
-interface ComplaintData {
-  source_url: string;
-  complaint_text: string;
-  category: string;
-  date: string;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,10 +35,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const complaints: ComplaintData[] = [];
-    const resultsPerPage = 10;
-    const startIndex = (page - 1) * resultsPerPage;
-
     const reviewSites = [
       {
         name: 'Trustpilot',
@@ -61,21 +50,21 @@ serve(async (req) => {
       }
     ];
 
+    const complaints = [];
+
     for (const site of reviewSites) {
       console.log(`Processing ${site.name} for ${clientName}`);
       
-      // Step 1: Find the correct review page URL
+      // Step 1: Search for the company and get review page URL
       const searchPrompt = `
-        Visit this search URL: ${site.searchUrl}
-        
-        1. Search for "${clientName}" on the page
-        2. Find and return ONLY the URL of the FIRST relevant review/profile page for this company
-        3. Make sure the URL leads directly to reviews or complaints
-        4. If you can't find a relevant result, return null
-        
-        Return ONLY the URL, nothing else. If no relevant URL is found, return null.
+        Visit this URL: ${site.searchUrl}
+        Search for "${clientName}" and find their review/complaint page.
+        Return ONLY the URL of their main review/complaint page.
+        If you can't find it, return "null".
+        Important: Return ONLY the URL, nothing else.
       `;
 
+      console.log(`Sending search prompt to Gemini for ${site.name}`);
       const searchResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
         method: 'POST',
         headers: {
@@ -97,49 +86,44 @@ serve(async (req) => {
       });
 
       if (!searchResponse.ok) {
-        console.error(`Error response from Gemini AI for ${site.name} search:`, await searchResponse.text());
+        console.error(`Error from Gemini search for ${site.name}:`, await searchResponse.text());
         continue;
       }
 
       const searchResult = await searchResponse.json();
+      console.log(`Raw Gemini search response for ${site.name}:`, JSON.stringify(searchResult));
+
       const reviewPageUrl = searchResult.candidates[0].content.parts[0].text.trim();
-      
       if (!reviewPageUrl || reviewPageUrl === 'null') {
-        console.log(`No relevant review page found for ${clientName} on ${site.name}`);
+        console.log(`No review page found for ${clientName} on ${site.name}`);
         continue;
       }
 
       console.log(`Found review page for ${clientName} on ${site.name}: ${reviewPageUrl}`);
 
-      // Step 2: Scrape the reviews from the found URL
+      // Step 2: Scrape complaints from the review page
       const scrapePrompt = `
         Visit this URL: ${reviewPageUrl}
         
-        Extract customer complaints and negative reviews about ${clientName}. For each complaint:
+        Find and extract customer complaints about ${clientName}. For each complaint:
         1. Extract the complete complaint text
         2. Note the date (use current date if not available)
         3. Categorize the complaint (e.g., "Product Quality", "Customer Service", etc.)
         
-        Format as JSON array with objects:
+        Format the results as a JSON array with objects containing:
         {
-          "text": "complete complaint text",
+          "text": "the complete complaint text",
           "date": "date in ISO format",
-          "category": "complaint category",
-          "url": "${reviewPageUrl}"
+          "category": "complaint category"
         }
         
         Important:
-        - Focus ONLY on negative reviews and complaints
+        - Focus on negative reviews and complaints
         - Include detailed complaint text
-        - If you can't access the page, return an empty array
-        - Look for issues about:
-          * Product quality/taste
-          * Packaging problems
-          * Customer service
-          * Distribution issues
-          * Marketing concerns
+        - If you can't access the page, return an empty array []
       `;
 
+      console.log(`Sending scrape prompt to Gemini for ${site.name}`);
       const scrapeResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
         method: 'POST',
         headers: {
@@ -161,61 +145,67 @@ serve(async (req) => {
       });
 
       if (!scrapeResponse.ok) {
-        console.error(`Error response from Gemini AI for ${site.name} scraping:`, await scrapeResponse.text());
+        console.error(`Error from Gemini scrape for ${site.name}:`, await scrapeResponse.text());
         continue;
       }
 
       const scrapeResult = await scrapeResponse.json();
-      console.log(`Raw Gemini AI response for ${site.name}:`, JSON.stringify(scrapeResult));
+      console.log(`Raw Gemini scrape response for ${site.name}:`, JSON.stringify(scrapeResult));
 
       try {
         const textContent = scrapeResult.candidates[0].content.parts[0].text;
+        console.log(`Extracted text content from Gemini for ${site.name}:`, textContent);
+
+        // Find JSON array in the response
         const jsonMatch = textContent.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const reviews = JSON.parse(jsonMatch[0]);
-          
-          for (const review of reviews) {
-            const complaint: ComplaintData = {
-              source_url: review.url,
-              complaint_text: review.text,
-              category: review.category || `${site.name} Review`,
-              date: new Date(review.date || new Date()).toISOString()
-            };
+          console.log(`Parsed ${reviews.length} reviews from ${site.name}`);
 
-            complaints.push(complaint);
-            
+          for (const review of reviews) {
             // Store in database
-            const { error: insertError } = await supabaseAdmin
+            const { data: insertedComplaint, error: insertError } = await supabaseAdmin
               .from('complaints')
               .insert({
                 project_id: projectId,
-                complaint_text: complaint.complaint_text,
-                source_url: complaint.source_url,
-                theme: complaint.category,
-                trend: 'Recent'
-              });
+                complaint_text: review.text,
+                source_url: reviewPageUrl,
+                theme: review.category || `${site.name} Review`,
+                trend: 'Recent',
+                created_at: review.date ? new Date(review.date).toISOString() : new Date().toISOString()
+              })
+              .select()
+              .single();
 
             if (insertError) {
-              console.error(`Error storing ${site.name} complaint:`, insertError);
+              console.error(`Error storing complaint from ${site.name}:`, insertError);
+            } else {
+              console.log(`Successfully stored complaint from ${site.name}:`, insertedComplaint);
+              complaints.push({
+                source_url: reviewPageUrl,
+                complaint_text: review.text,
+                category: review.category || `${site.name} Review`,
+                date: review.date || new Date().toISOString()
+              });
             }
           }
+        } else {
+          console.log(`No JSON array found in Gemini response for ${site.name}`);
         }
       } catch (error) {
-        console.error(`Error parsing ${site.name} response:`, error);
+        console.error(`Error processing ${site.name} response:`, error);
       }
     }
 
-    // Sort complaints by date (newest first) and apply pagination
-    const sortedComplaints = complaints
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(startIndex, startIndex + resultsPerPage);
+    const resultsPerPage = 10;
+    const startIndex = (page - 1) * resultsPerPage;
+    const paginatedComplaints = complaints.slice(startIndex, startIndex + resultsPerPage);
 
-    console.log(`Successfully processed ${sortedComplaints.length} complaints`);
+    console.log(`Returning ${paginatedComplaints.length} complaints for page ${page}`);
 
     return new Response(
-      JSON.stringify({ 
-        complaints: sortedComplaints,
-        message: `Successfully scraped ${sortedComplaints.length} complaints from page ${page}`,
+      JSON.stringify({
+        complaints: paginatedComplaints,
         hasMore: complaints.length > (startIndex + resultsPerPage)
       }),
       { 
