@@ -20,13 +20,11 @@ serve(async (req) => {
       throw new Error('Client name and project ID are required');
     }
 
-    // Initialize Supabase client with service role key for database operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch scraping URLs for the project
     const { data: scrapingUrls, error: urlError } = await supabaseAdmin
       .from('scraping_urls')
       .select('*')
@@ -45,13 +43,12 @@ serve(async (req) => {
       trend: string;
     }> = [];
 
-    // Function to scrape Trustpilot with pagination
     async function scrapeTrustpilot(baseUrl: string) {
       if (!baseUrl) return;
       
       let currentPage = 1;
       let hasMorePages = true;
-      const maxPages = 50; // Safety limit
+      const maxPages = 50;
 
       while (hasMorePages && currentPage <= maxPages) {
         const url = currentPage === 1 ? baseUrl : `${baseUrl}?page=${currentPage}`;
@@ -65,6 +62,8 @@ serve(async (req) => {
           }
 
           const html = await response.text();
+          console.log('HTML content length:', html.length);
+          
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, 'text/html');
           
@@ -73,8 +72,11 @@ serve(async (req) => {
             break;
           }
 
-          const reviews = doc.querySelectorAll('[data-service-review-text]');
-          const ratings = doc.querySelectorAll('[data-service-review-rating]');
+          // Updated selectors based on current Trustpilot structure
+          const reviews = doc.querySelectorAll('p[data-service-review-text-typography="true"]');
+          const ratings = doc.querySelectorAll('div[data-service-review-rating]');
+
+          console.log(`Found ${reviews.length} reviews and ${ratings.length} ratings on page ${currentPage}`);
 
           if (reviews.length === 0) {
             console.log('No more reviews found');
@@ -85,21 +87,26 @@ serve(async (req) => {
           let foundNegativeReviews = false;
           reviews.forEach((review, index) => {
             const rating = parseInt(ratings[index]?.getAttribute('data-service-review-rating') || '5');
-            if (rating <= 2) { // Only process negative reviews
+            console.log(`Review ${index + 1} rating:`, rating);
+            
+            if (rating <= 3) { // Adjusted to include neutral reviews
               foundNegativeReviews = true;
+              const complaintText = review.textContent?.trim() || '';
+              console.log(`Found negative review: ${complaintText.substring(0, 100)}...`);
+              
               complaints.push({
                 project_id: projectId,
                 source_url: url,
-                complaint_text: review.textContent?.trim() || '',
+                complaint_text: complaintText,
                 theme: 'Customer Service',
                 trend: 'Negative'
               });
             }
           });
 
-          // Check if there's a next page
           const nextPageButton = doc.querySelector('[data-pagination-button-next]');
           if (!nextPageButton || !foundNegativeReviews) {
+            console.log('No next page button found or no negative reviews on current page');
             hasMorePages = false;
           } else {
             currentPage++;
@@ -112,7 +119,6 @@ serve(async (req) => {
       }
     }
 
-    // Function to scrape BBB
     async function scrapeBBB(url: string) {
       if (!url) return;
       
@@ -168,7 +174,6 @@ serve(async (req) => {
       }
     }
 
-    // Scrape all configured URLs
     const scrapePromises = [];
     if (scrapingUrls.trustpilot_url) {
       scrapePromises.push(scrapeTrustpilot(scrapingUrls.trustpilot_url));
@@ -183,7 +188,6 @@ serve(async (req) => {
     await Promise.all(scrapePromises);
     console.log(`Found ${complaints.length} complaints, saving to database...`);
 
-    // Store complaints in database using upsert to avoid duplicates
     if (complaints.length > 0) {
       const { error: insertError } = await supabaseAdmin
         .from('complaints')
