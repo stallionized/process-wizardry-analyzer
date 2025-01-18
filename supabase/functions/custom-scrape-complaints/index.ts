@@ -14,11 +14,12 @@ interface ScrapeRequest {
 }
 
 async function makeGeminiRequest(prompt: string, apiKey: string) {
-  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+  console.log('Making Gemini request with prompt:', prompt);
+  
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       contents: [{
