@@ -88,47 +88,6 @@ async function scrapeTrustpilot(clientName: string) {
   }
 }
 
-async function scrapeYelp(clientName: string) {
-  console.log('Scraping Yelp for:', clientName);
-  const encodedName = encodeURIComponent(clientName.toLowerCase());
-  const url = `https://www.yelp.com/search?find_desc=${encodedName}`;
-  
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`Yelp returned status ${response.status}`);
-      return [];
-    }
-
-    const html = await response.text();
-    const complaints = [];
-    const reviewPattern = /<p class="comment">(.*?)<\/p>/gs;
-    const matches = html.matchAll(reviewPattern);
-
-    for (const match of matches) {
-      const text = match[1].replace(/<[^>]+>/g, '').trim();
-      if (text.length > 20) {
-        complaints.push({
-          text,
-          source: url,
-          category: 'Yelp Review'
-        });
-      }
-    }
-
-    console.log(`Found ${complaints.length} Yelp reviews`);
-    return complaints;
-  } catch (error) {
-    console.error('Error scraping Yelp:', error);
-    return [];
-  }
-}
-
 async function scrapePissedCustomer(clientName: string) {
   console.log('Scraping PissedCustomer for:', clientName);
   const encodedName = encodeURIComponent(clientName.toLowerCase());
@@ -189,17 +148,15 @@ serve(async (req) => {
     console.log(`Starting scraping for ${clientName} with project ID ${projectId}`);
     
     // Scrape from all sources concurrently
-    const [bbbComplaints, trustpilotComplaints, yelpComplaints, pissedCustomerComplaints] = await Promise.all([
+    const [bbbComplaints, trustpilotComplaints, pissedCustomerComplaints] = await Promise.all([
       scrapeBBB(clientName),
       scrapeTrustpilot(clientName),
-      scrapeYelp(clientName),
       scrapePissedCustomer(clientName)
     ]);
 
     const allComplaints = [
       ...bbbComplaints,
       ...trustpilotComplaints,
-      ...yelpComplaints,
       ...pissedCustomerComplaints
     ];
 
@@ -207,7 +164,6 @@ serve(async (req) => {
       total: allComplaints.length,
       bbb: bbbComplaints.length,
       trustpilot: trustpilotComplaints.length,
-      yelp: yelpComplaints.length,
       pissedCustomer: pissedCustomerComplaints.length
     });
 
