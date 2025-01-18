@@ -36,6 +36,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const geminiHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GEMINI_API_KEY}`
+    };
+
     // Step 1: Search for company on Trustpilot
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
     const searchPrompt = `
@@ -49,10 +54,7 @@ serve(async (req) => {
     console.log('Sending search prompt to Gemini');
     const searchResponse = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
-      },
+      headers: geminiHeaders,
       body: JSON.stringify({
         contents: [{
           parts: [{
@@ -137,10 +139,7 @@ serve(async (req) => {
     console.log('Sending scrape prompt to Gemini');
     const scrapeResponse = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
-      },
+      headers: geminiHeaders,
       body: JSON.stringify({
         contents: [{
           parts: [{
