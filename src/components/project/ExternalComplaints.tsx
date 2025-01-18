@@ -161,15 +161,15 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         };
       }
 
-      const response = await supabase.functions.invoke('jina-scrape-complaints', {
+      const response = await supabase.functions.invoke('custom-scrape-complaints', {
         body: { 
           clientName: project.client_name,
-          projectId: projectId,
-          page: currentPage
+          projectId: projectId
         }
       });
 
       if (response.error) {
+        console.error('Error from scraping function:', response.error);
         throw response.error;
       }
       
