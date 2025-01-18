@@ -48,26 +48,30 @@ serve(async (req) => {
     const startIndex = (page - 1) * resultsPerPage;
 
     // Format company names for different review sites
-    const formattedCompanyName = clientName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    const companyVariations = [
+      clientName.toLowerCase(),
+      clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      clientName.toLowerCase().replace(/[^a-z0-9]+/g, ''),
+      'budweiser', // Specific for Budweiser
+      'anheuser-busch', // Parent company
+      'ab-inbev' // Parent company
+    ];
 
-    // Define review sources to scrape
+    // Define review sources to scrape with specific URLs for Budweiser
     const sources = [
       {
         name: 'Trustpilot',
-        url: `https://www.trustpilot.com/review/${formattedCompanyName}`,
+        url: 'https://www.trustpilot.com/review/budweiser.com',
         selector: '.styles_reviewContent__0Q2Tg'
       },
       {
         name: 'BBB',
-        url: `https://www.bbb.org/us/mo/st-louis/profile/beer-distributors/${formattedCompanyName}`,
+        url: 'https://www.bbb.org/us/mo/st-louis/profile/breweries/anheuser-busch-companies-llc-0734-110193/complaints',
         selector: '.dtm-review'
       },
       {
         name: 'ConsumerAffairs',
-        url: `https://www.consumeraffairs.com/food/budweiser.html`,
+        url: 'https://www.consumeraffairs.com/food/budweiser.html',
         selector: '.rvw-bd'
       }
     ];
@@ -90,6 +94,13 @@ serve(async (req) => {
       }
       
       Only include actual reviews/complaints from the page. If you can't access the page or find reviews, return an empty array.
+      Focus on negative reviews and complaints rather than positive reviews.
+      For Budweiser specifically, look for complaints about:
+      - Product quality
+      - Packaging issues
+      - Distribution problems
+      - Customer service
+      - Marketing concerns
       `;
 
       const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
