@@ -81,11 +81,11 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         throw complaintsError;
       }
 
-      console.log('Existing complaints count:', existingComplaints?.length || 0);
+      console.log('Existing complaints:', existingComplaints);
 
       // If we have complaints in the database, use those
       if (existingComplaints && existingComplaints.length > 0) {
-        console.log('Using existing complaints from database');
+        console.log('Using existing complaints from database:', existingComplaints.length);
         return {
           complaints: existingComplaints.map(c => ({
             source_url: c.source_url,
@@ -113,8 +113,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       
       console.log('Scraping response:', response.data);
       return {
-        complaints: response.data.complaints,
-        hasMore: response.data.hasMore
+        complaints: response.data.complaints || [],
+        hasMore: response.data.hasMore || false
       };
     },
     enabled: !!projectId && !!project?.client_name,

@@ -21,7 +21,7 @@ serve(async (req) => {
       throw new Error('Client name and project ID are required');
     }
 
-    // First, search for the company on Trustpilot
+    // Search for the company on Trustpilot
     const searchUrl = `https://www.trustpilot.com/search?query=${encodeURIComponent(clientName)}`;
     console.log('Searching Trustpilot at:', searchUrl);
     
