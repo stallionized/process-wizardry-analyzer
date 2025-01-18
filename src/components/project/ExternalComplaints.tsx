@@ -161,10 +161,11 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         };
       }
 
-      const response = await supabase.functions.invoke('custom-scrape-complaints', {
+      const response = await supabase.functions.invoke('gemini-scrape-complaints', {
         body: { 
           clientName: project.client_name,
-          projectId: projectId
+          projectId: projectId,
+          page: currentPage
         }
       });
 
