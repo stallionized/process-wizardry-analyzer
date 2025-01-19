@@ -24,7 +24,9 @@ const Landing = () => {
   const { projects, isLoading, createProjectMutation, updateProjectMutation, softDeleteMutation } = useProjects();
 
   const handleCreateProject = () => {
-    createProjectMutation.mutate(undefined, {
+    createProjectMutation.mutate({
+      project_name: 'New Project'  // Add a default project name
+    }, {
       onSuccess: (data) => {
         navigate(`/project/${data.id}`);
       },
