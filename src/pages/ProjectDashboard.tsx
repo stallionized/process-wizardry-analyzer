@@ -123,7 +123,7 @@ const ProjectDashboard = () => {
                   "group",
                   activeTab === item.id 
                     ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent" // Active tab keeps its style
-                    : "text-foreground hover:bg-[#F2FCE2] hover:text-white", // Other tabs get new hover style
+                    : "text-foreground hover:bg-accent hover:text-white", // Updated to use accent color for hover
                   !isMenuVisible && "justify-center px-2"
                 )}
               >
