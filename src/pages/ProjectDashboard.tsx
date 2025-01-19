@@ -104,7 +104,7 @@ const ProjectDashboard = () => {
       <div className="min-h-screen relative">
         {/* Vertical Menu */}
         <div 
-          className="fixed left-0 top-24 h-[calc(100vh-6rem)] z-40"
+          className="fixed left-0 top-28 h-[calc(100vh-7rem)] z-40"
           onMouseEnter={() => setIsMenuVisible(true)}
           onMouseLeave={() => setIsMenuVisible(false)}
         >
