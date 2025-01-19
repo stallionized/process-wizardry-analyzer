@@ -137,7 +137,7 @@ const ClientManagement = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-8"> {/* Added pt-8 for extra top padding */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Client Management</h1>
         <p className="text-muted-foreground">
