@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -222,14 +221,14 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
   if (isLoadingProject) {
     return (
-      <Card className="p-6">
+      <div className="space-y-4">
         <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
         <div className="space-y-4">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-5/6" />
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -237,8 +236,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const hasMore = data?.hasMore || false;
 
   return (
-    <Card className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">External Complaints Analysis</h2>
         <div className="flex gap-2">
           <Dialog>
@@ -323,7 +322,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         </div>
       </div>
       
-      <div className="mb-4">
+      <div>
         <h3 className="text-lg font-medium mb-2">Complaints ({complaints.length})</h3>
       </div>
 
@@ -377,7 +376,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           )}
         </div>
       </ScrollArea>
-    </Card>
+    </div>
   );
 };
 
