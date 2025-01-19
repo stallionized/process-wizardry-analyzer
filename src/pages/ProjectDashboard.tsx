@@ -143,7 +143,7 @@ const ProjectDashboard = () => {
 
         {/* Main Content */}
         <div className={cn(
-          "transition-all duration-300 ease-in-out pt-8",
+          "transition-all duration-300 ease-in-out pt-6",
           isMenuVisible ? "ml-64" : "ml-16"
         )}>
           <div className="animate-fade-in p-4">
