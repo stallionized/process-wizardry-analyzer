@@ -120,18 +120,24 @@ const ProjectDashboard = () => {
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
-                  "hover:bg-accent/10 hover:text-accent min-w-[2rem]",
-                  activeTab === item.id ? "bg-accent/10 text-accent" : "text-foreground",
+                  "group",
+                  activeTab === item.id 
+                    ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent" // Active tab keeps its style
+                    : "text-foreground hover:bg-[#F2FCE2] hover:text-white", // Other tabs get new hover style
                   !isMenuVisible && "justify-center px-2"
                 )}
               >
-                <div className="flex-shrink-0">
+                <div className={cn(
+                  "flex-shrink-0",
+                  activeTab !== item.id && "group-hover:text-white" // Icon color changes to white on hover for non-active items
+                )}>
                   {item.icon}
                 </div>
                 <span 
                   className={cn(
                     "font-medium whitespace-nowrap transition-opacity duration-300",
-                    isMenuVisible ? "opacity-100" : "opacity-0 w-0"
+                    isMenuVisible ? "opacity-100" : "opacity-0 w-0",
+                    activeTab !== item.id && "group-hover:text-white" // Text color changes to white on hover for non-active items
                   )}
                 >
                   {item.label}
