@@ -25,10 +25,10 @@ import {
 
 interface ClientFormData {
   name: string;
-  email: string;
-  phone: string;
-  address: string;
-  contact_person: string;
+  email?: string;  // Made optional
+  phone?: string;
+  address?: string;
+  contact_person?: string;
   logo_url?: string;
 }
 
@@ -41,7 +41,16 @@ const ClientManagement = () => {
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientData | null>(null);
   
-  const clientForm = useForm<ClientFormData>();
+  const clientForm = useForm<ClientFormData>({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      contact_person: '',
+      logo_url: ''
+    }
+  });
 
   useEffect(() => {
     fetchClients();
@@ -63,10 +72,15 @@ const ClientManagement = () => {
 
   const onSubmitClient = async (data: ClientFormData) => {
     try {
+      // Clean up empty string values to be null
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [key, value === '' ? null : value])
+      );
+
       if (editingClient) {
         const { error } = await supabase
           .from('clients')
-          .update(data)
+          .update(cleanedData)
           .eq('id', editingClient.id);
 
         if (error) throw error;
@@ -74,7 +88,7 @@ const ClientManagement = () => {
       } else {
         const { error } = await supabase
           .from('clients')
-          .insert([data]);
+          .insert([cleanedData]);
 
         if (error) throw error;
         toast.success('Client created successfully');
@@ -157,9 +171,10 @@ const ClientManagement = () => {
                     <FormField
                       control={clientForm.control}
                       name="name"
+                      rules={{ required: "Client name is required" }}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Client Name</FormLabel>
+                          <FormLabel>Client Name *</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter client name" {...field} />
                           </FormControl>
@@ -183,6 +198,12 @@ const ClientManagement = () => {
                     <FormField
                       control={clientForm.control}
                       name="email"
+                      rules={{
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: "Invalid email address format"
+                        }
+                      }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Email</FormLabel>
