@@ -143,10 +143,10 @@ const ProjectDashboard = () => {
 
         {/* Main Content */}
         <div className={cn(
-          "transition-all duration-300 ease-in-out pt-6 px-2 w-[calc(100%-4rem)]",
+          "transition-all duration-300 ease-in-out pt-6",
           isMenuVisible ? "ml-64" : "ml-16"
         )}>
-          <div className="animate-fade-in p-4 max-w-[95%]">
+          <div className="animate-fade-in p-4 w-full">
             {activeComponent}
           </div>
         </div>
