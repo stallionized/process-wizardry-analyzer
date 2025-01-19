@@ -10,8 +10,6 @@ import TrendsAndThemes from '@/components/project/TrendsAndThemes';
 import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 
-// ... keep existing code (component imports and initial setup)
-
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState('project');
@@ -146,7 +144,7 @@ const ProjectDashboard = () => {
         {/* Main Content */}
         <div className={cn(
           "transition-all duration-300 ease-in-out pt-6",
-          isMenuVisible ? "ml-64" : "ml-24"
+          isMenuVisible ? "ml-64" : "ml-16"
         )}>
           <div className="animate-fade-in p-4">
             {activeComponent}
