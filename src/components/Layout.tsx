@@ -49,7 +49,14 @@ const Layout = () => {
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-24 items-center pl-14 py-3">
-          <div className="flex items-center space-x-4">
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
+              alt="AI Process Engineer Logo" 
+              className="h-[60px] w-auto scale-125"
+            />
+          </Link>
+          <div className="ml-auto flex items-center space-x-4 pr-8">
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
@@ -65,24 +72,15 @@ const Layout = () => {
               </NavigationMenuList>
             </NavigationMenu>
             <NavLink to="/client">Client Portal</NavLink>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              className="ml-2"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-
-          <Link to="/" className="flex items-center mx-auto">
-            <img 
-              src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
-              alt="AI Process Engineer Logo" 
-              className="h-[60px] w-auto scale-125"
-            />
-          </Link>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            className="ml-auto"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
       </nav>
       <div className="flex">
