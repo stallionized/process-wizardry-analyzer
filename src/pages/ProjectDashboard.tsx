@@ -104,13 +104,13 @@ const ProjectDashboard = () => {
       <div className="min-h-screen relative">
         {/* Vertical Menu */}
         <div 
-          className="fixed left-1 top-28 h-[calc(100vh-7rem)] z-40"
+          className="fixed left-8 top-28 h-[calc(100vh-7rem)] z-40"
           onMouseEnter={() => setIsMenuVisible(true)}
           onMouseLeave={() => setIsMenuVisible(false)}
         >
           <div 
             className={cn(
-              "flex flex-col gap-2 p-1 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
+              "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
               isMenuVisible ? "w-64 border-r border-black" : "w-16"
             )}
           >
@@ -150,7 +150,7 @@ const ProjectDashboard = () => {
         {/* Main Content */}
         <div className={cn(
           "transition-all duration-300 ease-in-out pt-6",
-          isMenuVisible ? "ml-[17rem]" : "ml-[4.5rem]"
+          isMenuVisible ? "ml-[17rem] w-[calc(100%-18rem)]" : "ml-[4rem] w-[calc(100%-5rem)]"
         )}>
           <div className="animate-fade-in p-4 max-w-full overflow-x-hidden">
             {activeComponent}
