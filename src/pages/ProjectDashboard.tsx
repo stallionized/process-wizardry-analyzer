@@ -10,6 +10,8 @@ import TrendsAndThemes from '@/components/project/TrendsAndThemes';
 import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 
+// ... keep existing code (component imports and initial setup)
+
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState('project');
@@ -104,7 +106,7 @@ const ProjectDashboard = () => {
       <div className="min-h-screen relative">
         {/* Vertical Menu */}
         <div 
-          className="fixed left-16 top-28 h-[calc(100vh-7rem)] z-40"
+          className="fixed left-14 top-28 h-[calc(100vh-7rem)] z-40"
           onMouseEnter={() => setIsMenuVisible(true)}
           onMouseLeave={() => setIsMenuVisible(false)}
         >
@@ -144,7 +146,7 @@ const ProjectDashboard = () => {
         {/* Main Content */}
         <div className={cn(
           "transition-all duration-300 ease-in-out pt-6",
-          isMenuVisible ? "ml-80" : "ml-32"
+          isMenuVisible ? "ml-72" : "ml-28"
         )}>
           <div className="animate-fade-in p-4">
             {activeComponent}
