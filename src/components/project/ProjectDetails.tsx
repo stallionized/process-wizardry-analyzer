@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,15 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProjectDetailsProps {
   projectName: string;
@@ -42,6 +50,25 @@ const ProjectDetails = ({
   const [tempProjectName, setTempProjectName] = useState(projectName);
   const [tempClientName, setTempClientName] = useState(clientName);
   const [tempTopics, setTempTopics] = useState(topics);
+
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      console.log('Fetching clients');
+      const { data, error } = await supabase
+        .from('clients')
+        .select('name')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching clients:', error);
+        throw error;
+      }
+      
+      console.log('Fetched clients:', data);
+      return data;
+    },
+  });
 
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -91,12 +118,22 @@ const ProjectDetails = ({
 
         <div className="space-y-2">
           <Label htmlFor="clientName">Client Name</Label>
-          <Input
-            id="clientName"
+          <Select
             value={tempClientName}
-            onChange={(e) => setTempClientName(e.target.value)}
-            placeholder="Enter client name"
-          />
+            onValueChange={setTempClientName}
+            disabled={isLoadingClients}
+          >
+            <SelectTrigger id="clientName" className="w-full">
+              <SelectValue placeholder="Select a client" />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.name} value={client.name}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
