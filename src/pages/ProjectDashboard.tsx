@@ -104,7 +104,7 @@ const ProjectDashboard = () => {
       <div className="min-h-screen relative">
         {/* Vertical Menu */}
         <div 
-          className="fixed left-0 top-28 h-[calc(100vh-7rem)] z-40"
+          className="fixed left-16 top-28 h-[calc(100vh-7rem)] z-40"
           onMouseEnter={() => setIsMenuVisible(true)}
           onMouseLeave={() => setIsMenuVisible(false)}
         >
@@ -144,7 +144,7 @@ const ProjectDashboard = () => {
         {/* Main Content */}
         <div className={cn(
           "transition-all duration-300 ease-in-out pt-6",
-          isMenuVisible ? "ml-64" : "ml-16"
+          isMenuVisible ? "ml-80" : "ml-32"
         )}>
           <div className="animate-fade-in p-4">
             {activeComponent}
