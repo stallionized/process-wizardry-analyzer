@@ -104,7 +104,7 @@ const ProjectDashboard = () => {
       <div className="min-h-screen relative">
         {/* Vertical Menu */}
         <div 
-          className="fixed left-12 top-28 h-[calc(100vh-7rem)] z-40"
+          className="fixed left-8 top-28 h-[calc(100vh-7rem)] z-40"
           onMouseEnter={() => setIsMenuVisible(true)}
           onMouseLeave={() => setIsMenuVisible(false)}
         >
@@ -122,14 +122,14 @@ const ProjectDashboard = () => {
                   "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
                   "group",
                   activeTab === item.id 
-                    ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent" // Active tab keeps its style
-                    : "text-foreground hover:bg-accent hover:text-white", // Updated to use accent color for hover
+                    ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
+                    : "text-foreground hover:bg-accent hover:text-white",
                   !isMenuVisible && "justify-center px-2"
                 )}
               >
                 <div className={cn(
                   "flex-shrink-0",
-                  activeTab !== item.id && "group-hover:text-white" // Icon color changes to white on hover for non-active items
+                  activeTab !== item.id && "group-hover:text-white"
                 )}>
                   {item.icon}
                 </div>
@@ -137,7 +137,7 @@ const ProjectDashboard = () => {
                   className={cn(
                     "font-medium whitespace-nowrap transition-opacity duration-300",
                     isMenuVisible ? "opacity-100" : "opacity-0 w-0",
-                    activeTab !== item.id && "group-hover:text-white" // Text color changes to white on hover for non-active items
+                    activeTab !== item.id && "group-hover:text-white"
                   )}
                 >
                   {item.label}
