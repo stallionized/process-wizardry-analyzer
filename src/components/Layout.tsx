@@ -48,15 +48,18 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-24 items-center pl-14 py-3">
-          <Link to="/" className="flex items-center ml-4">
-            <img 
-              src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
-              alt="AI Process Engineer Logo" 
-              className="h-[60px] w-auto scale-125"
-            />
-          </Link>
-          <div className="ml-auto flex items-center space-x-4 pr-8">
+        <div className="flex h-24 items-center max-w-[2000px] mx-auto px-8">
+          <div className="flex-shrink-0">
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
+                alt="AI Process Engineer Logo" 
+                className="h-[60px] w-auto scale-125"
+              />
+            </Link>
+          </div>
+          <div className="flex-grow" />
+          <div className="flex items-center space-x-4">
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
@@ -83,9 +86,9 @@ const Layout = () => {
           </div>
         </div>
       </nav>
-      <div className="flex">
-        <main className="flex-1 transition-all duration-300 ease-in-out pt-[4.5rem] pl-14 pr-8">
-          <div className="p-4">
+      <div className="flex pt-24">
+        <main className="flex-1 min-h-[calc(100vh-6rem)] px-8">
+          <div className="max-w-[2000px] mx-auto">
             <Outlet />
           </div>
         </main>
