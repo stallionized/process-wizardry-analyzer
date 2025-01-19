@@ -25,7 +25,7 @@ import {
 
 interface ClientFormData {
   name: string;
-  email?: string;  // Made optional
+  email?: string;
   phone?: string;
   address?: string;
   contact_person?: string;
@@ -72,10 +72,16 @@ const ClientManagement = () => {
 
   const onSubmitClient = async (data: ClientFormData) => {
     try {
-      // Clean up empty string values to be null
-      const cleanedData = Object.fromEntries(
+      // Transform empty strings to null while maintaining types
+      const cleanedData: ClientFormData = Object.fromEntries(
         Object.entries(data).map(([key, value]) => [key, value === '' ? null : value])
-      );
+      ) as ClientFormData;
+
+      // Ensure name is present as it's required
+      if (!cleanedData.name) {
+        toast.error('Client name is required');
+        return;
+      }
 
       if (editingClient) {
         const { error } = await supabase
@@ -88,7 +94,7 @@ const ClientManagement = () => {
       } else {
         const { error } = await supabase
           .from('clients')
-          .insert([cleanedData]);
+          .insert(cleanedData);
 
         if (error) throw error;
         toast.success('Client created successfully');
