@@ -222,7 +222,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   if (isLoadingProject) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold mb-6">External Complaints Analysis</h2>
+        <h2 className="text-2xl font-semibold mb-6">External Reviews Analysis</h2>
         <div className="space-y-4">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
@@ -238,7 +238,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">External Complaints Analysis</h2>
+        <h2 className="text-2xl font-semibold">External Reviews Analysis</h2>
         <div className="flex gap-2">
           <Dialog>
             <DialogTrigger asChild>

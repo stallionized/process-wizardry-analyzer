@@ -99,7 +99,7 @@ const ProjectDashboard = () => {
     },
     {
       id: 'complaints',
-      label: 'External Complaints',
+      label: 'External Reviews',
       icon: <AlertTriangle className="h-5 w-5" />,
       component: <ExternalComplaints projectId={id} />
     }
