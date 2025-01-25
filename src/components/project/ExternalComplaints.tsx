@@ -55,7 +55,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         .from('scraping_urls')
         .select('*')
         .eq('project_id', projectId)
-        .maybeSingle();  // Changed from .single() to .maybeSingle()
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching URLs:', error);
@@ -66,7 +66,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         setUrls({
           trustpilot_url: data.trustpilot_url || '',
           bbb_url: data.bbb_url || '',
-          pissed_customer_url: data.pissed_customer_url || ''
+          pissed_customer_url: data.pissed_customer_url || '',
+          google_reviews_id: data.google_reviews_id || ''
         });
       }
 
