@@ -33,6 +33,7 @@ interface ScrapingUrls {
   trustpilot_url: string | null;
   bbb_url: string | null;
   pissed_customer_url: string | null;
+  google_reviews_id: string | null;
 }
 
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
@@ -41,7 +42,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const [urls, setUrls] = useState<ScrapingUrls>({
     trustpilot_url: '',
     bbb_url: '',
-    pissed_customer_url: ''
+    pissed_customer_url: '',
+    google_reviews_id: ''
   });
   const queryClient = useQueryClient();
 
@@ -249,6 +251,17 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 <DialogTitle>Configure Scraping URLs</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="google">Google Reviews</Label>
+                  </div>
+                  <Input
+                    id="google"
+                    value={urls.google_reviews_id || ''}
+                    onChange={(e) => setUrls(prev => ({ ...prev, google_reviews_id: e.target.value }))}
+                    placeholder="Enter Google Reviews Identifier"
+                  />
+                </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="trustpilot">Trustpilot</Label>
