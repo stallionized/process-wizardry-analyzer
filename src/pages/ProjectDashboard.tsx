@@ -117,22 +117,18 @@ const ProjectDashboard = () => {
             if (isMobile) setIsMenuVisible(false);
           }}
           className={cn(
-            "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
-            "group",
+            "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full",
             activeTab === item.id 
-              ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
-              : "text-foreground hover:bg-accent hover:text-white"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-accent/10 hover:text-accent"
           )}
         >
-          <div className={cn(
-            "flex-shrink-0",
-            activeTab !== item.id && "group-hover:text-white"
-          )}>
+          <div className="flex-shrink-0">
             {item.icon}
           </div>
           <span className={cn(
-            "font-medium whitespace-nowrap",
-            activeTab !== item.id && "group-hover:text-white"
+            "font-medium transition-opacity duration-200",
+            !isMenuVisible && !isMobile ? "opacity-0 w-0" : "opacity-100"
           )}>
             {item.label}
           </span>
@@ -143,7 +139,7 @@ const ProjectDashboard = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="min-h-screen relative">
+      <div className="min-h-screen relative flex">
         {isMobile ? (
           <div className="fixed top-20 left-4 z-40">
             <Sheet>
@@ -152,20 +148,23 @@ const ProjectDashboard = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left">
+              <SheetContent side="left" className="w-[240px] sm:w-[280px]">
                 <MenuContent />
               </SheetContent>
             </Sheet>
           </div>
         ) : (
           <div 
-            className="fixed left-1 top-28 h-[calc(100vh-7rem)] z-40"
+            className={cn(
+              "sticky top-20 h-[calc(100vh-5rem)] transition-all duration-300 ease-in-out",
+              isMenuVisible ? "w-64" : "w-16"
+            )}
             onMouseEnter={() => setIsMenuVisible(true)}
             onMouseLeave={() => setIsMenuVisible(false)}
           >
             <div className={cn(
-              "flex flex-col gap-2 p-1 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
-              isMenuVisible ? "w-64 border-r border-black" : "w-16"
+              "h-full py-4 px-2 bg-background/95 backdrop-blur-sm border-r",
+              isMenuVisible ? "w-64" : "w-16"
             )}>
               <MenuContent />
             </div>
@@ -173,12 +172,10 @@ const ProjectDashboard = () => {
         )}
 
         <div className={cn(
-          "transition-all duration-300 ease-in-out pt-6",
-          isMobile ? "ml-0 px-4" : (
-            isMenuVisible ? "ml-[17rem] w-[calc(100%-18rem)]" : "ml-[4.5rem] w-[calc(100%-5rem)]"
-          )
+          "flex-1 transition-all duration-300 ease-in-out p-6",
+          isMobile && "pt-20"
         )}>
-          <div className="animate-fade-in p-4 max-w-full overflow-x-hidden">
+          <div className="max-w-[1200px] mx-auto">
             {activeComponent}
           </div>
         </div>
