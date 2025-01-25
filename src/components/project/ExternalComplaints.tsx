@@ -242,7 +242,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         <div className="flex gap-2">
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline">Configure URLs</Button>
+              <Button variant="outline">Configure</Button>
             </DialogTrigger>
             <DialogContent className="bg-white">
               <DialogHeader>
