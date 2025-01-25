@@ -72,14 +72,14 @@
 
   [role="dialog"] {
     @apply bg-white dark:bg-gray-900 rounded-lg shadow-lg;
-    width: 99.5vw;
-    height: 99.5vh;
+    width: min(99.5vw, 800px);
+    height: min(99.5vh, 600px);
     margin: 0.25rem;
     position: relative;
   }
 
   [role="dialog"] > div {
-    @apply p-8 h-full bg-white dark:bg-gray-900;
+    @apply p-4 md:p-8 h-full bg-white dark:bg-gray-900;
   }
 
   /* Dropdown and Menu Styles */
@@ -121,7 +121,7 @@
 
   /* Dialog Form Container */
   [data-radix-dialog-content] form {
-    @apply bg-white dark:bg-gray-900 p-6 rounded-lg;
+    @apply bg-white dark:bg-gray-900 p-4 md:p-6 rounded-lg;
   }
 
   /* Hover States */
@@ -137,7 +137,7 @@
 
   /* Modal Content */
   .modal-content {
-    @apply bg-white dark:bg-gray-900 p-6 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-gray-900 p-4 md:p-6 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700;
   }
 
   /* SelectContent specific styles */
@@ -150,5 +150,20 @@
   /* SelectItem specific styles */
   .SelectItem {
     @apply bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800;
+  }
+
+  /* Responsive padding utilities */
+  .responsive-container {
+    @apply px-4 md:px-8 lg:px-12;
+  }
+
+  /* Responsive text utilities */
+  .responsive-text {
+    @apply text-sm md:text-base lg:text-lg;
+  }
+
+  /* Responsive spacing utilities */
+  .responsive-spacing {
+    @apply space-y-4 md:space-y-6 lg:space-y-8;
   }
 }

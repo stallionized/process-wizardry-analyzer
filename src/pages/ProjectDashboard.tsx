@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database } from 'lucide-react';
+import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database, Menu } from 'lucide-react';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
@@ -9,11 +9,18 @@ import ControlResults from '@/components/project/ControlResults';
 import TrendsAndThemes from '@/components/project/TrendsAndThemes';
 import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const isMobile = useIsMobile();
   
   if (!id) return <div>Project ID is required</div>;
 
@@ -99,58 +106,76 @@ const ProjectDashboard = () => {
 
   const activeComponent = menuItems.find(item => item.id === activeTab)?.component;
 
+  const MenuContent = () => (
+    <div className="flex flex-col gap-2">
+      {menuItems.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => {
+            setActiveTab(item.id);
+            if (isMobile) setIsMenuVisible(false);
+          }}
+          className={cn(
+            "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
+            "group",
+            activeTab === item.id 
+              ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
+              : "text-foreground hover:bg-accent hover:text-white"
+          )}
+        >
+          <div className={cn(
+            "flex-shrink-0",
+            activeTab !== item.id && "group-hover:text-white"
+          )}>
+            {item.icon}
+          </div>
+          <span className={cn(
+            "font-medium whitespace-nowrap",
+            activeTab !== item.id && "group-hover:text-white"
+          )}>
+            {item.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="animate-fade-in">
       <div className="min-h-screen relative">
-        {/* Vertical Menu */}
-        <div 
-          className="fixed left-8 top-28 h-[calc(100vh-7rem)] z-40"
-          onMouseEnter={() => setIsMenuVisible(true)}
-          onMouseLeave={() => setIsMenuVisible(false)}
-        >
-          <div 
-            className={cn(
-              "flex flex-col gap-2 p-4 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
-              isMenuVisible ? "w-64 border-r border-black" : "w-16"
-            )}
-          >
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
-                  "group",
-                  activeTab === item.id 
-                    ? "bg-accent/10 text-accent hover:bg-accent/10 hover:text-accent"
-                    : "text-foreground hover:bg-accent hover:text-white",
-                  !isMenuVisible && "justify-center px-2"
-                )}
-              >
-                <div className={cn(
-                  "flex-shrink-0",
-                  activeTab !== item.id && "group-hover:text-white"
-                )}>
-                  {item.icon}
-                </div>
-                <span 
-                  className={cn(
-                    "font-medium whitespace-nowrap transition-opacity duration-300",
-                    isMenuVisible ? "opacity-100" : "opacity-0 w-0",
-                    activeTab !== item.id && "group-hover:text-white"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </button>
-            ))}
+        {isMobile ? (
+          <div className="fixed top-20 left-4 z-40">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <MenuContent />
+              </SheetContent>
+            </Sheet>
           </div>
-        </div>
+        ) : (
+          <div 
+            className="fixed left-1 top-28 h-[calc(100vh-7rem)] z-40"
+            onMouseEnter={() => setIsMenuVisible(true)}
+            onMouseLeave={() => setIsMenuVisible(false)}
+          >
+            <div className={cn(
+              "flex flex-col gap-2 p-1 h-full bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
+              isMenuVisible ? "w-64 border-r border-black" : "w-16"
+            )}>
+              <MenuContent />
+            </div>
+          </div>
+        )}
 
-        {/* Main Content */}
         <div className={cn(
           "transition-all duration-300 ease-in-out pt-6",
-          isMenuVisible ? "ml-[17rem] w-[calc(100%-18rem)]" : "ml-[4rem] w-[calc(100%-5rem)]"
+          isMobile ? "ml-0 px-4" : (
+            isMenuVisible ? "ml-[17rem] w-[calc(100%-18rem)]" : "ml-[4.5rem] w-[calc(100%-5rem)]"
+          )
         )}>
           <div className="animate-fade-in p-4 max-w-full overflow-x-hidden">
             {activeComponent}
