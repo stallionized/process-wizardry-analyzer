@@ -10,6 +10,7 @@ import TrendsAndThemes from '@/components/project/TrendsAndThemes';
 import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
