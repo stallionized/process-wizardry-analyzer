@@ -244,15 +244,39 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   };
 
-  // Add a function to initially retrieve complaints
+  // Add a function to retrieve Google reviews
   const handleRetrieve = async () => {
     try {
       setIsRefreshing(true);
-      await refetch();
-      toast.success('Complaints retrieved successfully');
+      
+      if (!urls.google_reviews_id) {
+        toast.error('Google Reviews Identifier is required');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('google-reviews', {
+        body: { 
+          placeId: urls.google_reviews_id,
+          projectId: projectId
+        }
+      });
+
+      if (response.error) {
+        console.error('Error from Google Reviews function:', response.error);
+        toast.error('Failed to retrieve reviews');
+        return;
+      }
+
+      // Force refetch both queries to get the new reviews
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
+        queryClient.invalidateQueries({ queryKey: ['existing-complaints', projectId] })
+      ]);
+
+      toast.success(`Successfully retrieved ${response.data.reviewsCount} reviews`);
     } catch (error) {
-      console.error('Error retrieving complaints:', error);
-      toast.error('Failed to retrieve complaints');
+      console.error('Error retrieving reviews:', error);
+      toast.error('Failed to retrieve reviews');
     } finally {
       setIsRefreshing(false);
     }

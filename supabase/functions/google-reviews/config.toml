@@ -1,0 +1,4 @@
+project_id = "trybqrktjibalolvsvej"
+[api]
+[api.token]
+name = "GOOGLE_PLACES_API_KEY"
