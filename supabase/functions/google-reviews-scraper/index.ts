@@ -25,26 +25,49 @@ serve(async (req) => {
       throw new Error('Google Places API key is not configured');
     }
 
-    // Fetch place details including reviews
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_PLACES_API_KEY}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    // First, get the place details to get a pagetoken
+    const initialUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_PLACES_API_KEY}`;
+    const initialResponse = await fetch(initialUrl);
+    const initialData = await initialResponse.json();
 
-    if (!response.ok) {
-      console.error('Error from Google Places API:', data);
+    if (!initialResponse.ok) {
+      console.error('Error from Google Places API:', initialData);
       throw new Error('Failed to fetch reviews from Google Places API');
     }
 
-    if (!data.result || !data.result.reviews) {
-      console.log('No reviews found for this place');
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          reviewsCount: 0
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let allReviews = [];
+    
+    // Get initial reviews
+    if (initialData.result && initialData.result.reviews) {
+      allReviews = [...initialData.result.reviews];
     }
+
+    // Now use Place Search to get more reviews with different sort options
+    const searchTypes = ['newest', 'rating', 'relevance'];
+    
+    for (const sortBy of searchTypes) {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&reviews_sort=${sortBy}&key=${GOOGLE_PLACES_API_KEY}`;
+      
+      console.log(`Fetching reviews with sort: ${sortBy}`);
+      
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+      
+      if (response.ok && data.result && data.result.reviews) {
+        // Add new unique reviews
+        const newReviews = data.result.reviews.filter(newReview => 
+          !allReviews.some(existingReview => 
+            existingReview.time === newReview.time && 
+            existingReview.text === newReview.text
+          )
+        );
+        
+        allReviews = [...allReviews, ...newReviews];
+        console.log(`Added ${newReviews.length} new reviews from ${sortBy} sort`);
+      }
+    }
+
+    console.log(`Total unique reviews collected: ${allReviews.length}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -57,13 +80,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Transform reviews into complaints format
-    const complaints = data.result.reviews.map((review: any) => ({
+    const complaints = allReviews.map((review: any) => ({
       project_id: projectId,
       complaint_text: review.text || '',
       source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
       theme: 'Google Review',
       trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
-      created_at: new Date(review.time * 1000).toISOString() // Convert Unix timestamp to ISO string
+      created_at: new Date(review.time * 1000).toISOString()
     }));
 
     // Store reviews in the database
