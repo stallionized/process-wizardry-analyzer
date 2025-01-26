@@ -369,7 +369,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 onClick={handleRefresh}
                 disabled={isRefreshing || isFetching}
               >
-                {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
+                {isRefreshing ? 'Refreshing...' : 'Refresh Reviews'}
               </Button>
             ) : (
               <Button 
@@ -377,7 +377,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 onClick={handleRetrieve}
                 disabled={isRefreshing || isFetching}
               >
-                {isRefreshing ? 'Retrieving...' : 'Retrieve Complaints'}
+                {isRefreshing ? 'Retrieving...' : 'Retrieve Reviews'}
               </Button>
             )
           )}
