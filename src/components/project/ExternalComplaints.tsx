@@ -3,8 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Info, ExternalLink } from 'lucide-react';
+import { Info, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -37,7 +36,6 @@ interface ScrapingUrls {
 }
 
 const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) => {
-  const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [urls, setUrls] = useState<ScrapingUrls>({
     trustpilot_url: null,
@@ -46,6 +44,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     google_reviews_id: null
   });
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const pageSize = 20; // Number of complaints to show per page
 
   // Fetch URLs
   const { data: scrapingUrls } = useQuery({
@@ -153,98 +153,31 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     scrapingUrls.google_reviews_id
   );
 
-  // Only fetch complaints if URLs are configured
-  const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['complaints', projectId, project?.client_name, currentPage],
+  // Fetch complaints with pagination
+  const { data: complaintsData, isLoading: isLoadingComplaints } = useQuery({
+    queryKey: ['complaints', projectId, page],
     queryFn: async () => {
-      if (!project?.client_name) {
-        throw new Error('Client name is required');
-      }
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
 
-      // First try to get complaints from database
-      const { data: existingComplaints, error: complaintsError } = await supabase
+      const { data, error, count } = await supabase
         .from('complaints')
-        .select('*')
-        .eq('project_id', projectId);
+        .select('*', { count: 'exact' })
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .range(start, end - 1);
 
-      if (complaintsError) {
-        throw complaintsError;
-      }
+      if (error) throw error;
 
-      // If we have complaints in the database, use those
-      if (existingComplaints && existingComplaints.length > 0) {
-        return {
-          complaints: existingComplaints.map(c => ({
-            source_url: c.source_url,
-            complaint_text: c.complaint_text,
-            date: c.created_at,
-            category: c.theme
-          })),
-          hasMore: false
-        };
-      }
-
-      const response = await supabase.functions.invoke('openai-scrape-complaints', {
-        body: { 
-          clientName: project.client_name,
-          projectId: projectId,
-          page: currentPage
-        }
-      });
-
-      if (response.error) {
-        console.error('Error from scraping function:', response.error);
-        throw response.error;
-      }
-      
       return {
-        complaints: response.data.complaints || [],
-        hasMore: response.data.hasMore || false
+        complaints: data || [],
+        totalCount: count || 0
       };
-    },
-    enabled: !!projectId && !!project?.client_name && !!hasConfiguredUrls,
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-    retry: false
+    }
   });
 
-  // Add a function to manually refetch complaints
-  const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      
-      // Delete existing complaints for this project
-      const { error: deleteError } = await supabase
-        .from('complaints')
-        .delete()
-        .eq('project_id', projectId);
-      
-      if (deleteError) {
-        console.error('Error deleting existing complaints:', deleteError);
-        toast.error('Failed to refresh complaints');
-        return;
-      }
+  const totalPages = complaintsData ? Math.ceil(complaintsData.totalCount / pageSize) : 0;
 
-      // Force refetch both queries
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
-        queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
-        queryClient.invalidateQueries({ queryKey: ['existing-complaints', projectId] })
-      ]);
-
-      // Explicitly call refetch after invalidation
-      await refetch();
-      
-      toast.success('Complaints refreshed successfully');
-    } catch (error) {
-      console.error('Error refreshing complaints:', error);
-      toast.error('Failed to refresh complaints');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Add a function to retrieve Google reviews
   const handleRetrieve = async () => {
     try {
       setIsRefreshing(true);
@@ -267,7 +200,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         return;
       }
 
-      // Force refetch both queries to get the new reviews
+      // Force refetch to get the new reviews
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
         queryClient.invalidateQueries({ queryKey: ['existing-complaints', projectId] })
@@ -295,8 +228,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     );
   }
 
-  const complaints = data?.complaints || [];
-  const hasMore = data?.hasMore || false;
+  const complaints = complaintsData?.complaints || [];
+  const hasMore = complaintsData?.totalCount > page * pageSize;
 
   return (
     <div className="space-y-6">
@@ -391,7 +324,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
               <Button 
                 variant="outline" 
                 onClick={handleRefresh}
-                disabled={isRefreshing || isFetching}
+                disabled={isRefreshing}
               >
                 {isRefreshing ? 'Refreshing...' : 'Refresh Reviews'}
               </Button>
@@ -399,7 +332,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
               <Button 
                 variant="outline" 
                 onClick={handleRetrieve}
-                disabled={isRefreshing || isFetching}
+                disabled={isRefreshing}
               >
                 {isRefreshing ? 'Retrieving...' : 'Retrieve Reviews'}
               </Button>
@@ -421,7 +354,13 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 Configure URLs for complaint sources to start fetching complaints.
               </p>
             </div>
-          ) : complaints.length > 0 ? (
+          ) : isLoadingComplaints ? (
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : complaints.length ? (
             <>
               {complaints.map((complaint, index) => (
                 <div key={index} className="p-4 rounded-lg bg-muted/50">
@@ -440,14 +379,26 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                   </a>
                 </div>
               ))}
-              {hasMore && (
-                <div className="flex justify-center pt-4">
-                  <Button 
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                    disabled={isFetching}
+              
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 pt-4">
+                  <Button
                     variant="outline"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
                   >
-                    {isFetching ? 'Loading...' : 'Load More'}
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-4">
+                    Page {page} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
                   </Button>
                 </div>
               )}
@@ -456,7 +407,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Info className="h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                No complaints found. Click refresh to fetch new complaints.
+                No reviews found. Click retrieve to fetch new reviews.
               </p>
             </div>
           )}
