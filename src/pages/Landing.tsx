@@ -47,8 +47,8 @@ export default function Landing() {
           <SplineSceneBasic />
         </div>
 
-        {/* Benefits Section */}
-        <div className="mt-20">
+        {/* Benefits Section - Reduced mt-20 to mt-8 */}
+        <div className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, index) => (
               <BenefitCard key={index} {...benefit} />
