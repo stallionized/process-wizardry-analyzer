@@ -6,15 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const pythonCode = `
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { placeId, projectId } = await req.json();
+    
+    if (!placeId || !projectId) {
+      throw new Error('Place ID and Project ID are required');
+    }
+
+    console.log('Starting review scraping for place ID:', placeId);
+
+    // Run Python directly using -c flag to pass the code as a string
+    const command = new Deno.Command('python3', {
+      args: [
+        '-c',
+        `
 import sys
-import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from datetime import datetime
+import json
 import time
 
 def scrape_google_reviews(place_id):
@@ -82,38 +100,10 @@ def scrape_google_reviews(place_id):
         })
 
 # Get place_id from command line arguments
-if len(sys.argv) > 1:
-    result = scrape_google_reviews(sys.argv[1])
-    print(result)
-else:
-    print(json.dumps({
-        'success': False,
-        'error': 'No place_id provided'
-    }))
-`;
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { placeId, projectId } = await req.json();
-    
-    if (!placeId || !projectId) {
-      throw new Error('Place ID and Project ID are required');
-    }
-
-    console.log('Starting review scraping for place ID:', placeId);
-
-    // Create a temporary Python file
-    const tempFile = await Deno.makeTempFile({ suffix: '.py' });
-    await Deno.writeTextFile(tempFile, pythonCode);
-
-    // Run the Python script
-    const command = new Deno.Command('python3', {
-      args: [tempFile, placeId],
+result = scrape_google_reviews("${placeId}")
+print(result)
+        `,
+      ],
     });
 
     const { stdout, stderr } = await command.output();
@@ -123,9 +113,6 @@ serve(async (req) => {
     if (errors) {
       console.error('Python script errors:', errors);
     }
-
-    // Clean up the temporary file
-    await Deno.remove(tempFile);
 
     // Parse the Python script output
     const result = JSON.parse(output);
