@@ -8,14 +8,16 @@ export function SplineSceneBasic() {
     <Card className="w-full h-[500px] bg-black/[0.96] relative overflow-hidden">      
       <div className="flex h-full">
         {/* Left content */}
-        <div className="flex-1 p-8 pb-16 relative z-10 flex flex-col justify-start pt-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-blue-400 to-blue-600 mb-4">
+        <div className="flex-1 p-8 relative z-10 flex flex-col">
+          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-blue-400 to-blue-600 mb-4 pt-12">
             AI Process Engineer
           </h1>
-          <p className="text-neutral-300 max-w-lg">
-            Bring your UI to life with beautiful 3D scenes. Create immersive experiences 
-            that capture attention and enhance your design.
-          </p>
+          <div className="flex items-center justify-center flex-1">
+            <p className="text-neutral-300 max-w-lg">
+              Bring your UI to life with beautiful 3D scenes. Create immersive experiences 
+              that capture attention and enhance your design.
+            </p>
+          </div>
         </div>
 
         {/* Right content */}
