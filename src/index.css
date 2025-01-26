@@ -4,12 +4,12 @@
  
 @layer base {
   :root {
-    --border: 210, 210, 210;
-    --input: 255, 255, 255;
-    --ring: 0, 0, 0;
+    --border: 15, 23, 42;
+    --input: 15, 23, 42;
+    --ring: 15, 23, 42;
     --background: 26, 31, 44;
     --foreground: 255, 255, 255;
-    --primary: 155, 135, 245;
+    --primary: 15, 23, 42;
     --secondary: 51, 195, 240;
     --accent: 30, 174, 219;
     --destructive: 255, 0, 0;
@@ -23,9 +23,9 @@
  
 @layer base {
   * {
-    @apply border-border;
+    @apply border-primary;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground min-h-screen m-0 p-0;
   }
 }
