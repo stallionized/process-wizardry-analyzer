@@ -48,7 +48,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   });
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const pageSize = 50; // Increased from 20 to 50 reviews per page
+  const pageSize = 50; // Show 50 reviews per page
 
   // Fetch URLs
   const { data: scrapingUrls, isLoading: isLoadingUrls } = useQuery({
@@ -104,7 +104,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         .from('projects')
         .select('*')
         .eq('id', projectId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching project:', error);
@@ -179,12 +179,20 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
 
       console.log(`Retrieved ${data?.length} complaints, total count: ${count}`);
       
+      // Remove duplicates based on complaint_text and created_at
+      const uniqueComplaints = data ? data.filter((complaint, index, self) =>
+        index === self.findIndex((c) => (
+          c.complaint_text === complaint.complaint_text &&
+          c.created_at === complaint.created_at
+        ))
+      ) : [];
+
       return {
-        complaints: data || [],
+        complaints: uniqueComplaints,
         totalCount: count || 0
       };
     },
-    placeholderData: (previousData) => previousData // This replaces keepPreviousData
+    placeholderData: (previousData) => previousData
   });
 
   const totalPages = complaintsData ? Math.ceil(complaintsData.totalCount / pageSize) : 0;
