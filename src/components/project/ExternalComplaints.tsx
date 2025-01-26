@@ -157,7 +157,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   );
 
   // Fetch complaints with pagination
-  const { data: complaintsData } = useQuery({
+  const { data: complaintsData, isLoading: isLoadingComplaints } = useQuery({
     queryKey: ['complaints', projectId, page],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
