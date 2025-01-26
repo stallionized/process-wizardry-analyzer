@@ -75,6 +75,23 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   });
 
+  // Check if there are any existing complaints
+  const { data: existingComplaints, isLoading: isLoadingComplaints } = useQuery({
+    queryKey: ['existing-complaints', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('complaints')
+        .select('id')
+        .eq('project_id', projectId)
+        .limit(1);
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const hasExistingComplaints = existingComplaints && existingComplaints.length > 0;
+
   // Fetch project details first
   const { data: project, isLoading: isLoadingProject } = useQuery({
     queryKey: ['project', projectId],
@@ -132,7 +149,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const hasConfiguredUrls = scrapingUrls && (
     scrapingUrls.trustpilot_url || 
     scrapingUrls.bbb_url || 
-    scrapingUrls.pissed_customer_url
+    scrapingUrls.pissed_customer_url ||
+    scrapingUrls.google_reviews_id
   );
 
   // Only fetch complaints if URLs are configured
@@ -210,7 +228,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       // Force refetch both queries
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['complaints', projectId] }),
-        queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+        queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
+        queryClient.invalidateQueries({ queryKey: ['existing-complaints', projectId] })
       ]);
 
       // Explicitly call refetch after invalidation
@@ -220,6 +239,20 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     } catch (error) {
       console.error('Error refreshing complaints:', error);
       toast.error('Failed to refresh complaints');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Add a function to initially retrieve complaints
+  const handleRetrieve = async () => {
+    try {
+      setIsRefreshing(true);
+      await refetch();
+      toast.success('Complaints retrieved successfully');
+    } catch (error) {
+      console.error('Error retrieving complaints:', error);
+      toast.error('Failed to retrieve complaints');
     } finally {
       setIsRefreshing(false);
     }
@@ -329,13 +362,25 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
               </div>
             </DialogContent>
           </Dialog>
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh}
-            disabled={isRefreshing || isFetching || !hasConfiguredUrls}
-          >
-            {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
-          </Button>
+          {hasConfiguredUrls && (
+            hasExistingComplaints ? (
+              <Button 
+                variant="outline" 
+                onClick={handleRefresh}
+                disabled={isRefreshing || isFetching}
+              >
+                {isRefreshing ? 'Refreshing...' : 'Refresh Complaints'}
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={handleRetrieve}
+                disabled={isRefreshing || isFetching}
+              >
+                {isRefreshing ? 'Retrieving...' : 'Retrieve Complaints'}
+              </Button>
+            )
+          )}
         </div>
       </div>
       
