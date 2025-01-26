@@ -31,7 +31,7 @@ const Auth = () => {
         if (event === 'SIGNED_IN' && session) {
           console.log('User signed in successfully');
           setErrorMessage("");
-          navigate('/');
+          navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
           console.log('Processing sign out or error state');
           
@@ -158,7 +158,7 @@ const Auth = () => {
               },
             }}
             providers={[]}
-            redirectTo={window.location.origin}
+            redirectTo={`${window.location.origin}/auth`}
           />
         </div>
       </div>
