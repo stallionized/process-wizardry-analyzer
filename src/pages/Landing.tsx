@@ -79,9 +79,21 @@ export default function Landing() {
       </nav>
 
       <div className="container mx-auto px-4 pt-24">
-        <div>
+        <div className="relative">
+          <div className="absolute inset-0 flex flex-col justify-center z-10 p-8">
+            <h1 className="text-4xl md:text-6xl font-bold text-blue-400 mb-4">
+              AI Process Engineer
+            </h1>
+            <p className="text-lg md:text-xl text-gray-300 max-w-2xl mb-8">
+              Unlock efficiency with an AI Process Engineer that analyzes every detail
+              of your process. Automate, optimize, and enhance with precision-driven
+              recommendations.
+            </p>
+          </div>
           <SplineSceneBasic />
-          <button className="btn-grad mx-auto">Watch Intro</button>
+          <div className="flex justify-center mt-4">
+            <button className="btn-grad">Watch Intro</button>
+          </div>
         </div>
 
         <div className="mt-8">
