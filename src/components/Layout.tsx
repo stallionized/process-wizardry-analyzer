@@ -28,7 +28,7 @@ const NavLink = ({ to, children, onClick }: { to: string; children: React.ReactN
       <Button
         variant="ghost"
         className={cn(
-          'w-full justify-start',
+          'w-full justify-start text-white hover:text-white hover:bg-primary/20',
           isActive && 'bg-accent/10 text-accent hover:bg-accent/20'
         )}
       >
@@ -57,8 +57,8 @@ const Layout = () => {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
-            <NavigationMenuContent className="bg-white dark:bg-gray-900 min-w-[8rem] p-2">
+            <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">Admin</NavigationMenuTrigger>
+            <NavigationMenuContent className="bg-primary min-w-[8rem] p-2">
               <div className="w-48">
                 <NavLink to="/" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
                 <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
@@ -73,7 +73,7 @@ const Layout = () => {
         variant="ghost"
         size="icon"
         onClick={handleSignOut}
-        className="ml-2"
+        className="ml-2 text-white hover:text-white hover:bg-primary/20"
       >
         <LogOut className="h-4 w-4" />
       </Button>
@@ -82,7 +82,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60">
         <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
@@ -97,11 +97,11 @@ const Layout = () => {
           {isMobile ? (
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-white hover:text-white hover:bg-primary/20">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent>
+              <SheetContent className="bg-primary">
                 <div className="flex flex-col space-y-4 mt-8">
                   <Navigation />
                 </div>
