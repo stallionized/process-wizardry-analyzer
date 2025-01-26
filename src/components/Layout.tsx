@@ -58,7 +58,7 @@ const Layout = () => {
         <NavigationMenuList>
           <NavigationMenuItem>
             <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">Admin</NavigationMenuTrigger>
-            <NavigationMenuContent className="bg-primary min-w-[8rem] p-2">
+            <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
               <div className="w-48">
                 <NavLink to="/" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
                 <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
@@ -82,7 +82,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 left-0 right-0 z-50 border-primary bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-0 bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60">
         <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
@@ -101,7 +101,7 @@ const Layout = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-primary">
+              <SheetContent className="bg-primary border-primary">
                 <div className="flex flex-col space-y-4 mt-8">
                   <Navigation />
                 </div>
