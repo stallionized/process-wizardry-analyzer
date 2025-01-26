@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,92 +18,75 @@ serve(async (req) => {
       throw new Error('Place ID and Project ID are required');
     }
 
-    console.log('Starting review scraping for place ID:', placeId);
+    console.log('Starting review fetch for place ID:', placeId);
 
-    // Launch browser
-    const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
+    if (!GOOGLE_PLACES_API_KEY) {
+      throw new Error('Google Places API key is not configured');
+    }
 
-    try {
-      const page = await browser.newPage();
-      
-      // Navigate to Google Reviews page
-      const url = `https://search.google.com/local/reviews?placeid=${placeId}`;
-      await page.goto(url, { waitUntil: 'networkidle0' });
+    // Fetch place details including reviews
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_PLACES_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
 
-      // Wait for reviews to load
-      await page.waitForSelector('div[data-review-id]', { timeout: 10000 });
+    if (!response.ok) {
+      console.error('Error from Google Places API:', data);
+      throw new Error('Failed to fetch reviews from Google Places API');
+    }
 
-      // Scroll to load more reviews (3 times)
-      for (let i = 0; i < 3; i++) {
-        await page.evaluate(() => {
-          window.scrollTo(0, document.body.scrollHeight);
-        });
-        await page.waitForTimeout(2000);
-      }
-
-      // Extract reviews
-      const reviews = await page.evaluate(() => {
-        const reviewElements = document.querySelectorAll('div[data-review-id]');
-        return Array.from(reviewElements).map(element => {
-          const textElement = element.querySelector('.review-full-text');
-          const ratingElement = element.querySelector('span[aria-label*="stars"]');
-          const dateElement = element.querySelector('span[class*="review-date"]');
-
-          return {
-            text: textElement ? textElement.textContent : '',
-            rating: ratingElement ? parseInt(ratingElement.getAttribute('aria-label')?.split(' ')[0] || '0') : 0,
-            date: dateElement ? dateElement.textContent : ''
-          };
-        });
-      });
-
-      // Initialize Supabase client
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase configuration missing');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      // Transform and store the reviews
-      const complaints = reviews.map(review => ({
-        project_id: projectId,
-        complaint_text: review.text || '',
-        source_url: url,
-        theme: 'Google Review',
-        trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
-        created_at: new Date().toISOString()
-      }));
-
-      // Store reviews in the database
-      if (complaints.length > 0) {
-        const { error: insertError } = await supabase
-          .from('complaints')
-          .upsert(complaints);
-
-        if (insertError) {
-          console.error('Error storing reviews:', insertError);
-          throw insertError;
-        }
-      }
-
-      console.log(`Successfully stored ${complaints.length} reviews`);
-      
+    if (!data.result || !data.result.reviews) {
+      console.log('No reviews found for this place');
       return new Response(
-        JSON.stringify({
+        JSON.stringify({ 
           success: true,
-          reviewsCount: complaints.length,
+          reviewsCount: 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-
-    } finally {
-      await browser.close();
     }
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Transform reviews into complaints format
+    const complaints = data.result.reviews.map((review: any) => ({
+      project_id: projectId,
+      complaint_text: review.text || '',
+      source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
+      theme: 'Google Review',
+      trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
+      created_at: new Date(review.time * 1000).toISOString() // Convert Unix timestamp to ISO string
+    }));
+
+    // Store reviews in the database
+    if (complaints.length > 0) {
+      const { error: insertError } = await supabase
+        .from('complaints')
+        .upsert(complaints);
+
+      if (insertError) {
+        console.error('Error storing reviews:', insertError);
+        throw insertError;
+      }
+    }
+
+    console.log(`Successfully stored ${complaints.length} reviews`);
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        reviewsCount: complaints.length,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
     console.error('Error in google-reviews-scraper function:', error);
