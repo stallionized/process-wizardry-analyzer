@@ -24,8 +24,23 @@ serve(async (req) => {
     }
 
     console.log(`Fetching reviews for place ID: ${placeId}`);
+    console.log('Using API key:', GOOGLE_API_KEY.substring(0, 5) + '...');
 
-    // Use the Places API with proper headers
+    // Test the API key first
+    const testResponse = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json?key=${GOOGLE_API_KEY}`,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const testData = await testResponse.json();
+    console.log('API key test response:', testData);
+
+    // Now fetch the actual place details
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_API_KEY}`,
       {
@@ -38,24 +53,40 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Google Places API response:', errorText);
-      throw new Error(`Google Places API error: ${response.statusText}`);
+      console.error('Google Places API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Google Places API error: ${response.statusText || 'Unknown error'}`);
     }
 
     const data = await response.json();
+    console.log('Full API response:', JSON.stringify(data, null, 2));
     
-    if (data.status === 'INVALID_REQUEST' || data.status === 'REQUEST_DENIED') {
-      console.error('Google Places API error:', data.error_message || data.status);
-      throw new Error(`Google Places API error: ${data.error_message || data.status}`);
+    if (data.status === 'REQUEST_DENIED') {
+      console.error('API request denied:', data.error_message);
+      throw new Error(`Google Places API error: ${data.error_message}`);
     }
 
     if (data.status !== 'OK') {
-      console.error('Google Places API returned non-OK status:', data.status);
-      throw new Error(`Google Places API error: ${data.status}`);
+      console.error('Non-OK API status:', data.status, data.error_message);
+      throw new Error(`Google Places API error: ${data.error_message || data.status}`);
+    }
+
+    if (!data.result?.reviews) {
+      console.log('No reviews found in response');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reviewsCount: 0,
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
     
-    console.log('Received reviews from Google Places API:', data);
-
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -67,48 +98,35 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Store reviews in the database
-    if (data.result?.reviews && data.result.reviews.length > 0) {
-      const complaints = data.result.reviews.map((review: any) => ({
-        project_id: projectId,
-        complaint_text: review.text || '',
-        source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
-        theme: 'Google Review',
-        trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
-        created_at: review.time ? new Date(review.time * 1000).toISOString() : new Date().toISOString()
-      }));
+    const complaints = data.result.reviews.map((review: any) => ({
+      project_id: projectId,
+      complaint_text: review.text || '',
+      source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
+      theme: 'Google Review',
+      trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
+      created_at: review.time ? new Date(review.time * 1000).toISOString() : new Date().toISOString()
+    }));
 
-      const { error: insertError } = await supabase
-        .from('complaints')
-        .upsert(complaints);
+    const { error: insertError } = await supabase
+      .from('complaints')
+      .upsert(complaints);
 
-      if (insertError) {
-        console.error('Error storing reviews:', insertError);
-        throw insertError;
-      }
-
-      console.log(`Successfully stored ${complaints.length} reviews`);
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          reviewsCount: complaints.length,
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    } else {
-      console.log('No reviews found for this place ID');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          reviewsCount: 0,
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    if (insertError) {
+      console.error('Error storing reviews:', insertError);
+      throw insertError;
     }
+
+    console.log(`Successfully stored ${complaints.length} reviews`);
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        reviewsCount: complaints.length,
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
 
   } catch (error) {
     console.error('Error in google-reviews function:', error);
