@@ -1,10 +1,6 @@
 import { SplineSceneBasic } from "@/components/demo/code.demo";
-import { ChartBarIcon, Cog, RocketIcon, ShieldCheck, LogIn } from "lucide-react";
+import { ChartBarIcon, Cog, RocketIcon, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 
 const BenefitCard = ({ icon: Icon, title, description }: { 
   icon: React.ElementType, 
@@ -19,17 +15,6 @@ const BenefitCard = ({ icon: Icon, title, description }: {
 );
 
 export default function Landing() {
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const benefits = [
     {
       icon: ChartBarIcon,
@@ -55,56 +40,29 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
-      {/* Landing-specific Menu */}
-      <nav className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isScrolled ? "bg-black/60 backdrop-blur-sm" : "bg-black"
-      )}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex-shrink-0">
-              <img 
-                src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
-                alt="AI Process Engineer Logo" 
-                className="h-10 w-auto"
-              />
-            </div>
-            <Link to="/auth">
-              <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Content with padding to account for fixed nav */}
-      <div className="pt-16">
-        {/* Hero Section */}
-        <div className="container mx-auto px-4 py-8">
-          {/* 3D Scene */}
-          <div>
-            <SplineSceneBasic />
-          </div>
-
-          {/* Benefits Section */}
-          <div className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {benefits.map((benefit, index) => (
-                <BenefitCard key={index} {...benefit} />
-              ))}
-            </div>
-          </div>
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-8">
+        {/* 3D Scene */}
+        <div>
+          <SplineSceneBasic />
         </div>
 
-        {/* Footer */}
-        <footer className="bg-[#221F26] mt-20 py-8">
-          <div className="container mx-auto px-4 text-center text-gray-300">
-            <p>© 2024 AI Process Engineer. All rights reserved.</p>
+        {/* Benefits Section - Reduced mt-20 to mt-8 */}
+        <div className="mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {benefits.map((benefit, index) => (
+              <BenefitCard key={index} {...benefit} />
+            ))}
           </div>
-        </footer>
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-[#221F26] mt-20 py-8">
+        <div className="container mx-auto px-4 text-center text-gray-300">
+          <p>© 2024 AI Process Engineer. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }
