@@ -91,8 +91,8 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="mt-20">
-          <LampContainer>
+        <div className="mt-12 mb-20">
+          <LampContainer className="h-[40vh] min-h-[400px]">
             <motion.h1
               initial={{ opacity: 0.5, y: 100 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -101,7 +101,7 @@ export default function Landing() {
                 duration: 0.8,
                 ease: "easeInOut",
               }}
-              className="mt-8 bg-gradient-to-br from-slate-300 to-slate-500 py-4 bg-clip-text text-center text-4xl font-medium tracking-tight text-transparent md:text-7xl"
+              className="mt-8 bg-gradient-to-br from-slate-300 to-slate-500 py-4 bg-clip-text text-center text-2xl font-medium tracking-tight text-transparent md:text-5xl"
             >
               Designed & Developed by Process Engineers
             </motion.h1>
@@ -109,7 +109,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="bg-[#221F26] mt-20 py-8">
+      <footer className="bg-[#221F26] py-8">
         <div className="container mx-auto px-4 text-center text-gray-300">
           <p>© 2024 AI Process Engineer. All rights reserved.</p>
         </div>
