@@ -24,8 +24,11 @@ interface ExternalComplaintsProps {
 interface Complaint {
   source_url: string;
   complaint_text: string;
-  date: string;
-  category: string;
+  created_at: string;
+  theme: string;
+  trend: string;
+  id: string;
+  project_id: string;
 }
 
 interface ScrapingUrls {
@@ -45,10 +48,10 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   });
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const pageSize = 20; // Number of complaints to show per page
+  const pageSize = 20;
 
   // Fetch URLs
-  const { data: scrapingUrls } = useQuery({
+  const { data: scrapingUrls, isLoading: isLoadingUrls } = useQuery({
     queryKey: ['scraping-urls', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -76,7 +79,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   });
 
   // Check if there are any existing complaints
-  const { data: existingComplaints, isLoading: isLoadingComplaints } = useQuery({
+  const { data: existingComplaints } = useQuery({
     queryKey: ['existing-complaints', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -154,7 +157,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   );
 
   // Fetch complaints with pagination
-  const { data: complaintsData, isLoading: isLoadingComplaints } = useQuery({
+  const { data: complaintsData } = useQuery({
     queryKey: ['complaints', projectId, page],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
@@ -215,7 +218,11 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     }
   };
 
-  if (isLoadingProject) {
+  const handleRefresh = async () => {
+    await handleRetrieve();
+  };
+
+  if (isLoadingProject || isLoadingUrls) {
     return (
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold mb-6">External Reviews Analysis</h2>
@@ -229,7 +236,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   }
 
   const complaints = complaintsData?.complaints || [];
-  const hasMore = complaintsData?.totalCount > page * pageSize;
 
   return (
     <div className="space-y-6">
@@ -354,19 +360,20 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 Configure URLs for complaint sources to start fetching complaints.
               </p>
             </div>
-          ) : isLoadingComplaints ? (
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
+          ) : complaints.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <Info className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">
+                No reviews found. Click retrieve to fetch new reviews.
+              </p>
             </div>
-          ) : complaints.length ? (
+          ) : (
             <>
               {complaints.map((complaint, index) => (
                 <div key={index} className="p-4 rounded-lg bg-muted/50">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-medium">{complaint.category}</span>
-                    <span className="text-sm text-muted-foreground">{formatDate(complaint.date)}</span>
+                    <span className="text-sm font-medium">{complaint.theme}</span>
+                    <span className="text-sm text-muted-foreground">{formatDate(complaint.created_at)}</span>
                   </div>
                   <p className="text-sm mb-2">{complaint.complaint_text}</p>
                   <a 
@@ -403,13 +410,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 </div>
               )}
             </>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              <Info className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">
-                No reviews found. Click retrieve to fetch new reviews.
-              </p>
-            </div>
           )}
         </div>
       </ScrollArea>
