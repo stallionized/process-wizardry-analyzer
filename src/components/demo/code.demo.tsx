@@ -2,6 +2,7 @@
 
 import { SplineScene } from "@/components/ui/splite";
 import { Card } from "@/components/ui/card"
+import { GradientButton } from "@/components/ui/gradient-button"
  
 export function SplineSceneBasic() {
   return (
@@ -16,6 +17,9 @@ export function SplineSceneBasic() {
             Unlock efficiency with an AI Process Engineer that analyzes every detail of your process. Automate, optimize, 
             and enhance with precision-driven recommendations.
           </p>
+          <div className="mt-8">
+            <GradientButton>Get Started</GradientButton>
+          </div>
         </div>
 
         {/* Right content */}
