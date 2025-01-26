@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,54 +21,51 @@ serve(async (req) => {
 
     console.log('Starting review fetch for place ID:', placeId);
 
-    const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
-    if (!GOOGLE_PLACES_API_KEY) {
-      throw new Error('Google Places API key is not configured');
-    }
-
-    // First, get the place details to get a pagetoken
-    const initialUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_PLACES_API_KEY}`;
-    const initialResponse = await fetch(initialUrl);
-    const initialData = await initialResponse.json();
-
-    if (!initialResponse.ok) {
-      console.error('Error from Google Places API:', initialData);
-      throw new Error('Failed to fetch reviews from Google Places API');
-    }
-
-    let allReviews = [];
+    // Construct the Google Maps URL for the place
+    const url = `https://www.google.com/maps/place/?q=place_id:${placeId}`;
     
-    // Get initial reviews
-    if (initialData.result && initialData.result.reviews) {
-      allReviews = [...initialData.result.reviews];
-    }
-
-    // Now use Place Search to get more reviews with different sort options
-    const searchTypes = ['newest', 'rating', 'relevance'];
-    
-    for (const sortBy of searchTypes) {
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&reviews_sort=${sortBy}&key=${GOOGLE_PLACES_API_KEY}`;
-      
-      console.log(`Fetching reviews with sort: ${sortBy}`);
-      
-      const response = await fetch(searchUrl);
-      const data = await response.json();
-      
-      if (response.ok && data.result && data.result.reviews) {
-        // Add new unique reviews
-        const newReviews = data.result.reviews.filter(newReview => 
-          !allReviews.some(existingReview => 
-            existingReview.time === newReview.time && 
-            existingReview.text === newReview.text
-          )
-        );
-        
-        allReviews = [...allReviews, ...newReviews];
-        console.log(`Added ${newReviews.length} new reviews from ${sortBy} sort`);
+    // Fetch the page content
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch Google Maps page');
     }
 
-    console.log(`Total unique reviews collected: ${allReviews.length}`);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    if (!doc) {
+      throw new Error('Failed to parse HTML');
+    }
+
+    // Extract reviews from the page
+    const reviewElements = doc.querySelectorAll('.jJc9Ad');
+    const reviews = [];
+
+    reviewElements.forEach((element) => {
+      const text = element.querySelector('.wiI7pd')?.textContent;
+      const ratingElement = element.querySelector('.kvMYJc')?.getAttribute('aria-label');
+      const rating = ratingElement ? parseInt(ratingElement.split(' ')[0]) : 3;
+      const timeElement = element.querySelector('.rsqaWe');
+      const timeText = timeElement?.textContent;
+
+      if (text) {
+        const review = {
+          text,
+          rating,
+          time: new Date().getTime() / 1000, // Current timestamp as fallback
+          timeText
+        };
+        reviews.push(review);
+      }
+    });
+
+    console.log(`Scraped ${reviews.length} reviews`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -80,13 +78,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Transform reviews into complaints format
-    const complaints = allReviews.map((review: any) => ({
+    const complaints = reviews.map((review) => ({
       project_id: projectId,
       complaint_text: review.text || '',
       source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
       theme: 'Google Review',
       trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
-      created_at: new Date(review.time * 1000).toISOString()
+      created_at: new Date().toISOString() // Using current time since exact review time is harder to parse
     }));
 
     // Store reviews in the database
