@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { LampContainer } from "@/components/ui/lamp";
 
 const BenefitCard = ({ icon: Icon, title, description }: { 
   icon: React.ElementType, 
@@ -56,7 +58,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
-      {/* Fixed Navigation Bar */}
       <nav className={`fixed top-0 left-0 right-0 z-50 px-6 h-16 flex items-center justify-between transition-colors duration-300 ${
         isScrolled ? 'bg-black/70 backdrop-blur-sm' : 'bg-black'
       }`}>
@@ -77,14 +78,11 @@ export default function Landing() {
         </Button>
       </nav>
 
-      {/* Main Content with top padding to account for fixed nav */}
       <div className="container mx-auto px-4 pt-24">
-        {/* 3D Scene */}
         <div>
           <SplineSceneBasic />
         </div>
 
-        {/* Benefits Section */}
         <div className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, index) => (
@@ -92,9 +90,25 @@ export default function Landing() {
             ))}
           </div>
         </div>
+
+        <div className="mt-20">
+          <LampContainer>
+            <motion.h1
+              initial={{ opacity: 0.5, y: 100 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: 0.3,
+                duration: 0.8,
+                ease: "easeInOut",
+              }}
+              className="mt-8 bg-gradient-to-br from-slate-300 to-slate-500 py-4 bg-clip-text text-center text-4xl font-medium tracking-tight text-transparent md:text-7xl"
+            >
+              Designed & Developed by Process Engineers
+            </motion.h1>
+          </LampContainer>
+        </div>
       </div>
 
-      {/* Footer */}
       <footer className="bg-[#221F26] mt-20 py-8">
         <div className="container mx-auto px-4 text-center text-gray-300">
           <p>© 2024 AI Process Engineer. All rights reserved.</p>
