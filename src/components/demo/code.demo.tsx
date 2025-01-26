@@ -18,7 +18,9 @@ export function SplineSceneBasic() {
             and enhance with precision-driven recommendations.
           </p>
           <div className="mt-8">
-            <GradientButton>Get Started</GradientButton>
+            <GradientButton className="bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700">
+              Watch Intro
+            </GradientButton>
           </div>
         </div>
 
