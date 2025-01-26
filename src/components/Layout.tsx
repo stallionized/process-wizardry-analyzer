@@ -82,15 +82,24 @@ const Layout = () => {
           </Button>
         </>
       ) : (
-        <Link to="/auth">
+        <>
           <Button
             variant="ghost"
             className="text-white hover:text-white hover:bg-primary/20 gap-2"
+            onClick={() => window.location.href = '#book-demo'}
           >
-            <LogIn className="h-4 w-4" />
-            Login
+            Book Demo
           </Button>
-        </Link>
+          <Link to="/auth">
+            <Button
+              variant="ghost"
+              className="text-white hover:text-white hover:bg-primary/20 gap-2"
+            >
+              <LogIn className="h-4 w-4" />
+              Login
+            </Button>
+          </Link>
+        </>
       )}
     </>
   );
