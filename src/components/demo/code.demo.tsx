@@ -13,7 +13,7 @@ export function SplineSceneBasic() {
             a Process Engineer
           </h1>
           <p className="mt-4 text-neutral-300 max-w-lg">
-            Unlock efficiency with AI that analyzes every detail of your process. Automate, optimize, 
+            Unlock efficiency with an AI Process Engineer that analyzes every detail of your process. Automate, optimize, 
             and enhance with precision-driven recommendations.
           </p>
         </div>
