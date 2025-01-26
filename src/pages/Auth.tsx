@@ -118,7 +118,7 @@ const Auth = () => {
 
   return (
     <div className="container max-w-md mx-auto py-12">
-      <Link to="/landing" className="inline-block mb-8">
+      <Link to="/" className="inline-block mb-8">
         <Button variant="ghost" className="gap-2">
           <ArrowLeft className="h-4 w-4" />
           Back to Home

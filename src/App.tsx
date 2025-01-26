@@ -57,7 +57,6 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/landing" element={<Landing />} />
             <Route element={<Layout />}>
               <Route path="/" element={
                 <ProtectedRoute>
