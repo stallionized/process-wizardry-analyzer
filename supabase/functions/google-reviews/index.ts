@@ -23,24 +23,9 @@ serve(async (req) => {
       throw new Error('Google Places API key not configured');
     }
 
-    console.log(`Fetching reviews for place ID: ${placeId}`);
-    console.log('Using API key:', GOOGLE_API_KEY.substring(0, 5) + '...');
+    console.log('Fetching reviews for place ID:', placeId);
+    console.log('API Key starts with:', GOOGLE_API_KEY.substring(0, 5));
 
-    // Test the API key first
-    const testResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?key=${GOOGLE_API_KEY}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const testData = await testResponse.json();
-    console.log('API key test response:', testData);
-
-    // Now fetch the actual place details
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_API_KEY}`,
       {
@@ -51,19 +36,19 @@ serve(async (req) => {
       }
     );
 
+    const data = await response.json();
+    console.log('API Response Status:', response.status);
+    console.log('API Response:', JSON.stringify(data, null, 2));
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Google Places API error response:', {
+      console.error('Google Places API error:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        data
       });
-      throw new Error(`Google Places API error: ${response.statusText || 'Unknown error'}`);
+      throw new Error(`Google Places API error: ${data.error_message || response.statusText || 'Unknown error'}`);
     }
 
-    const data = await response.json();
-    console.log('Full API response:', JSON.stringify(data, null, 2));
-    
     if (data.status === 'REQUEST_DENIED') {
       console.error('API request denied:', data.error_message);
       throw new Error(`Google Places API error: ${data.error_message}`);
@@ -75,11 +60,12 @@ serve(async (req) => {
     }
 
     if (!data.result?.reviews) {
-      console.log('No reviews found in response');
+      console.log('No reviews found for place ID:', placeId);
       return new Response(
         JSON.stringify({
           success: true,
           reviewsCount: 0,
+          message: 'No reviews found for this place'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -131,7 +117,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in google-reviews function:', error);
     return new Response(
-      JSON.stringify({ error: error.message, success: false }),
+      JSON.stringify({ 
+        error: error.message, 
+        success: false 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
