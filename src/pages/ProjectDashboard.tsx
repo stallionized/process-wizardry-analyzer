@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database, Menu } from 'lucide-react';
+import { useProjects } from '@/hooks/useProjects';
+import ProjectList from '@/components/projects/ProjectList';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
@@ -22,8 +24,25 @@ const ProjectDashboard = () => {
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
+  const { projects, isLoading: isLoadingProjects } = useProjects();
   
-  if (!id) return <div>Project ID is required</div>;
+  // If no ID is provided, show the projects list
+  if (!id) {
+    if (isLoadingProjects) {
+      return <div>Loading projects...</div>;
+    }
+
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-6">Projects Dashboard</h1>
+        <ProjectList 
+          projects={projects} 
+          isLoading={isLoadingProjects}
+          onStatusChange={() => {}} // Implement status change handler if needed
+        />
+      </div>
+    );
+  }
 
   const { project, isLoadingProject, updateProjectMutation } = useProjectManagement(id);
 
