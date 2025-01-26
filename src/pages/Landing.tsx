@@ -1,6 +1,9 @@
 import { SplineSceneBasic } from "@/components/demo/code.demo";
-import { ChartBarIcon, Cog, RocketIcon, ShieldCheck } from "lucide-react";
+import { ChartBarIcon, Cog, LogIn, RocketIcon, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const BenefitCard = ({ icon: Icon, title, description }: { 
   icon: React.ElementType, 
@@ -15,6 +18,19 @@ const BenefitCard = ({ icon: Icon, title, description }: {
 );
 
 export default function Landing() {
+  const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const benefits = [
     {
       icon: ChartBarIcon,
@@ -40,14 +56,35 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-8">
+      {/* Fixed Navigation Bar */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 px-6 h-16 flex items-center justify-between transition-colors duration-300 ${
+        isScrolled ? 'bg-black/70 backdrop-blur-sm' : 'bg-black'
+      }`}>
+        <div>
+          <img 
+            src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
+            alt="ProcessAI Logo" 
+            className="h-8 w-auto"
+          />
+        </div>
+        <Button
+          variant="ghost"
+          className="text-white hover:text-white/80"
+          onClick={() => navigate('/auth')}
+        >
+          <LogIn className="mr-2 h-4 w-4" />
+          Sign In
+        </Button>
+      </nav>
+
+      {/* Main Content with top padding to account for fixed nav */}
+      <div className="container mx-auto px-4 pt-24">
         {/* 3D Scene */}
         <div>
           <SplineSceneBasic />
         </div>
 
-        {/* Benefits Section - Reduced mt-20 to mt-8 */}
+        {/* Benefits Section */}
         <div className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, index) => (
