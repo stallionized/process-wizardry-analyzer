@@ -13,8 +13,8 @@ export function SplineSceneBasic() {
             AI Process Engineer
           </h1>
           <p className="mt-4 text-neutral-300 max-w-lg">
-            Bring your UI to life with beautiful 3D scenes. Create immersive experiences 
-            that capture attention and enhance your design.
+            Unlock efficiency with AI that analyzes every detail of your process. Automate, optimize, 
+            and enhance with precision-driven recommendations.
           </p>
         </div>
 
