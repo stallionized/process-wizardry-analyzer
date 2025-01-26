@@ -7,16 +7,32 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 
-const BenefitCard = ({ icon: Icon, title, description }: { 
+const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
   title: string, 
-  description: string 
+  description: string,
+  index: number 
 }) => (
-  <Card className="bg-black/[0.96] p-6 flex flex-col items-center text-center space-y-4">
-    <Icon className="w-8 h-8 text-blue-400" />
-    <h3 className="text-xl font-semibold text-white">{title}</h3>
-    <p className="text-neutral-300 text-sm">{description}</p>
-  </Card>
+  <motion.div
+    initial={{ opacity: 0, y: 50 }}
+    whileInView={{ 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        type: "spring",
+        bounce: 0.4,
+        duration: 0.8,
+        delay: index * 0.2
+      }
+    }}
+    viewport={{ once: true, margin: "-100px" }}
+  >
+    <Card className="bg-black/[0.96] p-6 flex flex-col items-center text-center space-y-4 hover:scale-105 transition-transform duration-300">
+      <Icon className="w-8 h-8 text-blue-400" />
+      <h3 className="text-xl font-semibold text-white">{title}</h3>
+      <p className="text-neutral-300 text-sm">{description}</p>
+    </Card>
+  </motion.div>
 );
 
 export default function Landing() {
@@ -98,7 +114,7 @@ export default function Landing() {
         <div className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit, index) => (
-              <BenefitCard key={index} {...benefit} />
+              <BenefitCard key={index} {...benefit} index={index} />
             ))}
           </div>
         </div>
