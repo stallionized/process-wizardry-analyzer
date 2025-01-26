@@ -218,8 +218,8 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         return;
       }
 
-      // Then fetch new reviews
-      const response = await supabase.functions.invoke('google-reviews', {
+      // Then fetch new reviews using the scraper
+      const response = await supabase.functions.invoke('google-reviews-scraper', {
         body: { 
           placeId: urls.google_reviews_id,
           projectId: projectId
@@ -227,7 +227,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       });
 
       if (response.error) {
-        console.error('Error from Google Reviews function:', response.error);
+        console.error('Error from Google Reviews scraper:', response.error);
         toast.error('Failed to retrieve reviews');
         return;
       }
