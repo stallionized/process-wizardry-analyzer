@@ -10,7 +10,7 @@ export function SplineSceneBasic() {
         {/* Left content */}
         <div className="flex-1 p-8 pb-12 relative z-10 flex flex-col justify-center">
           <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-blue-400 to-blue-600 mb-2">
-            AI Process Engineer
+            a Process Engineer
           </h1>
           <p className="mt-4 text-neutral-300 max-w-lg">
             Unlock efficiency with AI that analyzes every detail of your process. Automate, optimize, 
