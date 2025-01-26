@@ -81,6 +81,7 @@ export default function Landing() {
       <div className="container mx-auto px-4 pt-24">
         <div>
           <SplineSceneBasic />
+          <button className="btn-grad mx-auto">Watch Intro</button>
         </div>
 
         <div className="mt-8">
