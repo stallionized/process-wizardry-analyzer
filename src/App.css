@@ -71,20 +71,20 @@ button:hover,
 
 /* Gradient Button Styles */
 .gradient-button {
-  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+  background: linear-gradient(135deg, #33C3F0 0%, #0EA5E9 100%);
   transition: all 0.3s ease;
   border: none;
 }
 
 .gradient-button:hover {
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
   transform: translateY(-1px);
 }
 
 .gradient-button-variant {
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
 }
 
 .gradient-button-variant:hover {
-  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
 }
