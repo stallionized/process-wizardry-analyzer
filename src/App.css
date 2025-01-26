@@ -68,3 +68,23 @@ button:hover,
   background-color: #0F172A;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+
+/* Gradient Button Styles */
+.gradient-button {
+  background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%);
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.gradient-button:hover {
+  background: linear-gradient(135deg, #0284C7 0%, #1E40AF 100%);
+  transform: translateY(-1px);
+}
+
+.gradient-button-variant {
+  background: linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%);
+}
+
+.gradient-button-variant:hover {
+  background: linear-gradient(135deg, #1E3A8A 0%, #172554 100%);
+}
