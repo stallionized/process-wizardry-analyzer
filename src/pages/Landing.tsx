@@ -68,14 +68,26 @@ export default function Landing() {
             className="h-8 w-auto"
           />
         </div>
-        <Button
-          variant="ghost"
-          className="text-white hover:text-white/80"
-          onClick={() => navigate('/auth')}
-        >
-          <LogIn className="mr-2 h-4 w-4" />
-          Sign In
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            className="text-white hover:text-white/80"
+            onClick={() => {
+              const demoSection = document.getElementById('book-demo');
+              demoSection?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            Book Demo
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-white hover:text-white/80"
+            onClick={() => navigate('/auth')}
+          >
+            <LogIn className="mr-2 h-4 w-4" />
+            Sign In
+          </Button>
+        </div>
       </nav>
 
       <div className="container mx-auto px-4 pt-24">
