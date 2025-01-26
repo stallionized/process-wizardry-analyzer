@@ -17,9 +17,12 @@ export function SplineSceneBasic() {
             Unlock efficiency with an AI Process Engineer that analyzes every detail of your process. Automate, optimize, 
             and enhance with precision-driven recommendations.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex gap-4">
             <GradientButton className="bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700">
               Watch Intro
+            </GradientButton>
+            <GradientButton className="bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700">
+              Book Demo
             </GradientButton>
           </div>
         </div>
