@@ -206,6 +206,19 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         return;
       }
 
+      // First, delete existing complaints for this project
+      const { error: deleteError } = await supabase
+        .from('complaints')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (deleteError) {
+        console.error('Error deleting existing complaints:', deleteError);
+        toast.error('Failed to clear existing reviews');
+        return;
+      }
+
+      // Then fetch new reviews
       const response = await supabase.functions.invoke('google-reviews', {
         body: { 
           placeId: urls.google_reviews_id,
