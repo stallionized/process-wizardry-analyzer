@@ -91,7 +91,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="mt-12 mb-20">
+        <div className="mt-12 mb-20 bg-black">
           <LampContainer className="h-[40vh] min-h-[400px]">
             <motion.h1
               initial={{ opacity: 0.5, y: 100 }}
