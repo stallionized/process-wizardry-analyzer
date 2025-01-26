@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useSessionContext } from '@supabase/auth-helpers-react';
 
 const BenefitCard = ({ icon: Icon, title, description }: { 
   icon: React.ElementType, 
@@ -21,7 +20,6 @@ const BenefitCard = ({ icon: Icon, title, description }: {
 export default function Landing() {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
-  const { session } = useSessionContext();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,13 +30,6 @@ export default function Landing() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    // If user is already logged in, redirect to dashboard
-    if (session) {
-      navigate('/dashboard');
-    }
-  }, [session, navigate]);
 
   const benefits = [
     {
