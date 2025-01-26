@@ -14,12 +14,14 @@ const gradientButtonVariants = cva(
     "font-sans font-bold",
     "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
     "disabled:pointer-events-none disabled:opacity-50",
+    "bg-gradient-to-r from-[#33C3F0] to-[#0EA5E9] hover:from-[#0EA5E9] hover:to-[#0284C7]",
+    "transition-all duration-300 ease-in-out transform hover:-translate-y-1",
   ],
   {
     variants: {
       variant: {
         default: "",
-        variant: "gradient-button-variant",
+        variant: "bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] hover:from-[#0284C7] hover:to-[#0369A1]",
       },
     },
     defaultVariants: {
