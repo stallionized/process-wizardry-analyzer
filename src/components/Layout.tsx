@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
-import { LogOut, Menu } from 'lucide-react';
+import { useSupabaseClient, useSessionContext } from '@supabase/auth-helpers-react';
+import { LogOut, Menu, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -40,6 +40,7 @@ const NavLink = ({ to, children, onClick }: { to: string; children: React.ReactN
 
 const Layout = () => {
   const supabase = useSupabaseClient();
+  const { session } = useSessionContext();
   const isMobile = useIsMobile();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
@@ -54,29 +55,43 @@ const Layout = () => {
 
   const Navigation = () => (
     <>
-      <NavigationMenu>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">Admin</NavigationMenuTrigger>
-            <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
-              <div className="w-48">
-                <NavLink to="/" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
-                <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
-                <NavLink to="/clients" onClick={() => isMobile && setIsMenuVisible(false)}>Client Management</NavLink>
-              </div>
-            </NavigationMenuContent>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
-      <NavLink to="/client" onClick={() => isMobile && setIsMenuVisible(false)}>Client Portal</NavLink>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleSignOut}
-        className="ml-2 text-white hover:text-white hover:bg-primary/20"
-      >
-        <LogOut className="h-4 w-4" />
-      </Button>
+      {session ? (
+        <>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">Admin</NavigationMenuTrigger>
+                <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
+                  <div className="w-48">
+                    <NavLink to="/dashboard" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
+                    <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
+                    <NavLink to="/clients" onClick={() => isMobile && setIsMenuVisible(false)}>Client Management</NavLink>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+          <NavLink to="/client" onClick={() => isMobile && setIsMenuVisible(false)}>Client Portal</NavLink>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSignOut}
+            className="ml-2 text-white hover:text-white hover:bg-primary/20"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </>
+      ) : (
+        <Link to="/auth">
+          <Button
+            variant="ghost"
+            className="text-white hover:text-white hover:bg-primary/20 gap-2"
+          >
+            <LogIn className="h-4 w-4" />
+            Login
+          </Button>
+        </Link>
+      )}
     </>
   );
 
