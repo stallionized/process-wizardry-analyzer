@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
@@ -116,6 +118,13 @@ const Auth = () => {
 
   return (
     <div className="container max-w-md mx-auto py-12">
+      <Link to="/" className="inline-block mb-8">
+        <Button variant="ghost" className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Button>
+      </Link>
+
       <div className="space-y-6">
         <div className="space-y-2 text-center">
           <img 
