@@ -337,6 +337,7 @@ export type Database = {
         Row: {
           bbb_url: string | null
           created_at: string | null
+          google_reviews_id: string | null
           id: string
           pissed_customer_url: string | null
           project_id: string
@@ -346,6 +347,7 @@ export type Database = {
         Insert: {
           bbb_url?: string | null
           created_at?: string | null
+          google_reviews_id?: string | null
           id?: string
           pissed_customer_url?: string | null
           project_id: string
@@ -355,6 +357,7 @@ export type Database = {
         Update: {
           bbb_url?: string | null
           created_at?: string | null
+          google_reviews_id?: string | null
           id?: string
           pissed_customer_url?: string | null
           project_id?: string

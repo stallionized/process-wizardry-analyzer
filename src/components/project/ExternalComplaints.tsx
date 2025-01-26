@@ -40,10 +40,10 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [urls, setUrls] = useState<ScrapingUrls>({
-    trustpilot_url: '',
-    bbb_url: '',
-    pissed_customer_url: '',
-    google_reviews_id: ''
+    trustpilot_url: null,
+    bbb_url: null,
+    pissed_customer_url: null,
+    google_reviews_id: null
   });
   const queryClient = useQueryClient();
 
@@ -101,7 +101,10 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         .from('scraping_urls')
         .upsert({
           project_id: projectId,
-          ...urls
+          trustpilot_url: urls.trustpilot_url,
+          bbb_url: urls.bbb_url,
+          pissed_customer_url: urls.pissed_customer_url,
+          google_reviews_id: urls.google_reviews_id
         }, {
           onConflict: 'project_id'
         });
