@@ -25,9 +25,9 @@ serve(async (req) => {
 
     console.log(`Fetching reviews for place ID: ${placeId}`);
 
-    // Fetch place details including reviews
+    // Use the new Places API endpoint
     const response = await fetch(
-      `https://places.googleapis.com/v1/places/${placeId}?fields=reviews&key=${GOOGLE_API_KEY}`,
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_API_KEY}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -36,10 +36,17 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
+      console.error('Google Places API response:', await response.text());
       throw new Error(`Google Places API error: ${response.statusText}`);
     }
 
     const data = await response.json();
+    
+    if (data.status === 'INVALID_REQUEST' || data.status === 'REQUEST_DENIED') {
+      console.error('Google Places API error:', data.error_message || data.status);
+      throw new Error(`Google Places API error: ${data.error_message || data.status}`);
+    }
+    
     console.log('Received reviews from Google Places API');
 
     // Initialize Supabase client
@@ -53,14 +60,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Store reviews in the database
-    if (data.reviews && data.reviews.length > 0) {
-      const complaints = data.reviews.map((review: any) => ({
+    if (data.result?.reviews && data.result.reviews.length > 0) {
+      const complaints = data.result.reviews.map((review: any) => ({
         project_id: projectId,
         complaint_text: review.text || '',
         source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
         theme: 'Google Review',
         trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
-        created_at: review.publishTime
+        created_at: review.time ? new Date(review.time * 1000).toISOString() : new Date().toISOString()
       }));
 
       const { error: insertError } = await supabase
@@ -73,17 +80,28 @@ serve(async (req) => {
       }
 
       console.log(`Successfully stored ${complaints.length} reviews`);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reviewsCount: complaints.length,
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    } else {
+      console.log('No reviews found for this place ID');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reviewsCount: 0,
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        reviewsCount: data.reviews?.length || 0,
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
 
   } catch (error) {
     console.error('Error in google-reviews function:', error);
