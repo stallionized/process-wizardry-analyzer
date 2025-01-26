@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SplineSceneBasic } from "@/components/demo/code.demo";
 import { Button } from "@/components/ui/button";
+import { Brain, Rocket, Settings } from 'lucide-react';
 
 export default function Landing() {
   return (
@@ -26,6 +27,31 @@ export default function Landing() {
         {/* 3D Scene */}
         <div className="mb-20">
           <SplineSceneBasic />
+        </div>
+
+        {/* Features Section */}
+        <div className="grid md:grid-cols-3 gap-8 mt-20">
+          <div className="bg-[#221F26] p-8 rounded-xl">
+            <Brain className="w-12 h-12 text-[#9b87f5] mb-4" />
+            <h3 className="text-xl font-semibold mb-3">Intelligent Analysis</h3>
+            <p className="text-gray-300">
+              Advanced AI algorithms analyze your processes to identify optimization opportunities
+            </p>
+          </div>
+          <div className="bg-[#221F26] p-8 rounded-xl">
+            <Rocket className="w-12 h-12 text-[#33C3F0] mb-4" />
+            <h3 className="text-xl font-semibold mb-3">Rapid Implementation</h3>
+            <p className="text-gray-300">
+              Quick deployment of optimized processes with minimal disruption
+            </p>
+          </div>
+          <div className="bg-[#221F26] p-8 rounded-xl">
+            <Settings className="w-12 h-12 text-[#1EAEDB] mb-4" />
+            <h3 className="text-xl font-semibold mb-3">Customizable Solutions</h3>
+            <p className="text-gray-300">
+              Tailored solutions that adapt to your unique business needs
+            </p>
+          </div>
         </div>
       </div>
 
