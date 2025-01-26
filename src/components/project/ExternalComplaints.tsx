@@ -184,7 +184,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
         totalCount: count || 0
       };
     },
-    keepPreviousData: true // Keep previous data while fetching new data
+    placeholderData: (previousData) => previousData // This replaces keepPreviousData
   });
 
   const totalPages = complaintsData ? Math.ceil(complaintsData.totalCount / pageSize) : 0;
