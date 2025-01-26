@@ -81,6 +81,12 @@ export default function Landing() {
       <div className="container mx-auto px-4 pt-24">
         <div>
           <SplineSceneBasic />
+          <button 
+            onClick={() => navigate('/auth')} 
+            className="btn-grad mx-auto"
+          >
+            Get Started
+          </button>
         </div>
 
         <div className="mt-8">
