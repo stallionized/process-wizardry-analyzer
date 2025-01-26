@@ -8,7 +8,11 @@ import ProjectDashboard from './pages/ProjectDashboard';
 import ProjectList from './components/projects/ProjectList';
 import { useProjects } from './hooks/useProjects';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { session } = useSessionContext();
   
   if (!session) {
