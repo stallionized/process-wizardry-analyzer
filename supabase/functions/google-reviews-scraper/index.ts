@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,147 +21,90 @@ serve(async (req) => {
 
     console.log('Starting review scraping for place ID:', placeId);
 
-    // Run Python directly using -c flag to pass the code as a string
-    const command = new Deno.Command('python3', {
-      args: [
-        '-c',
-        `
-import sys
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-import json
-import time
-
-def scrape_google_reviews(place_id):
-    try:
-        # Configure Chrome options for headless browsing
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        
-        # Initialize the driver
-        driver = webdriver.Chrome(options=options)
-        
-        # Construct the URL using place_id
-        url = f"https://search.google.com/local/reviews?placeid={place_id}"
-        driver.get(url)
-        
-        # Wait for reviews to load
-        wait = WebDriverWait(driver, 10)
-        reviews = []
-        
-        # Scroll to load more reviews (adjust the number based on needs)
-        for _ in range(3):
-            try:
-                # Find all review elements
-                review_elements = wait.until(EC.presence_of_all_elements_located(
-                    (By.CSS_SELECTOR, 'div[data-review-id]')
-                ))
-                
-                for element in review_elements:
-                    try:
-                        # Extract review data
-                        text = element.find_element(By.CSS_SELECTOR, '.review-full-text').text
-                        rating = len(element.find_elements(By.CSS_SELECTOR, 'span[aria-label*="stars"]'))
-                        date_element = element.find_element(By.CSS_SELECTOR, 'span[class*="review-date"]')
-                        date_str = date_element.text
-                        
-                        review = {
-                            'text': text,
-                            'rating': rating,
-                            'date': date_str,
-                        }
-                        
-                        if review not in reviews:  # Avoid duplicates
-                            reviews.append(review)
-                            
-                    except Exception as e:
-                        print(f"Error extracting review: {str(e)}", file=sys.stderr)
-                        continue
-                
-                # Scroll to load more
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2)  # Wait for new reviews to load
-                
-            except TimeoutException:
-                break
-                
-        driver.quit()
-        return json.dumps({'success': True, 'reviews': reviews})
-        
-    except Exception as e:
-        return json.dumps({
-            'success': False,
-            'error': str(e)
-        })
-
-# Get place_id from command line arguments
-result = scrape_google_reviews("${placeId}")
-print(result)
-        `,
-      ],
+    // Launch browser
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
-    const { stdout, stderr } = await command.output();
-    const output = new TextDecoder().decode(stdout);
-    const errors = new TextDecoder().decode(stderr);
+    try {
+      const page = await browser.newPage();
+      
+      // Navigate to Google Reviews page
+      const url = `https://search.google.com/local/reviews?placeid=${placeId}`;
+      await page.goto(url, { waitUntil: 'networkidle0' });
 
-    if (errors) {
-      console.error('Python script errors:', errors);
-    }
+      // Wait for reviews to load
+      await page.waitForSelector('div[data-review-id]', { timeout: 10000 });
 
-    // Parse the Python script output
-    const result = JSON.parse(output);
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to scrape reviews');
-    }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Transform and store the reviews
-    const complaints = result.reviews.map((review: any) => ({
-      project_id: projectId,
-      complaint_text: review.text || '',
-      source_url: `https://search.google.com/local/reviews?placeid=${placeId}`,
-      theme: 'Google Review',
-      trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
-      created_at: new Date().toISOString() // You might want to parse review.date if available
-    }));
-
-    // Store reviews in the database
-    const { error: insertError } = await supabase
-      .from('complaints')
-      .upsert(complaints);
-
-    if (insertError) {
-      console.error('Error storing reviews:', insertError);
-      throw insertError;
-    }
-
-    console.log(`Successfully stored ${complaints.length} reviews`);
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        reviewsCount: complaints.length,
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      // Scroll to load more reviews (3 times)
+      for (let i = 0; i < 3; i++) {
+        await page.evaluate(() => {
+          window.scrollTo(0, document.body.scrollHeight);
+        });
+        await page.waitForTimeout(2000);
       }
-    );
+
+      // Extract reviews
+      const reviews = await page.evaluate(() => {
+        const reviewElements = document.querySelectorAll('div[data-review-id]');
+        return Array.from(reviewElements).map(element => {
+          const textElement = element.querySelector('.review-full-text');
+          const ratingElement = element.querySelector('span[aria-label*="stars"]');
+          const dateElement = element.querySelector('span[class*="review-date"]');
+
+          return {
+            text: textElement ? textElement.textContent : '',
+            rating: ratingElement ? parseInt(ratingElement.getAttribute('aria-label')?.split(' ')[0] || '0') : 0,
+            date: dateElement ? dateElement.textContent : ''
+          };
+        });
+      });
+
+      // Initialize Supabase client
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Supabase configuration missing');
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Transform and store the reviews
+      const complaints = reviews.map(review => ({
+        project_id: projectId,
+        complaint_text: review.text || '',
+        source_url: url,
+        theme: 'Google Review',
+        trend: review.rating >= 4 ? 'Positive' : review.rating <= 2 ? 'Negative' : 'Neutral',
+        created_at: new Date().toISOString()
+      }));
+
+      // Store reviews in the database
+      if (complaints.length > 0) {
+        const { error: insertError } = await supabase
+          .from('complaints')
+          .upsert(complaints);
+
+        if (insertError) {
+          console.error('Error storing reviews:', insertError);
+          throw insertError;
+        }
+      }
+
+      console.log(`Successfully stored ${complaints.length} reviews`);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          reviewsCount: complaints.length,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } finally {
+      await browser.close();
+    }
 
   } catch (error) {
     console.error('Error in google-reviews-scraper function:', error);
