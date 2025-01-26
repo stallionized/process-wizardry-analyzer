@@ -69,28 +69,7 @@ button:hover,
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Hero Get Started Button */
-.btn-grad {
-  background-image: linear-gradient(to right, #314755 0%, #26a0da 51%, #314755 100%);
-  margin: 10px;
-  padding: 15px 45px;
-  text-align: center;
-  text-transform: uppercase;
-  transition: 0.5s;
-  background-size: 200% auto;
-  color: white;            
-  box-shadow: 0 0 20px #eee;
-  border-radius: 10px;
-  display: block;
-}
-
-.btn-grad:hover {
-  background-position: right center;
-  color: #fff;
-  text-decoration: none;
-}
-
-/* Keep other gradient button styles for non-hero buttons */
+/* Gradient Button Styles */
 .gradient-button {
   background: linear-gradient(135deg, #33C3F0 0%, #0EA5E9 100%);
   transition: all 0.3s ease;
