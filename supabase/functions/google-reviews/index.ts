@@ -25,18 +25,20 @@ serve(async (req) => {
 
     console.log(`Fetching reviews for place ID: ${placeId}`);
 
-    // Use the new Places API endpoint
+    // Use the Places API with proper headers
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews&key=${GOOGLE_API_KEY}`,
       {
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
       }
     );
 
     if (!response.ok) {
-      console.error('Google Places API response:', await response.text());
+      const errorText = await response.text();
+      console.error('Google Places API response:', errorText);
       throw new Error(`Google Places API error: ${response.statusText}`);
     }
 
@@ -46,8 +48,13 @@ serve(async (req) => {
       console.error('Google Places API error:', data.error_message || data.status);
       throw new Error(`Google Places API error: ${data.error_message || data.status}`);
     }
+
+    if (data.status !== 'OK') {
+      console.error('Google Places API returned non-OK status:', data.status);
+      throw new Error(`Google Places API error: ${data.status}`);
+    }
     
-    console.log('Received reviews from Google Places API');
+    console.log('Received reviews from Google Places API:', data);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
