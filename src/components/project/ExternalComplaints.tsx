@@ -48,7 +48,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
   });
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 50; // Increased from 20 to 50 reviews per page
 
   // Fetch URLs
   const { data: scrapingUrls, isLoading: isLoadingUrls } = useQuery({
@@ -161,22 +161,30 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
     queryKey: ['complaints', projectId, page],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
-      const end = start + pageSize;
+      const end = start + pageSize - 1;
+
+      console.log(`Fetching complaints from ${start} to ${end}`);
 
       const { data, error, count } = await supabase
         .from('complaints')
         .select('*', { count: 'exact' })
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
-        .range(start, end - 1);
+        .range(start, end);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching complaints:', error);
+        throw error;
+      }
 
+      console.log(`Retrieved ${data?.length} complaints, total count: ${count}`);
+      
       return {
         complaints: data || [],
         totalCount: count || 0
       };
-    }
+    },
+    keepPreviousData: true // Keep previous data while fetching new data
   });
 
   const totalPages = complaintsData ? Math.ceil(complaintsData.totalCount / pageSize) : 0;
@@ -329,7 +337,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
             hasExistingComplaints ? (
               <Button 
                 variant="outline" 
-                onClick={handleRefresh}
+                onClick={handleRetrieve}
                 disabled={isRefreshing}
               >
                 {isRefreshing ? 'Refreshing...' : 'Refresh Reviews'}
@@ -348,7 +356,9 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
       </div>
       
       <div>
-        <h3 className="text-lg font-medium mb-2">Complaints ({complaints.length})</h3>
+        <h3 className="text-lg font-medium mb-2">
+          Complaints ({complaintsData?.totalCount || 0})
+        </h3>
       </div>
 
       <ScrollArea className="h-[500px] rounded-md border">
@@ -370,10 +380,12 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
           ) : (
             <>
               {complaints.map((complaint, index) => (
-                <div key={index} className="p-4 rounded-lg bg-muted/50">
+                <div key={complaint.id} className="p-4 rounded-lg bg-muted/50">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-sm font-medium">{complaint.theme}</span>
-                    <span className="text-sm text-muted-foreground">{formatDate(complaint.created_at)}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(complaint.created_at)}
+                    </span>
                   </div>
                   <p className="text-sm mb-2">{complaint.complaint_text}</p>
                   <a 
@@ -387,7 +399,6 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                 </div>
               ))}
               
-              {/* Pagination controls */}
               {totalPages > 1 && (
                 <div className="flex justify-center gap-2 pt-4">
                   <Button
@@ -398,7 +409,7 @@ const ExternalComplaints: React.FC<ExternalComplaintsProps> = ({ projectId }) =>
                     Previous
                   </Button>
                   <span className="flex items-center px-4">
-                    Page {page} of {totalPages}
+                    Page {page} of {totalPages} ({complaintsData?.totalCount} total reviews)
                   </span>
                   <Button
                     variant="outline"
