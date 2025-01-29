@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useSupabaseClient, useSessionContext } from '@supabase/auth-helpers-react';
 import { LogOut, Menu, LogIn, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -44,26 +44,10 @@ const NavLink = ({ to, children, onClick }: { to: string; children: React.ReactN
 
 const Layout = ({ children }: LayoutProps) => {
   const supabase = useSupabaseClient();
+  const { session } = useSessionContext();
   const isMobile = useIsMobile();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [session, setSession] = useState<any>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase.auth]);
 
   const handleSignOut = async () => {
     try {
