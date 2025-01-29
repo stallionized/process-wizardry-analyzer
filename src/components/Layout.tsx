@@ -62,17 +62,9 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const Navigation = () => {
-    // If we're on the landing page, always show the non-authenticated navigation
     if (isLandingPage) {
       return (
-        <>
-          <Button
-            variant="ghost"
-            className="text-white hover:text-white hover:bg-primary/20 gap-2"
-            onClick={() => window.location.href = '#book-demo'}
-          >
-            Book Demo
-          </Button>
+        <div className="flex items-center space-x-4">
           <Link to="/auth">
             <Button
               variant="ghost"
@@ -82,11 +74,10 @@ const Layout = ({ children }: LayoutProps) => {
               Login
             </Button>
           </Link>
-        </>
+        </div>
       );
     }
 
-    // For all other pages, show navigation based on authentication status
     return (
       <>
         {session ? (
@@ -145,7 +136,9 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 left-0 right-0 z-50 border-0 bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60">
+      <nav className={`fixed top-0 left-0 right-0 z-50 border-0 ${
+        isLandingPage ? 'bg-black' : 'bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60'
+      }`}>
         <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
@@ -164,7 +157,7 @@ const Layout = ({ children }: LayoutProps) => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[240px] sm:w-[280px]">
+              <SheetContent side="left" className="w-[240px] sm:w-[280px] bg-black border-white/10">
                 <div className="flex flex-col space-y-4 mt-8">
                   <Navigation />
                 </div>

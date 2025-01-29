@@ -27,7 +27,7 @@ const BenefitCard = ({ icon: Icon, title, description, index }: {
     }}
     viewport={{ once: true, margin: "-100px" }}
   >
-    <Card className="bg-black/[0.96] p-6 flex flex-col items-center text-center space-y-4 hover:scale-105 transition-transform duration-300">
+    <Card className="bg-black/[0.96] p-6 flex flex-col items-center text-center space-y-4 hover:scale-105 transition-transform duration-300 border-white/10">
       <Icon className="w-8 h-8 text-blue-400" />
       <h3 className="text-xl font-semibold text-white">{title}</h3>
       <p className="text-neutral-300 text-sm">{description}</p>
@@ -74,38 +74,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
-      <nav className={`fixed top-0 left-0 right-0 z-50 px-6 h-16 flex items-center justify-between transition-colors duration-300 ${
-        isScrolled ? 'bg-black/70 backdrop-blur-sm' : 'bg-black'
-      }`}>
-        <div>
-          <img 
-            src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
-            alt="ProcessAI Logo" 
-            className="h-8 w-auto"
-          />
-        </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            className="text-white hover:text-white/80"
-            onClick={() => {
-              const demoSection = document.getElementById('book-demo');
-              demoSection?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Book Demo
-          </Button>
-          <Button
-            variant="ghost"
-            className="text-white hover:text-white/80"
-            onClick={() => navigate('/auth')}
-          >
-            <LogIn className="mr-2 h-4 w-4" />
-            Sign In
-          </Button>
-        </div>
-      </nav>
-
       <div className="container mx-auto px-4 pt-24">
         <div>
           <SplineSceneBasic />
