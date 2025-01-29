@@ -29,7 +29,7 @@ function App() {
           <Route path="/recycle-bin" element={<RecycleBin />} />
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/blogs/new" element={<BlogManagement />} />
-          <Route path="/blogs/:id/edit" element={<BlogManagement />} />
+          <Route path="/blogs/edit/:id" element={<BlogManagement />} />
         </Route>
       </Routes>
       <Toaster />
