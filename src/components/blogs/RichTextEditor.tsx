@@ -107,7 +107,10 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           <Redo className="h-4 w-4" />
         </Button>
       </div>
-      <EditorContent editor={editor} className="prose max-w-none p-4" />
+      <EditorContent 
+        editor={editor} 
+        className="prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none"
+      />
     </div>
   );
 };
