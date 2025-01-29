@@ -116,7 +116,15 @@ export default function BlogManagement() {
   return (
     <div className="container mx-auto py-8 max-w-4xl">
       <Card className="p-6">
-        <h1 className="text-3xl font-bold mb-6">Create New Blog Post</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Create New Blog Post</h1>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/blogs')}
+          >
+            Cancel
+          </Button>
+        </div>
         
         <form className="space-y-6">
           <div>
