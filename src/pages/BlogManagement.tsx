@@ -33,7 +33,7 @@ export default function BlogManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   
-  const { register, handleSubmit, setValue, watch, reset } = useForm<BlogForm>();
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
   const { data: blog, isLoading: isBlogLoading, error: blogError } = useQuery({
     queryKey: ['blog', id],
@@ -53,43 +53,14 @@ export default function BlogManagement() {
 
   useEffect(() => {
     if (blog) {
-      reset({
-        title: blog.title,
-        content: blog.content,
-        topic: '',
-      });
+      setValue('title', blog.title);
+      setValue('content', blog.content);
+      setValue('topic', '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
     }
-  }, [blog, reset]);
-
-  if (isBlogLoading) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card className="p-6">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (blogError) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card className="p-6">
-          <h1 className="text-2xl font-bold text-red-600">Error Loading Blog</h1>
-          <p className="text-gray-600">Please try again later.</p>
-        </Card>
-      </div>
-    );
-  }
+  }, [blog, setValue]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,6 +71,15 @@ export default function BlogManagement() {
   };
 
   const generateContent = async (topic: string) => {
+    if (!topic) {
+      toast({
+        title: "Topic required",
+        description: "Please enter a topic to generate content.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-blog-content', {
@@ -124,7 +104,14 @@ export default function BlogManagement() {
   };
 
   const onSubmit = async (data: BlogForm, status: 'draft' | 'published') => {
-    if (!session?.user.id) return;
+    if (!session?.user.id) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to publish blogs.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -179,16 +166,44 @@ export default function BlogManagement() {
       });
 
       navigate('/blogs');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error saving blog:', error);
       toast({
         title: "Error saving blog",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isBlogLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (blogError) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="p-6">
+          <h1 className="text-2xl font-bold text-red-600">Error Loading Blog</h1>
+          <p className="text-gray-600">Please try again later.</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 max-w-4xl">
@@ -203,7 +218,7 @@ export default function BlogManagement() {
           </Button>
         </div>
         
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit((data) => onSubmit(data, 'published'))}>
           <div>
             <Label htmlFor="title">Blog Title</Label>
             <Input
@@ -211,6 +226,9 @@ export default function BlogManagement() {
               placeholder="Enter blog title"
               {...register('title', { required: true })}
             />
+            {errors.title && (
+              <p className="text-sm text-red-500 mt-1">Title is required</p>
+            )}
           </div>
 
           <div>
@@ -261,6 +279,9 @@ export default function BlogManagement() {
               {...register('content', { required: true })}
               className="font-mono"
             />
+            {errors.content && (
+              <p className="text-sm text-red-500 mt-1">Content is required</p>
+            )}
           </div>
 
           <div className="flex gap-4">
@@ -273,8 +294,7 @@ export default function BlogManagement() {
               Save as Draft
             </Button>
             <Button
-              type="button"
-              onClick={() => onSubmit(watch(), 'published')}
+              type="submit"
               disabled={isLoading}
             >
               Publish Blog
