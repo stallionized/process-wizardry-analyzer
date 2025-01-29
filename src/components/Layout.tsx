@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useSupabaseClient, useSessionContext } from '@supabase/auth-helpers-react';
-import { LogOut, Menu, LogIn } from 'lucide-react';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { LogOut, Menu, LogIn, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -44,14 +44,32 @@ const NavLink = ({ to, children, onClick }: { to: string; children: React.ReactN
 
 const Layout = ({ children }: LayoutProps) => {
   const supabase = useSupabaseClient();
-  const { session } = useSessionContext();
   const isMobile = useIsMobile();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       toast.success('Signed out successfully');
+      navigate('/');
     } catch (error) {
       toast.error('Error signing out');
     }
@@ -64,7 +82,10 @@ const Layout = ({ children }: LayoutProps) => {
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">Admin</NavigationMenuTrigger>
+                <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">
+                  <User className="h-4 w-4 mr-2" />
+                  Admin
+                </NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
                   <div className="w-48">
                     <NavLink to="/dashboard" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
@@ -130,7 +151,7 @@ const Layout = ({ children }: LayoutProps) => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-primary border-primary">
+              <SheetContent side="left" className="w-[240px] sm:w-[280px]">
                 <div className="flex flex-col space-y-4 mt-8">
                   <Navigation />
                 </div>
