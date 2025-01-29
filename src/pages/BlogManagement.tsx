@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface BlogForm {
   title: string;
@@ -18,13 +19,45 @@ interface BlogForm {
 }
 
 export default function BlogManagement() {
+  const { id } = useParams();
   const { session } = useSessionContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   
-  const { register, handleSubmit, setValue, watch } = useForm<BlogForm>();
+  const { register, handleSubmit, setValue, watch, reset } = useForm<BlogForm>();
+
+  // Fetch blog data if editing
+  const { data: blog } = useQuery({
+    queryKey: ['blog', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Set form values when blog data is loaded
+  useEffect(() => {
+    if (blog) {
+      reset({
+        title: blog.title,
+        content: blog.content,
+        topic: '',
+      });
+      if (blog.hero_image_url) {
+        setPreviewUrl(blog.hero_image_url);
+      }
+    }
+  }, [blog, reset]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,9 +96,9 @@ export default function BlogManagement() {
     
     setIsLoading(true);
     try {
-      let heroImageUrl = "";
+      let heroImageUrl = previewUrl;
       
-      if (data.heroImage[0]) {
+      if (data.heroImage?.[0]) {
         const file = data.heroImage[0];
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
@@ -84,15 +117,23 @@ export default function BlogManagement() {
         heroImageUrl = publicUrl;
       }
 
-      const { error } = await supabase
-        .from('blogs')
-        .insert({
-          title: data.title,
-          content: data.content,
-          hero_image_url: heroImageUrl,
-          status,
-          author_id: session.user.id
-        });
+      const blogData = {
+        title: data.title,
+        content: data.content,
+        hero_image_url: heroImageUrl,
+        status,
+        author_id: session.user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = id
+        ? await supabase
+            .from('blogs')
+            .update(blogData)
+            .eq('id', id)
+        : await supabase
+            .from('blogs')
+            .insert(blogData);
 
       if (error) throw error;
 
@@ -117,7 +158,7 @@ export default function BlogManagement() {
     <div className="container mx-auto py-8 max-w-4xl">
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Create New Blog Post</h1>
+          <h1 className="text-3xl font-bold">{id ? 'Edit Blog Post' : 'Create New Blog Post'}</h1>
           <Button
             variant="outline"
             onClick={() => navigate('/blogs')}
