@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -47,9 +47,20 @@ const Layout = ({ children }: LayoutProps) => {
   const { session } = useSessionContext();
   const isMobile = useIsMobile();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -134,9 +145,16 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className={cn("min-h-screen", isLandingPage ? "bg-black" : "bg-background")}>
-      <nav className={`fixed top-0 left-0 right-0 z-50 border-0 ${
-        isLandingPage ? 'bg-black' : 'bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60'
-      }`}>
+      <nav 
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 border-0 transition-colors duration-300",
+          isLandingPage 
+            ? isScrolled 
+              ? "bg-transparent backdrop-blur-sm" 
+              : "bg-[#0A192F]"
+            : "bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60"
+        )}
+      >
         <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
