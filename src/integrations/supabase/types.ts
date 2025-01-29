@@ -62,6 +62,39 @@ export type Database = {
           },
         ]
       }
+      blogs: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          hero_image_url: string | null
+          id: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_users: {
         Row: {
           client_id: string

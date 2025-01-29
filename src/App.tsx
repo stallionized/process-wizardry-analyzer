@@ -14,6 +14,7 @@ import Client from "./pages/Client";
 import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
 import ClientManagement from "./pages/ClientManagement";
+import BlogManagement from "./pages/BlogManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,11 @@ const App = () => (
               <Route path="/clients" element={
                 <ProtectedRoute>
                   <ClientManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/blogs/new" element={
+                <ProtectedRoute>
+                  <BlogManagement />
                 </ProtectedRoute>
               } />
             </Route>
