@@ -15,6 +15,7 @@ import RichTextEditor from "@/components/blogs/RichTextEditor";
 interface BlogForm {
   title: string;
   topic: string;
+  seoKeywords: string;
   content: string;
   heroImage: FileList;
 }
@@ -78,7 +79,10 @@ export default function BlogManagement() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-blog-content', {
-        body: { topic }
+        body: { 
+          topic,
+          seoKeywords: watch('seoKeywords')
+        }
       });
 
       if (error) throw error;
@@ -252,6 +256,16 @@ export default function BlogManagement() {
                 Generate Content
               </Button>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="seoKeywords">SEO Keywords to Include</Label>
+            <Textarea
+              id="seoKeywords"
+              placeholder="Enter SEO keywords separated by commas (optional)"
+              className="resize-y"
+              {...register('seoKeywords')}
+            />
           </div>
 
           <div>

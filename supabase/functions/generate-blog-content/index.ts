@@ -11,7 +11,26 @@ serve(async (req) => {
   }
 
   try {
-    const { topic } = await req.json()
+    const { topic, seoKeywords } = await req.json()
+
+    const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
+    Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
+    
+    Guidelines:
+    - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
+    - Write engaging, detailed content under each section
+    - Naturally incorporate SEO keywords when provided
+    - Use proper formatting for emphasis (bold for important points)
+    - Ensure content is factual and well-researched
+    - Aim for a professional yet conversational tone
+    - Include a compelling introduction and conclusion
+    - Break up text into readable paragraphs
+    - Remove any unnecessary special characters`
+
+    const userPrompt = seoKeywords 
+      ? `Write a comprehensive blog post about: ${topic}
+         Please naturally incorporate these SEO keywords throughout the content: ${seoKeywords}`
+      : `Write a comprehensive blog post about: ${topic}`
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -20,17 +39,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert blog writer focused on creating SEO-friendly, engaging content.'
+            content: systemPrompt
           },
           {
             role: 'user',
-            content: `Create a robust blog that is SEO friendly about the following topic: ${topic}. Include proper headings, subheadings, and a compelling introduction.`
+            content: userPrompt
           }
         ],
+        temperature: 0.7,
       }),
     })
 
