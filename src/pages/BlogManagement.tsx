@@ -18,13 +18,6 @@ interface BlogForm {
   heroImage: FileList;
 }
 
-const createSlug = (title: string) => {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
-};
-
 export default function BlogManagement() {
   const { id } = useParams();
   const { session } = useSessionContext();
@@ -136,7 +129,6 @@ export default function BlogManagement() {
         heroImageUrl = publicUrl;
       }
 
-      const slug = createSlug(data.title);
       const blogData = {
         title: data.title,
         content: data.content,
@@ -144,7 +136,6 @@ export default function BlogManagement() {
         status,
         author_id: session.user.id,
         updated_at: new Date().toISOString(),
-        slug,
       };
 
       const { error } = id
@@ -161,7 +152,7 @@ export default function BlogManagement() {
       toast({
         title: `Blog ${status === 'published' ? 'published' : 'saved'} successfully`,
         description: status === 'published' 
-          ? `Your blog has been published and is now available at /blog/${slug}`
+          ? "Your blog has been published and is now available."
           : "Your blog has been saved as draft.",
       });
 
