@@ -66,6 +66,7 @@ const Layout = () => {
                     <NavLink to="/dashboard" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
                     <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
                     <NavLink to="/clients" onClick={() => isMobile && setIsMenuVisible(false)}>Client Management</NavLink>
+                    <NavLink to="/blogs/new" onClick={() => isMobile && setIsMenuVisible(false)}>Blog Management</NavLink>
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
