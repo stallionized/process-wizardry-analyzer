@@ -48,6 +48,8 @@ const Layout = ({ children }: LayoutProps) => {
   const isMobile = useIsMobile();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
 
   const handleSignOut = async () => {
     try {
@@ -59,39 +61,10 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
-  const Navigation = () => (
-    <>
-      {session ? (
-        <>
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">
-                  <User className="h-4 w-4 mr-2" />
-                  Admin
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
-                  <div className="w-48">
-                    <NavLink to="/dashboard" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
-                    <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
-                    <NavLink to="/clients" onClick={() => isMobile && setIsMenuVisible(false)}>Client Management</NavLink>
-                    <NavLink to="/blogs" onClick={() => isMobile && setIsMenuVisible(false)}>Blog Management</NavLink>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-          <NavLink to="/client" onClick={() => isMobile && setIsMenuVisible(false)}>Client Portal</NavLink>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            className="ml-2 text-white hover:text-white hover:bg-primary/20"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </>
-      ) : (
+  const Navigation = () => {
+    // If we're on the landing page, always show the non-authenticated navigation
+    if (isLandingPage) {
+      return (
         <>
           <Button
             variant="ghost"
@@ -110,9 +83,65 @@ const Layout = ({ children }: LayoutProps) => {
             </Button>
           </Link>
         </>
-      )}
-    </>
-  );
+      );
+    }
+
+    // For all other pages, show navigation based on authentication status
+    return (
+      <>
+        {session ? (
+          <>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-white hover:text-white hover:bg-primary/20">
+                    <User className="h-4 w-4 mr-2" />
+                    Admin
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
+                    <div className="w-48">
+                      <NavLink to="/dashboard" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
+                      <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
+                      <NavLink to="/clients" onClick={() => isMobile && setIsMenuVisible(false)}>Client Management</NavLink>
+                      <NavLink to="/blogs" onClick={() => isMobile && setIsMenuVisible(false)}>Blog Management</NavLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+            <NavLink to="/client" onClick={() => isMobile && setIsMenuVisible(false)}>Client Portal</NavLink>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              className="ml-2 text-white hover:text-white hover:bg-primary/20"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              className="text-white hover:text-white hover:bg-primary/20 gap-2"
+              onClick={() => window.location.href = '#book-demo'}
+            >
+              Book Demo
+            </Button>
+            <Link to="/auth">
+              <Button
+                variant="ghost"
+                className="text-white hover:text-white hover:bg-primary/20 gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            </Link>
+          </>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
