@@ -35,8 +35,7 @@ export default function BlogManagement() {
   
   const { register, handleSubmit, setValue, watch, reset } = useForm<BlogForm>();
 
-  // Fetch blog data if editing
-  const { data: blog } = useQuery({
+  const { data: blog, isLoading: isBlogLoading, error: blogError } = useQuery({
     queryKey: ['blog', id],
     queryFn: async () => {
       if (!id) return null;
@@ -52,7 +51,6 @@ export default function BlogManagement() {
     enabled: !!id,
   });
 
-  // Set form values when blog data is loaded
   useEffect(() => {
     if (blog) {
       reset({
@@ -65,6 +63,33 @@ export default function BlogManagement() {
       }
     }
   }, [blog, reset]);
+
+  if (isBlogLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (blogError) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="p-6">
+          <h1 className="text-2xl font-bold text-red-600">Error Loading Blog</h1>
+          <p className="text-gray-600">Please try again later.</p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
