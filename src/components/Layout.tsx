@@ -65,10 +65,17 @@ const Layout = ({ children }: LayoutProps) => {
     if (isLandingPage) {
       return (
         <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            className="text-white hover:text-white hover:bg-black/20"
+            onClick={() => window.location.href = '#book-demo'}
+          >
+            Book Demo
+          </Button>
           <Link to="/auth">
             <Button
               variant="ghost"
-              className="text-white hover:text-white hover:bg-primary/20 gap-2"
+              className="text-white hover:text-white hover:bg-black/20 gap-2"
             >
               <LogIn className="h-4 w-4" />
               Login
@@ -111,31 +118,22 @@ const Layout = ({ children }: LayoutProps) => {
             </Button>
           </>
         ) : (
-          <>
+          <Link to="/auth">
             <Button
               variant="ghost"
               className="text-white hover:text-white hover:bg-primary/20 gap-2"
-              onClick={() => window.location.href = '#book-demo'}
             >
-              Book Demo
+              <LogIn className="h-4 w-4" />
+              Login
             </Button>
-            <Link to="/auth">
-              <Button
-                variant="ghost"
-                className="text-white hover:text-white hover:bg-primary/20 gap-2"
-              >
-                <LogIn className="h-4 w-4" />
-                Login
-              </Button>
-            </Link>
-          </>
+          </Link>
         )}
       </>
     );
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen", isLandingPage ? "bg-black" : "bg-background")}>
       <nav className={`fixed top-0 left-0 right-0 z-50 border-0 ${
         isLandingPage ? 'bg-black' : 'bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60'
       }`}>

@@ -1,9 +1,7 @@
 import { SplineSceneBasic } from "@/components/demo/code.demo";
-import { ChartBarIcon, Cog, LogIn, RocketIcon, ShieldCheck } from "lucide-react";
+import { ChartBarIcon, Cog, RocketIcon, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 
@@ -36,19 +34,6 @@ const BenefitCard = ({ icon: Icon, title, description, index }: {
 );
 
 export default function Landing() {
-  const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 0);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const benefits = [
     {
       icon: ChartBarIcon,
@@ -73,7 +58,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#1A1F2C] text-white">
+    <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 pt-24">
         <div>
           <SplineSceneBasic />
@@ -105,7 +90,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="bg-[#221F26] py-8">
+      <footer className="bg-[#000000] py-8">
         <div className="container mx-auto px-4 text-center text-gray-300">
           <p>© 2024 AI Process Engineer. All rights reserved.</p>
         </div>
