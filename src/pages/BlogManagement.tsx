@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import RichTextEditor from "@/components/blogs/RichTextEditor";
@@ -236,15 +237,17 @@ export default function BlogManagement() {
           <div>
             <Label htmlFor="topic">Blog Topic</Label>
             <div className="flex gap-2">
-              <Input
+              <Textarea
                 id="topic"
                 placeholder="Enter blog topic for AI generation"
+                className="min-h-[100px] resize-y"
                 {...register('topic')}
               />
               <Button
                 type="button"
                 onClick={() => generateContent(watch('topic'))}
                 disabled={isLoading}
+                className="h-fit"
               >
                 Generate Content
               </Button>
