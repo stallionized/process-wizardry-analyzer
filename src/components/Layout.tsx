@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSupabaseClient, useSessionContext } from '@supabase/auth-helpers-react';
@@ -18,6 +18,10 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
 
 const NavLink = ({ to, children, onClick }: { to: string; children: React.ReactNode; onClick?: () => void }) => {
   const location = useLocation();
@@ -38,7 +42,7 @@ const NavLink = ({ to, children, onClick }: { to: string; children: React.ReactN
   );
 };
 
-const Layout = () => {
+const Layout = ({ children }: LayoutProps) => {
   const supabase = useSupabaseClient();
   const { session } = useSessionContext();
   const isMobile = useIsMobile();
@@ -142,7 +146,7 @@ const Layout = () => {
       <div className="flex pt-16 md:pt-24">
         <main className="flex-1 min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-6rem)] px-4 md:px-8">
           <div className="max-w-[2000px] mx-auto">
-            <Outlet />
+            {children}
           </div>
         </main>
       </div>
