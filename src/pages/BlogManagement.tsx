@@ -5,11 +5,11 @@ import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import RichTextEditor from "@/components/blogs/RichTextEditor";
 
 interface BlogForm {
   title: string;
@@ -25,10 +25,11 @@ export default function BlogManagement() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [content, setContent] = useState("");
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
-  const { data: blog, isLoading: isBlogLoading, error: blogError } = useQuery({
+  const { data: blog, isLoading: isBlogLoading } = useQuery({
     queryKey: ['blog', id],
     queryFn: async () => {
       if (!id) return null;
@@ -47,7 +48,7 @@ export default function BlogManagement() {
   useEffect(() => {
     if (blog) {
       setValue('title', blog.title);
-      setValue('content', blog.content);
+      setContent(blog.content);
       setValue('topic', '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
@@ -80,7 +81,7 @@ export default function BlogManagement() {
       });
 
       if (error) throw error;
-      setValue('content', data.content);
+      setContent(data.content);
       toast({
         title: "Content generated successfully",
         description: "You can now edit the generated content.",
@@ -131,7 +132,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content: data.content,
+        content,
         hero_image_url: heroImageUrl,
         status,
         author_id: session.user.id,
@@ -180,17 +181,6 @@ export default function BlogManagement() {
               <div className="h-4 bg-gray-200 rounded w-1/2"></div>
             </div>
           </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (blogError) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card className="p-6">
-          <h1 className="text-2xl font-bold text-red-600">Error Loading Blog</h1>
-          <p className="text-gray-600">Please try again later.</p>
         </Card>
       </div>
     );
@@ -263,16 +253,10 @@ export default function BlogManagement() {
 
           <div>
             <Label htmlFor="content">Blog Content</Label>
-            <Textarea
-              id="content"
-              rows={15}
-              placeholder="Blog content will appear here after generation, or write your own"
-              {...register('content', { required: true })}
-              className="font-mono"
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
             />
-            {errors.content && (
-              <p className="text-sm text-red-500 mt-1">Content is required</p>
-            )}
           </div>
 
           <div className="flex gap-4">
