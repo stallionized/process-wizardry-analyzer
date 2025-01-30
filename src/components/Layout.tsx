@@ -51,6 +51,7 @@ const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
+  const isAuthPage = location.pathname === '/auth';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,25 +74,29 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const Navigation = () => {
-    if (isLandingPage) {
+    if (isLandingPage || isAuthPage) {
       return (
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            className="text-white hover:text-white hover:bg-black/20"
-            onClick={() => window.location.href = '#book-demo'}
-          >
-            Book Demo
-          </Button>
-          <Link to="/auth">
-            <Button
-              variant="ghost"
-              className="text-white hover:text-white hover:bg-black/20 gap-2"
-            >
-              <LogIn className="h-4 w-4" />
-              Login
-            </Button>
-          </Link>
+          {!isAuthPage && (
+            <>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-white hover:bg-black/20"
+                onClick={() => window.location.href = '#book-demo'}
+              >
+                Book Demo
+              </Button>
+              <Link to="/auth">
+                <Button
+                  variant="ghost"
+                  className="text-white hover:text-white hover:bg-black/20 gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       );
     }
@@ -144,11 +149,14 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className={cn("min-h-screen", isLandingPage ? "bg-black" : "bg-background")}>
+    <div className={cn(
+      "min-h-screen",
+      isLandingPage ? "bg-black" : isAuthPage ? "bg-background" : "bg-background"
+    )}>
       <nav 
         className={cn(
           "fixed top-0 left-0 right-0 z-50 border-0 transition-colors duration-300",
-          isLandingPage 
+          isLandingPage || isAuthPage
             ? isScrolled 
               ? "bg-transparent backdrop-blur-sm" 
               : "bg-[#0A192F]"
