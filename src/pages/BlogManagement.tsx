@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import RichTextEditor from "@/components/blogs/RichTextEditor";
@@ -17,7 +18,9 @@ interface BlogForm {
   topic: string;
   seoKeywords: string;
   content: string;
+  summary: string;
   heroImage: FileList;
+  featured: boolean;
 }
 
 export default function BlogManagement() {
@@ -50,8 +53,9 @@ export default function BlogManagement() {
   useEffect(() => {
     if (blog) {
       setValue('title', blog.title);
+      setValue('summary', blog.summary || '');
+      setValue('featured', blog.featured || false);
       setContent(blog.content);
-      setValue('topic', '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
@@ -87,6 +91,7 @@ export default function BlogManagement() {
 
       if (error) throw error;
       setContent(data.content);
+      setValue('summary', data.summary);
       toast({
         title: "Content generated successfully",
         description: "You can now edit the generated content.",
@@ -138,8 +143,10 @@ export default function BlogManagement() {
       const blogData = {
         title: data.title,
         content,
+        summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
+        featured: data.featured,
         author_id: session.user.id,
         updated_at: new Date().toISOString(),
       };
@@ -215,6 +222,27 @@ export default function BlogManagement() {
             {errors.title && (
               <p className="text-sm text-red-500 mt-1">Title is required</p>
             )}
+          </div>
+
+          <div>
+            <Label htmlFor="summary">Blog Summary</Label>
+            <Textarea
+              id="summary"
+              placeholder="Enter a brief summary of your blog post"
+              {...register('summary', { required: true })}
+              className="resize-y"
+            />
+            {errors.summary && (
+              <p className="text-sm text-red-500 mt-1">Summary is required</p>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="featured"
+              {...register('featured')}
+            />
+            <Label htmlFor="featured">Feature this blog post</Label>
           </div>
 
           <div>

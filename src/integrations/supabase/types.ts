@@ -68,10 +68,13 @@ export type Database = {
           author_id: string
           content: string
           created_at: string
+          display_order: number | null
+          featured: boolean | null
           hero_image_url: string | null
           id: string
           slug: string | null
           status: string | null
+          summary: string | null
           title: string
           updated_at: string
         }
@@ -80,10 +83,13 @@ export type Database = {
           author_id: string
           content: string
           created_at?: string
+          display_order?: number | null
+          featured?: boolean | null
           hero_image_url?: string | null
           id?: string
           slug?: string | null
           status?: string | null
+          summary?: string | null
           title: string
           updated_at?: string
         }
@@ -92,10 +98,13 @@ export type Database = {
           author_id?: string
           content?: string
           created_at?: string
+          display_order?: number | null
+          featured?: boolean | null
           hero_image_url?: string | null
           id?: string
           slug?: string | null
           status?: string | null
+          summary?: string | null
           title?: string
           updated_at?: string
         }

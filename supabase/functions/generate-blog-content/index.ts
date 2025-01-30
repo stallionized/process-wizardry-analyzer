@@ -15,6 +15,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
     Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
+    You will also provide a concise summary (max 2-3 sentences) that captures the essence of the blog post.
     
     Guidelines:
     - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
@@ -25,7 +26,8 @@ serve(async (req) => {
     - Aim for a professional yet conversational tone
     - Include a compelling introduction and conclusion
     - Break up text into readable paragraphs
-    - Remove any unnecessary special characters`
+    - Remove any unnecessary special characters
+    - Provide a brief, engaging summary that hooks readers`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -57,8 +59,13 @@ serve(async (req) => {
     const data = await response.json()
     const generatedContent = data.choices[0].message.content
 
+    // Split the content to separate the summary and main content
+    const contentParts = generatedContent.split('\n\n')
+    const summary = contentParts[0]
+    const content = contentParts.slice(1).join('\n\n')
+
     return new Response(
-      JSON.stringify({ content: generatedContent }),
+      JSON.stringify({ content, summary }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

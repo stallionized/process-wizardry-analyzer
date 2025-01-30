@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
+import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -69,6 +70,23 @@ export default function Landing() {
             {benefits.map((benefit, index) => (
               <BenefitCard key={index} {...benefit} index={index} />
             ))}
+          </div>
+        </div>
+
+        <div className="mt-20 mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="sticky top-24 h-fit">
+              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
+                Latest Insights
+              </h2>
+              <p className="text-neutral-300">
+                Discover our latest thoughts and innovations in process engineering,
+                data analysis, and continuous improvement methodologies.
+              </p>
+            </div>
+            <div className="min-h-[600px]">
+              <FeaturedBlogs />
+            </div>
           </div>
         </div>
 
