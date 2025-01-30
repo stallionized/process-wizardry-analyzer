@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import RichTextEditor from "@/components/blogs/RichTextEditor";
+import BlogEditor from "@/components/blogs/BlogEditor";
 
 interface BlogForm {
   title: string;
@@ -53,16 +53,14 @@ export default function BlogManagement() {
 
   useEffect(() => {
     if (blog) {
-      // Reset form with all blog data
       reset({
         title: blog.title || '',
-        topic: '', // Reset topic since it's for generation only
-        seoKeywords: '', // Reset keywords since they're for generation only
+        topic: '',
+        seoKeywords: '',
         content: blog.content || '',
         summary: blog.summary || '',
         featured: blog.featured || false,
       });
-      // Ensure content state is synchronized with blog content
       setContent(blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
@@ -327,7 +325,7 @@ export default function BlogManagement() {
                 </div>
               </div>
             ) : (
-              <RichTextEditor
+              <BlogEditor
                 content={content}
                 onChange={handleContentChange}
               />
