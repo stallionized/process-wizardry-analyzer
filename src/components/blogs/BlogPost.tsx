@@ -17,7 +17,10 @@ export default function BlogPost() {
         .eq('status', 'published')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching blog:', error);
+        throw error;
+      }
       return data;
     },
   });
