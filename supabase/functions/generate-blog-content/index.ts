@@ -16,9 +16,17 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
     Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
-    You will also provide a concise summary (max 3 sentences) that captures the essence of the blog post.
     
-    Guidelines:
+    First, provide a clear, concise 3-sentence summary of the blog post that captures its main points and value proposition.
+    Then, after two blank lines, write the full blog post.
+    
+    Guidelines for the summary:
+    - Exactly 3 sentences
+    - No special characters or formatting
+    - Focus on the key value proposition and main points
+    - Keep it engaging but straightforward
+    
+    Guidelines for the blog post:
     - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
     - Write engaging, detailed content under each section
     - Naturally incorporate SEO keywords when provided
@@ -26,11 +34,7 @@ serve(async (req) => {
     - Ensure content is factual and well-researched
     - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
-    - Break up text into readable paragraphs
-    - Remove any unnecessary special characters
-    - Provide a brief, engaging summary (max 3 sentences) that hooks readers
-
-    IMPORTANT: Start your response with a 3-sentence summary, followed by two blank lines, and then the main blog content.`
+    - Break up text into readable paragraphs`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -71,10 +75,10 @@ serve(async (req) => {
     const generatedContent = data.choices[0].message.content
     console.log('Generated content:', generatedContent);
 
-    // Split the content to separate the summary and main content
-    const contentParts = generatedContent.split('\n\n')
-    const summary = contentParts[0]
-    const content = contentParts.slice(1).join('\n\n')
+    // Split content into summary and main content
+    const parts = generatedContent.split('\n\n')
+    const summary = parts[0].replace(/[^\w\s.,!?]/g, '').trim() // Remove special characters
+    const content = parts.slice(2).join('\n\n') // Skip the two blank lines
 
     return new Response(
       JSON.stringify({ content, summary }),
