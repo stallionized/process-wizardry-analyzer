@@ -77,22 +77,19 @@ export default function BlogManagement() {
     enabled: !!id,
   });
 
+  // Use useEffect to update form values when blog data is loaded
   useEffect(() => {
     if (blog) {
       setValue('title', blog.title);
-      const aiContent = blog.ai_generated_content as AIGeneratedContent;
-      if (aiContent) {
-        setValue('topic', aiContent.topic || '');
-        setValue('seoKeywords', aiContent.seoKeywords || '');
+      if (blog.ai_generated_content) {
+        const aiContent = blog.ai_generated_content as AIGeneratedContent;
+        if (aiContent?.topic) setValue('topic', aiContent.topic);
+        if (aiContent?.seoKeywords) setValue('seoKeywords', aiContent.seoKeywords);
       }
-      setValue('summary', blog.summary || '');
+      if (blog.summary) setValue('summary', blog.summary);
       setValue('featured', blog.featured || false);
-      if (blog.content) {
-        setContent(blog.content);
-      }
-      if (blog.hero_image_url) {
-        setPreviewUrl(blog.hero_image_url);
-      }
+      if (blog.content) setContent(blog.content);
+      if (blog.hero_image_url) setPreviewUrl(blog.hero_image_url);
     }
   }, [blog, setValue]);
 
@@ -397,4 +394,3 @@ export default function BlogManagement() {
       </Card>
     </div>
   );
-}
