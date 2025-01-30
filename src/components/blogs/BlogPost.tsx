@@ -8,6 +8,24 @@ export default function BlogPost() {
   const { slug } = useParams();
   console.log('Current slug:', slug);
 
+  // First query to check blog status
+  const { data: blogStatus } = useQuery({
+    queryKey: ['blog-status', slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('status, archived_at')
+        .eq('slug', slug)
+        .maybeSingle();
+      
+      console.log('Blog status check:', data);
+      if (error) console.error('Error checking blog status:', error);
+      return data;
+    },
+    enabled: !!slug,
+  });
+
   const { data: blog, isLoading, error } = useQuery({
     queryKey: ['blog', slug],
     queryFn: async () => {
@@ -31,11 +49,16 @@ export default function BlogPost() {
 
       console.log('Blog data received:', data);
       if (!data) {
-        console.log('No blog found with slug:', slug);
+        if (blogStatus) {
+          console.log('Blog exists but may not be published. Status:', blogStatus.status);
+          console.log('Archived:', blogStatus.archived_at ? 'Yes' : 'No');
+        } else {
+          console.log('No blog found with slug:', slug);
+        }
       }
       return data;
     },
-    enabled: !!slug, // Only run query if slug exists
+    enabled: !!slug,
   });
 
   console.log('Component render - blog:', blog, 'isLoading:', isLoading, 'error:', error);
@@ -75,7 +98,11 @@ export default function BlogPost() {
       <div className="container mx-auto py-8">
         <Card className="p-6 bg-black/[0.96] border-white/10">
           <h1 className="text-2xl font-bold text-white">Blog post not found</h1>
-          <p className="text-neutral-300 mt-2">The blog post you're looking for doesn't exist or has been removed.</p>
+          <p className="text-neutral-300 mt-2">
+            {blogStatus ? 
+              "This blog post is not currently published." :
+              "The blog post you're looking for doesn't exist or has been removed."}
+          </p>
         </Card>
       </div>
     );
