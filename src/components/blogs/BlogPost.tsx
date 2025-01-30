@@ -8,10 +8,15 @@ export default function BlogPost() {
   const { slug } = useParams();
   console.log('Current slug:', slug);
 
-  const { data: blog, isLoading } = useQuery({
+  const { data: blog, isLoading, error } = useQuery({
     queryKey: ['blog', slug],
     queryFn: async () => {
       console.log('Fetching blog with slug:', slug);
+      if (!slug) {
+        console.error('No slug provided');
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
@@ -23,10 +28,17 @@ export default function BlogPost() {
         console.error('Error fetching blog:', error);
         throw error;
       }
+
       console.log('Blog data received:', data);
+      if (!data) {
+        console.log('No blog found with slug:', slug);
+      }
       return data;
     },
+    enabled: !!slug, // Only run query if slug exists
   });
+
+  console.log('Component render - blog:', blog, 'isLoading:', isLoading, 'error:', error);
 
   if (isLoading) {
     return (
@@ -41,6 +53,18 @@ export default function BlogPost() {
               <div className="h-4 bg-white/10 rounded w-4/6"></div>
             </div>
           </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Error in component:', error);
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="p-6 bg-black/[0.96] border-white/10">
+          <h1 className="text-2xl font-bold text-white">Error loading blog post</h1>
+          <p className="text-neutral-300 mt-2">There was an error loading the blog post. Please try again later.</p>
         </Card>
       </div>
     );
