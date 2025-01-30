@@ -82,20 +82,54 @@ export default function BlogManagement() {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-blog-content', {
+      const { data: generatedContent, error: generateError } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
           topic,
           seoKeywords: watch('seoKeywords')
         }
       });
 
-      if (error) throw error;
+      if (generateError) throw generateError;
       
-      if (data.content && data.summary) {
-        setContent(data.content);
-        setValue('summary', data.summary);
+      if (generatedContent.content && generatedContent.summary) {
+        // Save the AI-generated content to the database first
+        const aiContent = {
+          originalContent: generatedContent.content,
+          originalSummary: generatedContent.summary,
+          generatedAt: new Date().toISOString(),
+          topic,
+          seoKeywords: watch('seoKeywords')
+        };
+
+        const { error: saveError } = id
+          ? await supabase
+              .from('blogs')
+              .update({ 
+                content: generatedContent.content,
+                summary: generatedContent.summary,
+                ai_generated_content: aiContent,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', id)
+          : await supabase
+              .from('blogs')
+              .insert({
+                title: watch('title') || 'Untitled Blog',
+                content: generatedContent.content,
+                summary: generatedContent.summary,
+                ai_generated_content: aiContent,
+                status: 'draft',
+                author_id: session?.user.id
+              });
+
+        if (saveError) throw saveError;
+
+        // Update the form fields
+        setContent(generatedContent.content);
+        setValue('summary', generatedContent.summary);
+        
         toast({
-          title: "Content generated successfully",
+          title: "Content generated and saved",
           description: "You can now edit the generated content.",
         });
       } else {

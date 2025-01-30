@@ -64,6 +64,7 @@ export type Database = {
       }
       blogs: {
         Row: {
+          ai_generated_content: Json | null
           archived_at: string | null
           author_id: string
           content: string
@@ -79,6 +80,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_generated_content?: Json | null
           archived_at?: string | null
           author_id: string
           content: string
@@ -94,6 +96,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_generated_content?: Json | null
           archived_at?: string | null
           author_id?: string
           content?: string
