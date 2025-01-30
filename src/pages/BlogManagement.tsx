@@ -51,7 +51,15 @@ export default function BlogManagement() {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [content, setContent] = useState("");
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>({
+    defaultValues: {
+      title: "",
+      topic: "",
+      seoKeywords: "",
+      summary: "",
+      featured: false
+    }
+  });
 
   const { data: blog, isLoading: isBlogLoading } = useQuery({
     queryKey: ['blog', id],
@@ -77,8 +85,8 @@ export default function BlogManagement() {
       setValue('seoKeywords', aiContent?.seoKeywords || '');
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
-      if (blog.content !== content) {
-        setContent(blog.content || '');
+      if (blog.content && blog.content !== content) {
+        setContent(blog.content);
       }
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
@@ -116,7 +124,6 @@ export default function BlogManagement() {
       if (generateError) throw generateError;
       
       if (generatedContent.content && generatedContent.summary) {
-        // Save the AI-generated content to the database first
         const aiContent = {
           originalContent: generatedContent.content,
           originalSummary: generatedContent.summary,
@@ -148,7 +155,6 @@ export default function BlogManagement() {
 
         if (saveError) throw saveError;
 
-        // Update the form fields and editor content
         setContent(generatedContent.content);
         setValue('summary', generatedContent.summary);
         
