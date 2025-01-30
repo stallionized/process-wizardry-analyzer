@@ -1,6 +1,7 @@
 import { Editor } from '@tinymce/tinymce-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 
 interface BlogEditorProps {
   content: string;
@@ -9,21 +10,59 @@ interface BlogEditorProps {
 
 const BlogEditor = ({ content, onChange }: BlogEditorProps) => {
   const [apiKey, setApiKey] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchApiKey = async () => {
-      const { data: { TINYMCE_API_KEY } } = await supabase.functions.invoke('get-secret', {
-        body: { secretName: 'TINYMCE_API_KEY' }
-      });
-      if (TINYMCE_API_KEY) {
-        setApiKey(TINYMCE_API_KEY);
+      try {
+        const { data, error: functionError } = await supabase.functions.invoke('get-secret', {
+          body: { secretName: 'TINYMCE_API_KEY' }
+        });
+
+        if (functionError) {
+          throw new Error(functionError.message);
+        }
+
+        if (!data?.TINYMCE_API_KEY) {
+          throw new Error('TinyMCE API key not found');
+        }
+
+        setApiKey(data.TINYMCE_API_KEY);
+        setError(null);
+      } catch (err: any) {
+        const errorMessage = err.message || 'Failed to load editor API key';
+        setError(errorMessage);
+        toast({
+          title: "Editor Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        console.error('Error fetching TinyMCE API key:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchApiKey();
-  }, []);
 
-  if (!apiKey) {
-    return <div className="min-h-[400px] border rounded-md p-4 bg-muted/20">Loading editor...</div>;
+    fetchApiKey();
+  }, [toast]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[400px] border rounded-md p-4 bg-muted/20 flex items-center justify-center">
+        <p className="text-muted-foreground">Loading editor...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[400px] border rounded-md p-4 bg-destructive/10 flex flex-col items-center justify-center gap-4">
+        <p className="text-destructive font-medium">Failed to load editor</p>
+        <p className="text-sm text-muted-foreground text-center">{error}</p>
+      </div>
+    );
   }
 
   return (
