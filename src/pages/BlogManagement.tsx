@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import RichTextEditor from "@/components/blogs/RichTextEditor";
+import { Json } from "@/integrations/supabase/types";
 
 interface BlogForm {
   title: string;
@@ -38,7 +39,7 @@ interface Blog {
   summary?: string;
   hero_image_url?: string;
   featured?: boolean;
-  ai_generated_content?: AIGeneratedContent;
+  ai_generated_content?: Json;
 }
 
 export default function BlogManagement() {
@@ -71,8 +72,9 @@ export default function BlogManagement() {
   useEffect(() => {
     if (blog) {
       setValue('title', blog.title);
-      setValue('topic', blog.ai_generated_content?.topic || '');
-      setValue('seoKeywords', blog.ai_generated_content?.seoKeywords || '');
+      const aiContent = blog.ai_generated_content as AIGeneratedContent;
+      setValue('topic', aiContent?.topic || '');
+      setValue('seoKeywords', aiContent?.seoKeywords || '');
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
       setContent(blog.content || '');
@@ -113,7 +115,7 @@ export default function BlogManagement() {
       
       if (generatedContent.content && generatedContent.summary) {
         // Save the AI-generated content to the database first
-        const aiContent: AIGeneratedContent = {
+        const aiContent: Json = {
           originalContent: generatedContent.content,
           originalSummary: generatedContent.summary,
           generatedAt: new Date().toISOString(),
