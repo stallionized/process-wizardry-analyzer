@@ -33,7 +33,7 @@ export default function BlogManagement() {
   const [content, setContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<BlogForm>();
 
   const { data: blog, isLoading: isBlogLoading } = useQuery({
     queryKey: ['blog', id],
@@ -53,16 +53,21 @@ export default function BlogManagement() {
 
   useEffect(() => {
     if (blog) {
-      setValue('title', blog.title);
-      setValue('summary', blog.summary || '');
-      setValue('featured', blog.featured || false);
+      // Reset form with all blog data
+      reset({
+        title: blog.title || '',
+        topic: '', // Reset topic since it's for generation only
+        seoKeywords: '', // Reset keywords since they're for generation only
+        content: blog.content || '',
+        summary: blog.summary || '',
+        featured: blog.featured || false,
+      });
       setContent(blog.content || '');
-      setValue('content', blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
     }
-  }, [blog, setValue]);
+  }, [blog, reset]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
