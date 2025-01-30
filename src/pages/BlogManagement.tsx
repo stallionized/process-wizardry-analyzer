@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import RichTextEditor from "@/components/blogs/RichTextEditor";
 
 interface BlogForm {
   title: string;
@@ -56,6 +55,7 @@ export default function BlogManagement() {
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
       setContent(blog.content || '');
+      setValue('content', blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
@@ -150,7 +150,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content: content, // Use the content from state
+        content: data.content, // Use the content from form data
         summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
@@ -306,10 +306,15 @@ export default function BlogManagement() {
 
           <div>
             <Label htmlFor="content">Blog Content</Label>
-            <RichTextEditor
-              content={content}
-              onChange={setContent}
+            <Textarea
+              id="content"
+              placeholder="Enter or generate blog content"
+              className="min-h-[400px] resize-y"
+              {...register('content', { required: true })}
             />
+            {errors.content && (
+              <p className="text-sm text-red-500 mt-1">Content is required</p>
+            )}
           </div>
 
           <div className="flex gap-4">
