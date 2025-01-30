@@ -23,6 +23,24 @@ interface BlogForm {
   featured: boolean;
 }
 
+interface AIGeneratedContent {
+  topic?: string;
+  seoKeywords?: string;
+  originalContent?: string;
+  originalSummary?: string;
+  generatedAt?: string;
+}
+
+interface Blog {
+  id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  hero_image_url?: string;
+  featured?: boolean;
+  ai_generated_content?: AIGeneratedContent;
+}
+
 export default function BlogManagement() {
   const { id } = useParams();
   const { session } = useSessionContext();
@@ -45,7 +63,7 @@ export default function BlogManagement() {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Blog;
     },
     enabled: !!id,
   });
@@ -95,7 +113,7 @@ export default function BlogManagement() {
       
       if (generatedContent.content && generatedContent.summary) {
         // Save the AI-generated content to the database first
-        const aiContent = {
+        const aiContent: AIGeneratedContent = {
           originalContent: generatedContent.content,
           originalSummary: generatedContent.summary,
           generatedAt: new Date().toISOString(),
