@@ -53,6 +53,8 @@ export default function BlogManagement() {
   useEffect(() => {
     if (blog) {
       setValue('title', blog.title);
+      setValue('topic', blog.ai_generated_content?.topic || '');
+      setValue('seoKeywords', blog.ai_generated_content?.seoKeywords || '');
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
       setContent(blog.content || '');
@@ -280,7 +282,8 @@ export default function BlogManagement() {
           <div className="flex items-center space-x-2">
             <Switch
               id="featured"
-              {...register('featured')}
+              checked={watch('featured')}
+              onCheckedChange={(checked) => setValue('featured', checked)}
             />
             <Label htmlFor="featured">Feature this blog post</Label>
           </div>
