@@ -24,10 +24,13 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     content,
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
-      if (newContent !== content) {
-        onChange(newContent);
-      }
+      onChange(newContent);
     },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none'
+      }
+    }
   });
 
   if (!editor) {
@@ -110,10 +113,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           <Redo className="h-4 w-4" />
         </Button>
       </div>
-      <EditorContent 
-        editor={editor} 
-        className="prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none"
-      />
+      <EditorContent editor={editor} />
     </div>
   );
 };
