@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,7 +16,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
     Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
-    You will also provide a concise summary (max 2-3 sentences) that captures the essence of the blog post.
+    You will also provide a detailed summary (at least 2-3 sentences long) that captures the essence of the blog post and entices readers to learn more.
     
     Guidelines:
     - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
@@ -23,11 +24,15 @@ serve(async (req) => {
     - Naturally incorporate SEO keywords when provided
     - Use proper formatting for emphasis (bold for important points)
     - Ensure content is factual and well-researched
-    - Aim for a professional yet conversational tone
+    - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
     - Break up text into readable paragraphs
     - Remove any unnecessary special characters
-    - Provide a brief, engaging summary that hooks readers`
+    - For the summary:
+      * Write at least 2-3 sentences
+      * Capture the main value proposition
+      * Include a hook to generate interest
+      * Keep it concise but informative`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
