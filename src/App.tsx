@@ -26,6 +26,7 @@ function App() {
             <Route path="/dashboard" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/blogs/manage" element={<BlogManagement />} />
+            <Route path="/blogs/edit/:id" element={<BlogManagement />} />
             <Route path="/blogs" element={<Blogs />} />
             <Route path="/client" element={<Client />} />
             <Route path="/clients" element={<ClientManagement />} />
