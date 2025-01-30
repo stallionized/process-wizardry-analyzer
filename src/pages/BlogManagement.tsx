@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import RichTextEditor from "@/components/blogs/RichTextEditor";
-import { Json } from "@/integrations/supabase/types";
 
 interface BlogForm {
   title: string;
@@ -24,24 +23,6 @@ interface BlogForm {
   featured: boolean;
 }
 
-interface AIGeneratedContent {
-  topic?: string;
-  seoKeywords?: string;
-  originalContent?: string;
-  originalSummary?: string;
-  generatedAt?: string;
-}
-
-interface Blog {
-  id: string;
-  title: string;
-  content: string;
-  summary?: string;
-  hero_image_url?: string;
-  featured?: boolean;
-  ai_generated_content?: Json;
-}
-
 export default function BlogManagement() {
   const { id } = useParams();
   const { session } = useSessionContext();
@@ -51,15 +32,7 @@ export default function BlogManagement() {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [content, setContent] = useState("");
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>({
-    defaultValues: {
-      title: "",
-      topic: "",
-      seoKeywords: "",
-      summary: "",
-      featured: false
-    }
-  });
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
   const { data: blog, isLoading: isBlogLoading } = useQuery({
     queryKey: ['blog', id],
@@ -69,27 +42,23 @@ export default function BlogManagement() {
         .from('blogs')
         .select('*')
         .eq('id', id)
-        .maybeSingle();
+        .single();
       
       if (error) throw error;
-      return data as Blog;
+      return data;
     },
     enabled: !!id,
   });
 
-  // Use useEffect to update form values when blog data is loaded
   useEffect(() => {
     if (blog) {
       setValue('title', blog.title);
-      if (blog.ai_generated_content) {
-        const aiContent = blog.ai_generated_content as AIGeneratedContent;
-        if (aiContent?.topic) setValue('topic', aiContent.topic);
-        if (aiContent?.seoKeywords) setValue('seoKeywords', aiContent.seoKeywords);
-      }
-      if (blog.summary) setValue('summary', blog.summary);
+      setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
-      if (blog.content) setContent(blog.content);
-      if (blog.hero_image_url) setPreviewUrl(blog.hero_image_url);
+      setContent(blog.content);
+      if (blog.hero_image_url) {
+        setPreviewUrl(blog.hero_image_url);
+      }
     }
   }, [blog, setValue]);
 
@@ -113,59 +82,21 @@ export default function BlogManagement() {
 
     setIsLoading(true);
     try {
-      const { data: generatedContent, error: generateError } = await supabase.functions.invoke('generate-blog-content', {
+      const { data, error } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
           topic,
           seoKeywords: watch('seoKeywords')
         }
       });
 
-      if (generateError) throw generateError;
-      
-      if (generatedContent.content && generatedContent.summary) {
-        const aiContent = {
-          originalContent: generatedContent.content,
-          originalSummary: generatedContent.summary,
-          generatedAt: new Date().toISOString(),
-          topic,
-          seoKeywords: watch('seoKeywords')
-        };
-
-        const { error: saveError } = id
-          ? await supabase
-              .from('blogs')
-              .update({ 
-                content: generatedContent.content,
-                summary: generatedContent.summary,
-                ai_generated_content: aiContent,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', id)
-          : await supabase
-              .from('blogs')
-              .insert({
-                title: watch('title') || 'Untitled Blog',
-                content: generatedContent.content,
-                summary: generatedContent.summary,
-                ai_generated_content: aiContent,
-                status: 'draft',
-                author_id: session?.user.id
-              });
-
-        if (saveError) throw saveError;
-
-        setContent(generatedContent.content);
-        setValue('summary', generatedContent.summary);
-        
-        toast({
-          title: "Content generated and saved",
-          description: "You can now edit the generated content.",
-        });
-      } else {
-        throw new Error('Invalid response format from content generation');
-      }
+      if (error) throw error;
+      setContent(data.content);
+      setValue('summary', data.summary);
+      toast({
+        title: "Content generated successfully",
+        description: "You can now edit the generated content.",
+      });
     } catch (error) {
-      console.error('Error generating content:', error);
       toast({
         title: "Error generating content",
         description: "Please try again later.",
@@ -309,8 +240,7 @@ export default function BlogManagement() {
           <div className="flex items-center space-x-2">
             <Switch
               id="featured"
-              checked={watch('featured')}
-              onCheckedChange={(checked) => setValue('featured', checked)}
+              {...register('featured')}
             />
             <Label htmlFor="featured">Feature this blog post</Label>
           </div>

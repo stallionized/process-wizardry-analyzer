@@ -74,31 +74,31 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const Navigation = () => {
-    if (isLandingPage) {
+    if (isLandingPage || isAuthPage) {
       return (
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            className="text-white hover:text-white hover:bg-black/20"
-            onClick={() => window.location.href = '#book-demo'}
-          >
-            Book Demo
-          </Button>
-          <Link to="/auth">
-            <Button
-              variant="ghost"
-              className="text-white hover:text-white hover:bg-black/20 gap-2"
-            >
-              <LogIn className="h-4 w-4" />
-              Login
-            </Button>
-          </Link>
+          {!isAuthPage && (
+            <>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-white hover:bg-black/20"
+                onClick={() => window.location.href = '#book-demo'}
+              >
+                Book Demo
+              </Button>
+              <Link to="/auth">
+                <Button
+                  variant="ghost"
+                  className="text-white hover:text-white hover:bg-black/20 gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       );
-    }
-
-    if (isAuthPage) {
-      return null;
     }
 
     return (
@@ -153,53 +153,48 @@ const Layout = ({ children }: LayoutProps) => {
       "min-h-screen",
       isLandingPage ? "bg-black" : isAuthPage ? "bg-background" : "bg-background"
     )}>
-      {!isAuthPage && (
-        <nav 
-          className={cn(
-            "fixed top-0 left-0 right-0 z-50 border-0 transition-colors duration-300",
-            isLandingPage
-              ? isScrolled 
-                ? "bg-transparent backdrop-blur-sm" 
-                : "bg-[#0A192F]"
-              : "bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60"
-          )}
-        >
-          <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
-            <div className="flex-shrink-0">
-              <Link to="/" className="flex items-center">
-                <img 
-                  src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
-                  alt="AI Process Engineer Logo" 
-                  className="h-[40px] md:h-[60px] w-auto scale-125"
-                />
-              </Link>
-            </div>
-            <div className="flex-grow" />
-            {isMobile ? (
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-white hover:text-white hover:bg-primary/20">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[240px] sm:w-[280px] bg-black border-white/10">
-                  <div className="flex flex-col space-y-4 mt-8">
-                    <Navigation />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <Navigation />
-              </div>
-            )}
+      <nav 
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 border-0 transition-colors duration-300",
+          isLandingPage || isAuthPage
+            ? isScrolled 
+              ? "bg-transparent backdrop-blur-sm" 
+              : "bg-[#0A192F]"
+            : "bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60"
+        )}
+      >
+        <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
+          <div className="flex-shrink-0">
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
+                alt="AI Process Engineer Logo" 
+                className="h-[40px] md:h-[60px] w-auto scale-125"
+              />
+            </Link>
           </div>
-        </nav>
-      )}
-      <div className={cn(
-        "flex",
-        !isAuthPage && "pt-16 md:pt-24"
-      )}>
+          <div className="flex-grow" />
+          {isMobile ? (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:text-white hover:bg-primary/20">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[240px] sm:w-[280px] bg-black border-white/10">
+                <div className="flex flex-col space-y-4 mt-8">
+                  <Navigation />
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <Navigation />
+            </div>
+          )}
+        </div>
+      </nav>
+      <div className="flex pt-16 md:pt-24">
         <main className="flex-1 min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-6rem)] px-4 md:px-8">
           <div className="max-w-[2000px] mx-auto">
             {children}

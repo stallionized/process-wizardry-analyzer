@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Plus, Archive, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { BlogCard } from './BlogCard';
-import { DeleteBlogDialog } from './DeleteBlogDialog';
 
 const BlogList = () => {
   const navigate = useNavigate();
@@ -36,32 +45,6 @@ const BlogList = () => {
       return data;
     },
   });
-
-  const handleDisplayOrderChange = async (blogId: string, value: string) => {
-    const order = value === 'not-selected' ? null : parseInt(value);
-    const { error } = await supabase
-      .from('blogs')
-      .update({ 
-        display_order: order,
-        featured: order !== null 
-      })
-      .eq('id', blogId);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update blog display order",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Success",
-      description: "Blog display order updated successfully",
-    });
-    refetch();
-  };
 
   const handleArchive = async (blogId: string, isArchived: boolean) => {
     const { error } = await supabase
@@ -117,7 +100,67 @@ const BlogList = () => {
     return <div className="text-center py-8">Loading blogs...</div>;
   }
 
-  return (
+  const BlogCard = ({ blog }: { blog: any }) => (
+    <Card key={blog.id} className="p-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-xl font-semibold mb-2">{blog.title}</h2>
+          <div className="text-sm text-muted-foreground">
+            <span>Status: {blog.status}</span>
+            <span className="mx-2">•</span>
+            <span>Created: {format(new Date(blog.created_at), 'PP')}</span>
+          </div>
+          {blog.status === 'published' && blog.slug && !blog.archived_at && (
+            <div className="mt-2">
+              <Link 
+                to={`/blog/${blog.slug}`}
+                className="text-primary hover:underline"
+              >
+                View Published Blog
+              </Link>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (blog.archived_at) {
+                handleArchive(blog.id, true);
+              } else {
+                handleArchive(blog.id, false);
+              }
+            }}
+          >
+            {blog.archived_at ? (
+              <RefreshCw className="h-4 w-4" />
+            ) : (
+              <Archive className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setSelectedBlogId(blog.id);
+              setShowDeleteDialog(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/blogs/edit/${blog.id}`)}
+          >
+            Edit
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+
+return (
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Blog Posts</h1>
@@ -134,18 +177,7 @@ const BlogList = () => {
         <TabsContent value="active" className="mt-6">
           <div className="space-y-4">
             {blogs?.map((blog) => (
-              <Card key={blog.id} className="p-6">
-                <BlogCard
-                  blog={blog}
-                  onArchive={handleArchive}
-                  onDelete={(id) => {
-                    setSelectedBlogId(id);
-                    setShowDeleteDialog(true);
-                  }}
-                  onEdit={(id) => navigate(`/blogs/edit/${id}`)}
-                  onDisplayOrderChange={handleDisplayOrderChange}
-                />
-              </Card>
+              <BlogCard key={blog.id} blog={blog} />
             ))}
             {blogs?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
@@ -157,18 +189,7 @@ const BlogList = () => {
         <TabsContent value="archived" className="mt-6">
           <div className="space-y-4">
             {blogs?.map((blog) => (
-              <Card key={blog.id} className="p-6">
-                <BlogCard
-                  blog={blog}
-                  onArchive={handleArchive}
-                  onDelete={(id) => {
-                    setSelectedBlogId(id);
-                    setShowDeleteDialog(true);
-                  }}
-                  onEdit={(id) => navigate(`/blogs/edit/${id}`)}
-                  onDisplayOrderChange={handleDisplayOrderChange}
-                />
-              </Card>
+              <BlogCard key={blog.id} blog={blog} />
             ))}
             {blogs?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
@@ -179,11 +200,20 @@ const BlogList = () => {
         </TabsContent>
       </Tabs>
 
-      <DeleteBlogDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDelete}
-      />
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the blog post.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -23,25 +23,12 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     extensions: [StarterKit],
     content,
     onUpdate: ({ editor }) => {
-      const newContent = editor.getHTML();
-      if (content !== newContent) {
-        onChange(newContent);
-      }
-    },
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none',
-      },
+      onChange(editor.getHTML());
     },
   });
 
   if (!editor) {
     return null;
-  }
-
-  // Only update editor content when it's different from the current content
-  if (editor && content !== editor.getHTML()) {
-    editor.commands.setContent(content, false);
   }
 
   return (
@@ -122,7 +109,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       </div>
       <EditorContent 
         editor={editor} 
-        className="p-4 min-h-[400px]"
+        className="prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none"
       />
     </div>
   );
