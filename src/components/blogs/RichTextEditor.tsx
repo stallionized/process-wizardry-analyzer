@@ -46,77 +46,92 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     return null;
   }
 
+  const handleToolbarClick = (e: React.MouseEvent, action: () => boolean) => {
+    e.preventDefault(); // Prevent form submission
+    editor.chain().focus();
+    action();
+  };
+
   return (
     <div className="border rounded-md">
       <div className="border-b p-2 bg-muted/20 flex flex-wrap gap-1">
         <Button
+          type="button" // Explicitly set type to button
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBold().run())}
           className={editor.isActive('bold') ? 'bg-muted' : ''}
         >
           <Bold className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleItalic().run())}
           className={editor.isActive('italic') ? 'bg-muted' : ''}
         >
           <Italic className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
           className={editor.isActive('heading', { level: 2 }) ? 'bg-muted' : ''}
         >
           <Heading2 className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBulletList().run())}
           className={editor.isActive('bulletList') ? 'bg-muted' : ''}
         >
           <List className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleOrderedList().run())}
           className={editor.isActive('orderedList') ? 'bg-muted' : ''}
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBlockquote().run())}
           className={editor.isActive('blockquote') ? 'bg-muted' : ''}
         >
           <Quote className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleCodeBlock().run())}
           className={editor.isActive('codeBlock') ? 'bg-muted' : ''}
         >
           <Code className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().undo().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().undo().run())}
           disabled={!editor.can().undo()}
         >
           <Undo className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().redo().run()}
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().redo().run())}
           disabled={!editor.can().redo()}
         >
           <Redo className="h-4 w-4" />
