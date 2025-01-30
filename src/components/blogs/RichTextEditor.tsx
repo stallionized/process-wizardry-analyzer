@@ -25,7 +25,17 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none',
+      },
+    },
   });
+
+  // Update editor content when content prop changes
+  if (editor && content !== editor.getHTML()) {
+    editor.commands.setContent(content);
+  }
 
   if (!editor) {
     return null;
@@ -109,7 +119,7 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       </div>
       <EditorContent 
         editor={editor} 
-        className="prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none"
+        className="p-4 min-h-[400px]"
       />
     </div>
   );

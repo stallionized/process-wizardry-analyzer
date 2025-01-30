@@ -182,7 +182,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content: content, // Use the content from state instead of form data
+        content,
         summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
