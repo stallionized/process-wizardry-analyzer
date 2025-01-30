@@ -90,13 +90,17 @@ export default function BlogManagement() {
       });
 
       if (error) throw error;
+      
+      // Update both the content state and the form value
       setContent(data.content);
       setValue('summary', data.summary);
+      
       toast({
         title: "Content generated successfully",
         description: "You can now edit the generated content.",
       });
     } catch (error) {
+      console.error('Error generating content:', error);
       toast({
         title: "Error generating content",
         description: "Please try again later.",
