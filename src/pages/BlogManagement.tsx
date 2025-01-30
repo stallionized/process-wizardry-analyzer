@@ -62,6 +62,7 @@ export default function BlogManagement() {
         summary: blog.summary || '',
         featured: blog.featured || false,
       });
+      // Ensure content state is synchronized with blog content
       setContent(blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
@@ -69,17 +70,17 @@ export default function BlogManagement() {
     }
   }, [blog, reset]);
 
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    setValue('content', newContent, { shouldValidate: true });
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
-  };
-
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-    setValue('content', newContent);
   };
 
   const generateContent = async (topic: string) => {
@@ -95,7 +96,6 @@ export default function BlogManagement() {
     setIsLoading(true);
     setIsGenerating(true);
     try {
-      console.log('Generating content for topic:', topic);
       const { data, error } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
           topic,
@@ -105,11 +105,9 @@ export default function BlogManagement() {
 
       if (error) throw error;
       
-      console.log('Generated content:', data);
-      
       setContent(data.content);
-      setValue('content', data.content);
-      setValue('summary', data.summary);
+      setValue('content', data.content, { shouldValidate: true });
+      setValue('summary', data.summary, { shouldValidate: true });
       
       toast({
         title: "Content generated successfully",
