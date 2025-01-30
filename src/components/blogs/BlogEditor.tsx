@@ -21,23 +21,14 @@ interface BlogEditorProps {
 const BlogEditor = ({ content, onChange }: BlogEditorProps) => {
   const editor = useEditor({
     extensions: [StarterKit],
-    content: content
-      .replace(/\n/g, '<br>') // Convert line breaks to HTML breaks
-      .replace(/[^\x20-\x7E\n]/g, '') // Remove special characters except newlines
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim(), // Remove leading/trailing whitespace
+    content,
     onUpdate: ({ editor }) => {
-      const newContent = editor.getHTML()
-        .replace(/<br\s*\/?>/g, '\n') // Convert HTML breaks back to line breaks
-        .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces with regular spaces
-        .replace(/\n{3,}/g, '\n\n') // Replace multiple consecutive line breaks with double line breaks
-        .replace(/[^\x20-\x7E\n]/g, '') // Remove special characters except newlines
-        .trim(); // Remove leading/trailing whitespace
-      onChange(newContent);
+      const html = editor.getHTML();
+      onChange(html);
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none whitespace-pre-wrap leading-relaxed'
+        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none'
       }
     }
   });
@@ -47,7 +38,7 @@ const BlogEditor = ({ content, onChange }: BlogEditorProps) => {
   }
 
   const handleToolbarClick = (e: React.MouseEvent, action: () => boolean) => {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault();
     editor.chain().focus();
     action();
   };
@@ -56,7 +47,7 @@ const BlogEditor = ({ content, onChange }: BlogEditorProps) => {
     <div className="border rounded-md">
       <div className="border-b p-2 bg-muted/20 flex flex-wrap gap-1">
         <Button
-          type="button" // Explicitly set type to button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBold().run())}
