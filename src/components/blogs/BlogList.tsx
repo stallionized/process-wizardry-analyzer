@@ -3,10 +3,17 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Archive, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Archive, Trash2, RefreshCw, ListOrdered } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +52,32 @@ const BlogList = () => {
       return data;
     },
   });
+
+  const handleDisplayOrderChange = async (blogId: string, value: string) => {
+    const order = value === 'not-selected' ? null : parseInt(value);
+    const { error } = await supabase
+      .from('blogs')
+      .update({ 
+        display_order: order,
+        featured: order !== null 
+      })
+      .eq('id', blogId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update blog display order",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Blog display order updated successfully",
+    });
+    refetch();
+  };
 
   const handleArchive = async (blogId: string, isArchived: boolean) => {
     const { error } = await supabase
@@ -121,7 +154,28 @@ const BlogList = () => {
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {!blog.archived_at && (
+            <div className="flex items-center gap-2 mr-4">
+              <ListOrdered className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={blog.display_order?.toString() || 'not-selected'}
+                onValueChange={(value) => handleDisplayOrderChange(blog.id, value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Display Order" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not-selected">Not Selected</SelectItem>
+                  <SelectItem value="1">Position 1</SelectItem>
+                  <SelectItem value="2">Position 2</SelectItem>
+                  <SelectItem value="3">Position 3</SelectItem>
+                  <SelectItem value="4">Position 4</SelectItem>
+                  <SelectItem value="5">Position 5</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -160,7 +214,7 @@ const BlogList = () => {
     </Card>
   );
 
-return (
+  return (
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Blog Posts</h1>
@@ -201,7 +255,7 @@ return (
       </Tabs>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
