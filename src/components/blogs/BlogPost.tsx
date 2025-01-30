@@ -6,21 +6,24 @@ import { motion } from "framer-motion";
 
 export default function BlogPost() {
   const { slug } = useParams();
+  console.log('Current slug:', slug);
 
   const { data: blog, isLoading } = useQuery({
     queryKey: ['blog', slug],
     queryFn: async () => {
+      console.log('Fetching blog with slug:', slug);
       const { data, error } = await supabase
         .from('blogs')
         .select('*')
         .eq('slug', slug)
         .eq('status', 'published')
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching blog:', error);
         throw error;
       }
+      console.log('Blog data received:', data);
       return data;
     },
   });
@@ -48,6 +51,7 @@ export default function BlogPost() {
       <div className="container mx-auto py-8">
         <Card className="p-6 bg-black/[0.96] border-white/10">
           <h1 className="text-2xl font-bold text-white">Blog post not found</h1>
+          <p className="text-neutral-300 mt-2">The blog post you're looking for doesn't exist or has been removed.</p>
         </Card>
       </div>
     );
