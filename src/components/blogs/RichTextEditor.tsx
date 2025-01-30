@@ -21,14 +21,16 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [StarterKit],
-    content,
+    content: content.replace(/\n/g, '<br>'), // Convert line breaks to HTML breaks
     onUpdate: ({ editor }) => {
-      const newContent = editor.getHTML();
+      const newContent = editor.getHTML()
+        .replace(/<br\s*\/?>/g, '\n') // Convert HTML breaks back to line breaks
+        .replace(/&nbsp;/g, ' '); // Replace non-breaking spaces with regular spaces
       onChange(newContent);
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none'
+        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none whitespace-pre-wrap'
       }
     }
   });
