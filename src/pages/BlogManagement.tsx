@@ -90,13 +90,19 @@ export default function BlogManagement() {
       });
 
       if (error) throw error;
-      setContent(data.content);
-      setValue('summary', data.summary);
-      toast({
-        title: "Content generated successfully",
-        description: "You can now edit the generated content.",
-      });
+      
+      if (data.content && data.summary) {
+        setContent(data.content);
+        setValue('summary', data.summary);
+        toast({
+          title: "Content generated successfully",
+          description: "You can now edit the generated content.",
+        });
+      } else {
+        throw new Error('Invalid response format from content generation');
+      }
     } catch (error) {
+      console.error('Error generating content:', error);
       toast({
         title: "Error generating content",
         description: "Please try again later.",

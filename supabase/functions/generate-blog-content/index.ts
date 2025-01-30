@@ -12,10 +12,11 @@ serve(async (req) => {
 
   try {
     const { topic, seoKeywords } = await req.json()
+    console.log('Generating content for topic:', topic, 'with keywords:', seoKeywords);
 
     const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
     Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
-    You will also provide a concise summary (max 2-3 sentences) that captures the essence of the blog post.
+    You will also provide a concise summary (max 3 sentences) that captures the essence of the blog post.
     
     Guidelines:
     - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
@@ -27,7 +28,7 @@ serve(async (req) => {
     - Include a compelling introduction and conclusion
     - Break up text into readable paragraphs
     - Remove any unnecessary special characters
-    - Provide a brief, engaging summary that hooks readers`
+    - Provide a brief, engaging summary (max 3 sentences) that hooks readers`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -56,8 +57,17 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error('Failed to generate content');
+    }
+
     const data = await response.json()
+    console.log('OpenAI response received:', data);
+    
     const generatedContent = data.choices[0].message.content
+    console.log('Generated content:', generatedContent);
 
     // Split the content to separate the summary and main content
     const contentParts = generatedContent.split('\n\n')
