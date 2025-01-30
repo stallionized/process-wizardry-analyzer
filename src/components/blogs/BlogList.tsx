@@ -165,7 +165,7 @@ const BlogList = () => {
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Display Order" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md">
+                <SelectContent className="bg-white border border-border shadow-md">
                   <SelectItem value="not-selected">Not Selected</SelectItem>
                   <SelectItem value="1">Position 1</SelectItem>
                   <SelectItem value="2">Position 2</SelectItem>
