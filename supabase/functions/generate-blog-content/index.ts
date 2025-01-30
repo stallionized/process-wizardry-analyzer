@@ -24,11 +24,13 @@ serve(async (req) => {
     - Naturally incorporate SEO keywords when provided
     - Use proper formatting for emphasis (bold for important points)
     - Ensure content is factual and well-researched
-    - Aim for a professional yet conversational tone
+    - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
     - Break up text into readable paragraphs
     - Remove any unnecessary special characters
-    - Provide a brief, engaging summary (max 3 sentences) that hooks readers`
+    - Provide a brief, engaging summary (max 3 sentences) that hooks readers
+
+    IMPORTANT: Start your response with a 3-sentence summary, followed by two blank lines, and then the main blog content.`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
