@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import RichTextEditor from "@/components/blogs/RichTextEditor";
 
 interface BlogForm {
   title: string;
@@ -68,6 +69,11 @@ export default function BlogManagement() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    setValue('content', newContent);
   };
 
   const generateContent = async (topic: string) => {
@@ -306,24 +312,11 @@ export default function BlogManagement() {
 
           <div>
             <Label htmlFor="content">Blog Content</Label>
-            <Textarea
-              id="content"
-              placeholder="Enter or generate blog content"
-              {...register('content', { required: true })}
-              className="min-h-[400px] resize-y font-mono whitespace-pre-wrap leading-relaxed p-4"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                lineHeight: "1.8",
-                fontSize: "1rem",
-              }}
+            <input type="hidden" {...register('content', { required: true })} />
+            <RichTextEditor
+              content={content}
+              onChange={handleContentChange}
             />
-            <div className="mt-2 text-sm text-muted-foreground">
-              Tip: You can use markdown-style formatting:
-              # for headers
-              ** for bold **
-              * for italic *
-              - for bullet points
-            </div>
             {errors.content && (
               <p className="text-sm text-red-500 mt-1">Content is required</p>
             )}
