@@ -23,7 +23,10 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     extensions: [StarterKit],
     content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const newContent = editor.getHTML();
+      if (newContent !== content) {
+        onChange(newContent);
+      }
     },
   });
 
