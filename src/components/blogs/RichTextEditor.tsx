@@ -23,7 +23,10 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     extensions: [StarterKit],
     content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const newContent = editor.getHTML();
+      if (content !== newContent) {
+        onChange(newContent);
+      }
     },
     editorProps: {
       attributes: {
@@ -32,13 +35,13 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     },
   });
 
-  // Update editor content when content prop changes
-  if (editor && content !== editor.getHTML()) {
-    editor.commands.setContent(content);
-  }
-
   if (!editor) {
     return null;
+  }
+
+  // Only update editor content when it's different from the current content
+  if (editor && content !== editor.getHTML()) {
+    editor.commands.setContent(content, false);
   }
 
   return (
