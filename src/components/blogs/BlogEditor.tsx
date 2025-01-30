@@ -1,7 +1,17 @@
-import { Editor } from '@tinymce/tinymce-react';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from "@/hooks/use-toast";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { Button } from "@/components/ui/button";
+import { 
+  Bold, 
+  Italic, 
+  List, 
+  ListOrdered, 
+  Quote, 
+  Heading2,
+  Code,
+  Undo,
+  Redo
+} from "lucide-react";
 
 interface BlogEditorProps {
   content: string;
@@ -9,82 +19,126 @@ interface BlogEditorProps {
 }
 
 const BlogEditor = ({ content, onChange }: BlogEditorProps) => {
-  const [apiKey, setApiKey] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchApiKey = async () => {
-      try {
-        const { data, error: functionError } = await supabase.functions.invoke('get-secret', {
-          body: { secretName: 'TINYMCE_API_KEY' }
-        });
-
-        if (functionError) {
-          throw new Error(functionError.message);
-        }
-
-        if (!data?.TINYMCE_API_KEY) {
-          throw new Error('TinyMCE API key not found');
-        }
-
-        setApiKey(data.TINYMCE_API_KEY);
-        setError(null);
-      } catch (err: any) {
-        const errorMessage = err.message || 'Failed to load editor API key';
-        setError(errorMessage);
-        toast({
-          title: "Editor Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        console.error('Error fetching TinyMCE API key:', err);
-      } finally {
-        setIsLoading(false);
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: content
+      .replace(/\n/g, '<br>') // Convert line breaks to HTML breaks
+      .replace(/[^\x20-\x7E\n]/g, '') // Remove special characters except newlines
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim(), // Remove leading/trailing whitespace
+    onUpdate: ({ editor }) => {
+      const newContent = editor.getHTML()
+        .replace(/<br\s*\/?>/g, '\n') // Convert HTML breaks back to line breaks
+        .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces with regular spaces
+        .replace(/\n{3,}/g, '\n\n') // Replace multiple consecutive line breaks with double line breaks
+        .replace(/[^\x20-\x7E\n]/g, '') // Remove special characters except newlines
+        .trim(); // Remove leading/trailing whitespace
+      onChange(newContent);
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none whitespace-pre-wrap leading-relaxed'
       }
-    };
+    }
+  });
 
-    fetchApiKey();
-  }, [toast]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[400px] border rounded-md p-4 bg-muted/20 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading editor...</p>
-      </div>
-    );
+  if (!editor) {
+    return null;
   }
 
-  if (error) {
-    return (
-      <div className="min-h-[400px] border rounded-md p-4 bg-destructive/10 flex flex-col items-center justify-center gap-4">
-        <p className="text-destructive font-medium">Failed to load editor</p>
-        <p className="text-sm text-muted-foreground text-center">{error}</p>
-      </div>
-    );
-  }
+  const handleToolbarClick = (e: React.MouseEvent, action: () => boolean) => {
+    e.preventDefault(); // Prevent form submission
+    editor.chain().focus();
+    action();
+  };
 
   return (
-    <Editor
-      apiKey={apiKey}
-      init={{
-        height: 400,
-        menubar: true,
-        plugins: [
-          'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-          'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-          'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-        ],
-        toolbar: 'undo redo | blocks | ' +
-          'bold italic forecolor | alignleft aligncenter ' +
-          'alignright alignjustify | bullist numlist outdent indent | ' +
-          'removeformat | help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-      }}
-      value={content}
-      onEditorChange={(newContent) => onChange(newContent)}
-    />
+    <div className="border rounded-md">
+      <div className="border-b p-2 bg-muted/20 flex flex-wrap gap-1">
+        <Button
+          type="button" // Explicitly set type to button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBold().run())}
+          className={editor.isActive('bold') ? 'bg-muted' : ''}
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleItalic().run())}
+          className={editor.isActive('italic') ? 'bg-muted' : ''}
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
+          className={editor.isActive('heading', { level: 2 }) ? 'bg-muted' : ''}
+        >
+          <Heading2 className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBulletList().run())}
+          className={editor.isActive('bulletList') ? 'bg-muted' : ''}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleOrderedList().run())}
+          className={editor.isActive('orderedList') ? 'bg-muted' : ''}
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleBlockquote().run())}
+          className={editor.isActive('blockquote') ? 'bg-muted' : ''}
+        >
+          <Quote className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().toggleCodeBlock().run())}
+          className={editor.isActive('codeBlock') ? 'bg-muted' : ''}
+        >
+          <Code className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().undo().run())}
+          disabled={!editor.can().undo()}
+        >
+          <Undo className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={(e) => handleToolbarClick(e, () => editor.chain().focus().redo().run())}
+          disabled={!editor.can().redo()}
+        >
+          <Redo className="h-4 w-4" />
+        </Button>
+      </div>
+      <EditorContent editor={editor} />
+    </div>
   );
 };
 
