@@ -238,7 +238,7 @@ export default function BlogManagement() {
               id="summary"
               placeholder="Enter a brief summary of your blog post"
               {...register('summary', { required: true })}
-              className="resize-y"
+              className="resize-y min-h-[100px]"
             />
             {errors.summary && (
               <p className="text-sm text-red-500 mt-1">Summary is required</p>
@@ -309,9 +309,21 @@ export default function BlogManagement() {
             <Textarea
               id="content"
               placeholder="Enter or generate blog content"
-              className="min-h-[400px] resize-y"
               {...register('content', { required: true })}
+              className="min-h-[400px] resize-y font-mono whitespace-pre-wrap leading-relaxed p-4"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                lineHeight: "1.8",
+                fontSize: "1rem",
+              }}
             />
+            <div className="mt-2 text-sm text-muted-foreground">
+              Tip: You can use markdown-style formatting:
+              # for headers
+              ** for bold **
+              * for italic *
+              - for bullet points
+            </div>
             {errors.content && (
               <p className="text-sm text-red-500 mt-1">Content is required</p>
             )}
