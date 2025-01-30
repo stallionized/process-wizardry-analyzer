@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -90,6 +92,45 @@ export default function Landing() {
           </div>
         </div>
 
+        <div className="mt-20 mb-20">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-left mb-12"
+            >
+              <h2 className="text-5xl font-bold mb-6">Topics that get you thinking</h2>
+              <p className="text-xl text-neutral-400 max-w-2xl">
+                Explore thought-provoking insights on process engineering, data analysis, 
+                and continuous improvement methodologies. Join us in building more 
+                efficient and scalable workflows.
+              </p>
+              <Link to="/blogs">
+                <Button 
+                  variant="outline" 
+                  className="mt-8 text-white border-white/20 hover:bg-white/10"
+                >
+                  VIEW ALL POSTS
+                </Button>
+              </Link>
+            </motion.div>
+
+            <div className="grid grid-cols-1 gap-12">
+              <BlogPreview
+                date="12.1.2024"
+                title="The Importance of Process Engineering: Building the Backbone of Business Success"
+                description="Explore the transformative power of process engineering, from ideation to implementation, for efficient and scalable workflows."
+              />
+              <BlogPreview
+                date="12.1.2024"
+                title="Motivated and Loyal Team Members"
+                description="Motivate and inspire loyalty by leading through team members' values, aligning their strengths with personal purpose."
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="mt-12 mb-20">
           <LampContainer className="h-[40vh] min-h-[400px]">
             <motion.h1
@@ -117,3 +158,30 @@ export default function Landing() {
     </div>
   );
 }
+
+const BlogPreview = ({ date, title, description }: { 
+  date: string; 
+  title: string; 
+  description: string; 
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6 }}
+    className="group"
+  >
+    <div className="flex flex-col md:flex-row justify-between items-start gap-8 p-6 rounded-lg hover:bg-white/5 transition-colors">
+      <div className="md:w-32 text-sm text-neutral-400">
+        {date}
+      </div>
+      <div className="flex-1">
+        <h3 className="text-2xl font-semibold mb-4 group-hover:text-blue-400 transition-colors">
+          {title}
+        </h3>
+        <p className="text-neutral-400 leading-relaxed">
+          {description}
+        </p>
+      </div>
+    </div>
+  </motion.div>
+);
