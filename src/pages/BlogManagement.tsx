@@ -31,6 +31,7 @@ export default function BlogManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [content, setContent] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
@@ -87,6 +88,7 @@ export default function BlogManagement() {
     }
 
     setIsLoading(true);
+    setIsGenerating(true);
     try {
       console.log('Generating content for topic:', topic);
       const { data, error } = await supabase.functions.invoke('generate-blog-content', {
@@ -100,7 +102,6 @@ export default function BlogManagement() {
       
       console.log('Generated content:', data);
       
-      // Update both the content state and form values
       setContent(data.content);
       setValue('content', data.content);
       setValue('summary', data.summary);
@@ -118,6 +119,7 @@ export default function BlogManagement() {
       });
     } finally {
       setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -156,7 +158,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content: data.content, // Use the content from form data
+        content: data.content,
         summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
@@ -313,10 +315,20 @@ export default function BlogManagement() {
           <div>
             <Label htmlFor="content">Blog Content</Label>
             <input type="hidden" {...register('content', { required: true })} />
-            <RichTextEditor
-              content={content}
-              onChange={handleContentChange}
-            />
+            {isGenerating ? (
+              <div className="min-h-[400px] border rounded-md p-4 bg-muted/20">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                </div>
+              </div>
+            ) : (
+              <RichTextEditor
+                content={content}
+                onChange={handleContentChange}
+              />
+            )}
             {errors.content && (
               <p className="text-sm text-red-500 mt-1">Content is required</p>
             )}
