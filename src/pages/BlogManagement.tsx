@@ -81,11 +81,13 @@ export default function BlogManagement() {
     if (blog) {
       setValue('title', blog.title);
       const aiContent = blog.ai_generated_content as AIGeneratedContent;
-      setValue('topic', aiContent?.topic || '');
-      setValue('seoKeywords', aiContent?.seoKeywords || '');
+      if (aiContent) {
+        setValue('topic', aiContent.topic || '');
+        setValue('seoKeywords', aiContent.seoKeywords || '');
+      }
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
-      if (blog.content && blog.content !== content) {
+      if (blog.content) {
         setContent(blog.content);
       }
       if (blog.hero_image_url) {
@@ -130,7 +132,7 @@ export default function BlogManagement() {
           generatedAt: new Date().toISOString(),
           topic,
           seoKeywords: watch('seoKeywords')
-        } as Json;
+        };
 
         const { error: saveError } = id
           ? await supabase
