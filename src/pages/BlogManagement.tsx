@@ -55,7 +55,7 @@ export default function BlogManagement() {
       setValue('title', blog.title);
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
-      setContent(blog.content);
+      setContent(blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
@@ -124,7 +124,7 @@ export default function BlogManagement() {
 
         if (saveError) throw saveError;
 
-        // Update the form fields
+        // Update the form fields and editor content
         setContent(generatedContent.content);
         setValue('summary', generatedContent.summary);
         
@@ -182,7 +182,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content,
+        content: content, // Use the content from state instead of form data
         summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
