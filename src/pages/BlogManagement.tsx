@@ -55,7 +55,7 @@ export default function BlogManagement() {
       setValue('title', blog.title);
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
-      setContent(blog.content);
+      setContent(blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
@@ -82,6 +82,7 @@ export default function BlogManagement() {
 
     setIsLoading(true);
     try {
+      console.log('Generating content for topic:', topic);
       const { data, error } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
           topic,
@@ -91,8 +92,11 @@ export default function BlogManagement() {
 
       if (error) throw error;
       
-      // Update both the content state and the form value
+      console.log('Generated content:', data);
+      
+      // Update both the content state and form values
       setContent(data.content);
+      setValue('content', data.content);
       setValue('summary', data.summary);
       
       toast({
@@ -146,7 +150,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content,
+        content: content, // Use the content from state
         summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
