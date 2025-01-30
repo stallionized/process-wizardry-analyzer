@@ -1,4 +1,6 @@
 import { Editor } from '@tinymce/tinymce-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BlogEditorProps {
   content: string;
@@ -6,12 +8,30 @@ interface BlogEditorProps {
 }
 
 const BlogEditor = ({ content, onChange }: BlogEditorProps) => {
+  const [apiKey, setApiKey] = useState<string>('');
+
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      const { data: { TINYMCE_API_KEY } } = await supabase.functions.invoke('get-secret', {
+        body: { secretName: 'TINYMCE_API_KEY' }
+      });
+      if (TINYMCE_API_KEY) {
+        setApiKey(TINYMCE_API_KEY);
+      }
+    };
+    fetchApiKey();
+  }, []);
+
+  if (!apiKey) {
+    return <div className="min-h-[400px] border rounded-md p-4 bg-muted/20">Loading editor...</div>;
+  }
+
   return (
     <Editor
-      apiKey="no-api-key" // For development - you may want to get a free API key from TinyMCE
+      apiKey={apiKey}
       init={{
         height: 400,
-        menubar: false,
+        menubar: true,
         plugins: [
           'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
           'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
