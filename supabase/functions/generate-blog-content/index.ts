@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,7 +35,9 @@ serve(async (req) => {
     - Ensure content is factual and well-researched
     - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
-    - Break up text into readable paragraphs`
+    - Break up text into readable paragraphs
+    - Aim for at least 800 words of high-quality content
+    - Make the content inspiring and influential`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -70,10 +73,10 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    console.log('OpenAI response received:', data);
+    console.log('OpenAI response received');
     
     const generatedContent = data.choices[0].message.content
-    console.log('Generated content:', generatedContent);
+    console.log('Generated content length:', generatedContent.length);
 
     // Split content into summary and main content
     const parts = generatedContent.split('\n\n')
