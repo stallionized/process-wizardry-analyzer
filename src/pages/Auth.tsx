@@ -125,8 +125,8 @@ const Auth = () => {
 
   // Show auth UI if not authenticated
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-md mx-auto py-12">
+    <div className="flex min-h-screen bg-background">
+      <div className="container max-w-md mx-auto py-12 px-4">
         <Link to="/" className="inline-block mb-8">
           <Button variant="ghost" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -164,6 +164,12 @@ const Auth = () => {
                       brandAccent: '#059669',
                     },
                   },
+                },
+                className: {
+                  container: 'flex flex-col gap-4',
+                  button: 'bg-primary text-white hover:bg-primary/90',
+                  input: 'bg-background border-input',
+                  label: 'text-foreground',
                 },
               }}
               providers={[]}
