@@ -29,9 +29,10 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/users" element={<UserManagement />} />
             <Route path="/clients" element={<ClientManagement />} />
-            <Route path="/blogs" element={<BlogManagement />} />
-            <Route path="/client" element={<Client />} />
             <Route path="/blogs" element={<Blogs />} />
+            <Route path="/blogs/new" element={<BlogManagement />} />
+            <Route path="/blogs/edit/:id" element={<BlogManagement />} />
+            <Route path="/client" element={<Client />} />
           </Route>
         </Routes>
         <Toaster />
