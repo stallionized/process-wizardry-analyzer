@@ -69,8 +69,9 @@ export default function BlogManagement() {
   }, [blog, reset]);
 
   const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-    setValue('content', newContent, { shouldValidate: true });
+    const formattedContent = newContent.replace(/\n/g, '\n');
+    setContent(formattedContent);
+    setValue('content', formattedContent, { shouldValidate: true });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
