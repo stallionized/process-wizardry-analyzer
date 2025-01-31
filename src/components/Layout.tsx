@@ -73,6 +73,11 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
+  // Don't show navigation on auth page
+  if (isAuthPage) {
+    return <div className="min-h-screen bg-background">{children}</div>;
+  }
+
   const Navigation = () => {
     if (isLandingPage || isAuthPage) {
       return (
