@@ -29,12 +29,32 @@ export default function BlogPost() {
     return <div className="container mx-auto py-8">Blog post not found</div>;
   }
 
+  // Format the content by replacing newlines with proper HTML breaks
+  const formattedContent = blog.content
+    .split('\n')
+    .map((paragraph: string, index: number) => {
+      // Skip empty paragraphs
+      if (!paragraph.trim()) return '';
+      
+      // Check if the paragraph is a heading
+      if (paragraph.startsWith('# ')) {
+        return `<h1 class="text-3xl font-bold mt-6 mb-4">${paragraph.slice(2)}</h1>`;
+      }
+      if (paragraph.startsWith('## ')) {
+        return `<h2 class="text-2xl font-bold mt-5 mb-3">${paragraph.slice(3)}</h2>`;
+      }
+      
+      // Regular paragraphs
+      return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
+    })
+    .join('');
+
   return (
     <div className="container mx-auto py-8 max-w-4xl">
-      <Card className="p-6">
-        <h1 className="text-3xl font-bold mb-4">{blog.title}</h1>
+      <Card className="p-8">
+        <h1 className="text-4xl font-bold mb-6">{blog.title}</h1>
         {blog.hero_image_url && (
-          <div className="mb-6">
+          <div className="mb-8">
             <img
               src={blog.hero_image_url}
               alt={blog.title}
@@ -43,8 +63,8 @@ export default function BlogPost() {
           </div>
         )}
         <div 
-          className="prose prose-lg max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: blog.content }}
+          className="prose prose-lg max-w-none dark:prose-invert space-y-4"
+          dangerouslySetInnerHTML={{ __html: formattedContent }}
         />
       </Card>
     </div>
