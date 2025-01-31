@@ -43,7 +43,7 @@ export default function BlogPost() {
           </div>
         )}
         <div 
-          className="prose max-w-none"
+          className="prose prose-lg max-w-none dark:prose-invert"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
       </Card>
