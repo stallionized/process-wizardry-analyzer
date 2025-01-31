@@ -11,6 +11,7 @@ import { LogIn, LogOut, User } from "lucide-react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -44,6 +45,17 @@ export default function Landing() {
   const { session } = useSessionContext();
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -80,7 +92,9 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
+        isScrolled ? 'bg-primary/80 backdrop-blur' : 'bg-primary'
+      }`}>
         <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
