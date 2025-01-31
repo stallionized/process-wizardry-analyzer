@@ -91,7 +91,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black text-white">
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
         isScrolled ? 'bg-primary/80 backdrop-blur' : 'bg-primary'
       }`}>
@@ -191,7 +191,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="bg-[#000000] py-8">
+      <footer className="bg-black py-8">
         <div className="container mx-auto px-4 text-center text-gray-300">
           <p>© 2024 AI Process Engineer. All rights reserved.</p>
         </div>
