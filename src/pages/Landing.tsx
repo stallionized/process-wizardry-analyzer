@@ -91,7 +91,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black">
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
         isScrolled ? 'bg-primary/80 backdrop-blur' : 'bg-primary'
       }`}>
@@ -142,7 +142,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 pt-24">
+      <div className="container mx-auto px-4 pt-24 bg-black">
         <div>
           <SplineSceneBasic />
         </div>
