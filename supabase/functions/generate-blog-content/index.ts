@@ -16,7 +16,6 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
     Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
-    You will also provide a detailed summary (at least 2-3 sentences long) that captures the essence of the blog post and entices readers to learn more.
     
     Guidelines:
     - Create clear section headings without using markdown symbols
@@ -28,11 +27,12 @@ serve(async (req) => {
     - Include a compelling introduction and conclusion
     - Break up text into readable paragraphs
     - Remove any unnecessary special characters
-    - For the summary:
-      * Write at least 2-3 sentences
-      * Capture the main value proposition
-      * Include a hook to generate interest
-      * Keep it concise but informative`
+    
+    For the summary:
+    - Extract 2-3 sentences from the introduction that best capture the main points
+    - The summary should give readers a clear idea of what they'll learn
+    - Keep it concise but informative (around 50-75 words)
+    - Make it engaging to encourage readers to continue reading`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -46,7 +46,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
@@ -72,9 +72,15 @@ serve(async (req) => {
       .trim()
 
     // Split the content to separate the summary and main content
-    const contentParts = generatedContent.split('\n\n')
-    const summary = contentParts[0]
-    const content = contentParts.slice(1).join('\n\n')
+    const paragraphs = generatedContent.split('\n\n')
+    const firstParagraph = paragraphs[0]
+    
+    // Extract 2-3 sentences for the summary
+    const sentences = firstParagraph.split(/[.!?]+\s+/)
+    const summary = sentences.slice(0, 3).join('. ') + '.'
+    
+    // Join the rest of the paragraphs for the main content
+    const content = paragraphs.join('\n\n')
 
     return new Response(
       JSON.stringify({ content, summary }),
