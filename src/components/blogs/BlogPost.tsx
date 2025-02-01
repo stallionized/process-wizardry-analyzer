@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { Database } from "@/integrations/supabase/types";
 
 type BlogWithAuthor = {
   id: string;
@@ -10,7 +11,7 @@ type BlogWithAuthor = {
   content: string;
   hero_image_url: string | null;
   author: {
-    email: string;
+    email: string | null;
   } | null;
   status: string;
 }
@@ -50,9 +51,7 @@ export default function BlogPost() {
         .from('blogs')
         .select(`
           *,
-          author:profiles!blogs_author_id_fkey (
-            email
-          )
+          author:profiles(email)
         `)
         .eq('slug', slug)
         .eq('status', 'published')
@@ -71,8 +70,19 @@ export default function BlogPost() {
         } else {
           console.log('No blog found with slug:', slug);
         }
+        return null;
       }
-      return data as BlogWithAuthor;
+
+      const blogWithAuthor: BlogWithAuthor = {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        hero_image_url: data.hero_image_url,
+        status: data.status,
+        author: data.author ? { email: data.author.email } : null
+      };
+
+      return blogWithAuthor;
     },
     enabled: !!slug,
   });
