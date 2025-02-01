@@ -2,8 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 export const FeaturedBlogs = () => {
+  const navigate = useNavigate();
+  
   const { data: blogs, isLoading } = useQuery({
     queryKey: ['featured-blogs'],
     queryFn: async () => {
@@ -38,6 +41,8 @@ export const FeaturedBlogs = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
+          onClick={() => navigate(`/blog/${blog.slug}`)}
+          className="cursor-pointer"
         >
           <Card className="p-6 bg-black/[0.96] border-white/10 hover:border-white/20 transition-all">
             <h3 className="text-xl font-semibold text-white mb-2">{blog.title}</h3>
