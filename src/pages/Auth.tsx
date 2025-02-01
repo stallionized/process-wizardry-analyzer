@@ -12,63 +12,26 @@ const Auth = () => {
   const navigate = useNavigate();
   const { session } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [errorHandled, setErrorHandled] = useState(false);
 
-  // Primary redirect based on session
+  // If session exists, redirect to dashboard immediately
   useEffect(() => {
     if (session) {
       navigate('/dashboard', { replace: true });
     }
   }, [session, navigate]);
 
+  // Handle auth state changes
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (event === 'SIGNED_IN' && currentSession) {
-        setErrorMessage("");
         navigate('/dashboard', { replace: true });
-      } else if (event === 'SIGNED_OUT') {
-        if (errorHandled) return;
-        
-        const params = new URLSearchParams(window.location.search);
-        const error = params.get('error');
-        const errorDescription = params.get('error_description');
-        
-        if (!error && !errorDescription) {
-          setErrorMessage("");
-          return;
-        }
-        
-        setErrorHandled(true);
-        
-        setTimeout(() => {
-          switch (error) {
-            case 'invalid_grant':
-            case 'invalid_credentials':
-              setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-              break;
-            case 'refresh_token_not_found':
-              setErrorMessage('Your session has expired. Please sign in again.');
-              break;
-            default:
-              if (errorDescription) {
-                setErrorMessage('An error occurred during sign in. Please try again.');
-              }
-              break;
-          }
-          
-          setTimeout(() => {
-            setErrorHandled(false);
-          }, 2000);
-        }, 1000);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, errorHandled]);
+  }, [navigate]);
 
   return (
     <div className="container max-w-md mx-auto py-12">
