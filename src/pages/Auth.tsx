@@ -10,16 +10,21 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { session, isLoading } = useSessionContext();
+  const { session, isLoading: sessionLoading } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [errorHandled, setErrorHandled] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (session) {
       navigate('/dashboard');
     }
-  }, [session, navigate]);
+    // Set loading to false after initial session check
+    if (!sessionLoading) {
+      setAuthLoading(false);
+    }
+  }, [session, navigate, sessionLoading]);
 
   useEffect(() => {
     let subscription: { unsubscribe: () => void } | null = null;
@@ -106,8 +111,8 @@ const Auth = () => {
     };
   }, [navigate, errorHandled]);
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state only during initial session check
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
