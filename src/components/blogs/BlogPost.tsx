@@ -73,13 +73,21 @@ export default function BlogPost() {
         return null;
       }
 
+      type BlogResponse = Database['public']['Tables']['blogs']['Row'] & {
+        author: {
+          email: string | null;
+        } | null;
+      };
+
+      const typedData = data as BlogResponse;
+
       const blogWithAuthor: BlogWithAuthor = {
-        id: data.id,
-        title: data.title,
-        content: data.content,
-        hero_image_url: data.hero_image_url,
-        status: data.status,
-        author: data.author ? { email: data.author.email } : null
+        id: typedData.id,
+        title: typedData.title,
+        content: typedData.content,
+        hero_image_url: typedData.hero_image_url,
+        status: typedData.status || '',
+        author: typedData.author
       };
 
       return blogWithAuthor;
