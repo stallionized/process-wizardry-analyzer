@@ -1,28 +1,43 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./components/Layout";
-import Auth from "./pages/Auth";
-import Landing from "./pages/Landing";
-import Blogs from "./pages/Blogs";
-import BlogManagement from "./pages/BlogManagement";
-import BlogPost from "./components/blogs/BlogPost";
-import ProjectDashboard from "./pages/ProjectDashboard";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { Toaster } from '@/components/ui/sonner';
+import Layout from '@/components/Layout';
+import Landing from '@/pages/Landing';
+import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/ProjectDashboard';
+import UserManagement from '@/pages/UserManagement';
+import ClientManagement from '@/pages/ClientManagement';
+import BlogManagement from '@/pages/BlogManagement';
+import Client from '@/pages/Client';
+import Blogs from '@/pages/Blogs';
+import { supabase } from '@/integrations/supabase/client';
+import './App.css';
 
-export default function App() {
+function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Landing />} />
+    <SessionContextProvider supabaseClient={supabase}>
+      <Router>
+        <Routes>
+          {/* Landing page without Layout wrapper */}
+          <Route path="/" element={<Landing />} />
+          
+          {/* Auth page without Layout wrapper */}
           <Route path="/auth" element={<Auth />} />
-          <Route path="/blogs" element={<Blogs />} />
-          <Route path="/blogs/new" element={<BlogManagement />} />
-          <Route path="/blogs/edit/:id" element={<BlogManagement />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/project/*" element={<ProjectDashboard />} />
-          {/* Redirect any unknown routes to the landing page */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </Router>
+          
+          {/* Protected routes with Layout wrapper */}
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/users" element={<UserManagement />} />
+            <Route path="/clients" element={<ClientManagement />} />
+            <Route path="/blogs" element={<BlogManagement />} />
+            <Route path="/client" element={<Client />} />
+            <Route path="/blogs" element={<Blogs />} />
+          </Route>
+        </Routes>
+        <Toaster />
+      </Router>
+    </SessionContextProvider>
   );
 }
+
+export default App;

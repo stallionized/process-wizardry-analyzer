@@ -53,69 +53,6 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
-      typography: {
-        DEFAULT: {
-          css: {
-            maxWidth: 'none',
-            color: 'inherit',
-            a: {
-              color: 'inherit',
-              textDecoration: 'underline',
-              fontWeight: '500',
-            },
-            '[class~="lead"]': {
-              color: 'inherit',
-            },
-            strong: {
-              color: 'inherit',
-            },
-            'ul > li::before': {
-              backgroundColor: 'currentColor',
-            },
-            hr: {
-              borderColor: 'currentColor',
-              opacity: 0.3,
-            },
-            blockquote: {
-              color: 'inherit',
-              borderLeftColor: 'currentColor',
-            },
-            h1: {
-              color: 'inherit',
-            },
-            h2: {
-              color: 'inherit',
-            },
-            h3: {
-              color: 'inherit',
-            },
-            h4: {
-              color: 'inherit',
-            },
-            'figure figcaption': {
-              color: 'inherit',
-            },
-            code: {
-              color: 'inherit',
-            },
-            'a code': {
-              color: 'inherit',
-            },
-            pre: {
-              color: 'currentColor',
-              backgroundColor: 'rgb(15 23 42 / 0.1)',
-            },
-            thead: {
-              color: 'inherit',
-              borderBottomColor: 'currentColor',
-            },
-            'tbody tr': {
-              borderBottomColor: 'currentColor',
-              opacity: 0.8,
-            },
-          },
-        },
-      },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
@@ -141,5 +78,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [require("tailwindcss-animate")],
 } satisfies Config;

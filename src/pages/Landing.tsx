@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useSessionContext } from "@supabase/auth-helpers-react";
 import { LogIn, LogOut, User } from "lucide-react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
@@ -66,14 +67,6 @@ export default function Landing() {
     }
   };
 
-  const handleLogin = () => {
-    if (session) {
-      navigate('/projects');
-    } else {
-      navigate('/auth');
-    }
-  };
-
   const benefits = [
     {
       icon: ChartBarIcon,
@@ -116,7 +109,7 @@ export default function Landing() {
           <div className="flex items-center space-x-4">
             {session ? (
               <>
-                <Link to="/projects">
+                <Link to="/dashboard">
                   <Button
                     variant="ghost"
                     className="text-white hover:text-white hover:bg-primary/20 gap-2"
@@ -135,28 +128,15 @@ export default function Landing() {
                 </Button>
               </>
             ) : (
-              <>
+              <Link to="/auth">
                 <Button
                   variant="ghost"
                   className="text-white hover:text-white hover:bg-primary/20 gap-2"
-                  onClick={() => {
-                    const demoSection = document.querySelector('#book-demo');
-                    if (demoSection) {
-                      demoSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                >
-                  Book Demo
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="text-white hover:text-white hover:bg-primary/20 gap-2"
-                  onClick={handleLogin}
                 >
                   <LogIn className="h-4 w-4" />
                   Login
                 </Button>
-              </>
+              </Link>
             )}
           </div>
         </div>
@@ -172,6 +152,23 @@ export default function Landing() {
             {benefits.map((benefit, index) => (
               <BenefitCard key={index} {...benefit} index={index} />
             ))}
+          </div>
+        </div>
+
+        <div className="mt-20 mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="sticky top-24 h-fit">
+              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
+                Latest Insights
+              </h2>
+              <p className="text-neutral-300">
+                Discover our latest thoughts and innovations in process engineering,
+                data analysis, and continuous improvement methodologies.
+              </p>
+            </div>
+            <div className="min-h-[600px]">
+              <FeaturedBlogs />
+            </div>
           </div>
         </div>
 
@@ -191,23 +188,6 @@ export default function Landing() {
               <span className="block mt-14">Six Sigma Master Black Belt Process Engineers</span>
             </motion.h1>
           </LampContainer>
-        </div>
-
-        <div className="mt-20 mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="sticky top-24 h-fit">
-              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
-                Latest Insights
-              </h2>
-              <p className="text-neutral-300">
-                Discover our latest thoughts and innovations in process engineering,
-                data analysis, and continuous improvement methodologies.
-              </p>
-            </div>
-            <div className="min-h-[600px]">
-              <FeaturedBlogs />
-            </div>
-          </div>
         </div>
       </div>
 

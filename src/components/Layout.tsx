@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSupabaseClient, useSessionContext } from '@supabase/auth-helpers-react';
-import { LogOut, Menu, LogIn, User, Users, Settings } from 'lucide-react';
+import { LogOut, Menu, LogIn, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -43,6 +43,7 @@ const Layout = () => {
   const { session } = useSessionContext();
   const isMobile = useIsMobile();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,28 +70,16 @@ const Layout = () => {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-primary border-primary min-w-[8rem] p-2">
                   <div className="w-48">
-                    <NavLink to="/dashboard">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </NavLink>
-                    <NavLink to="/users">
-                      <Users className="h-4 w-4 mr-2" />
-                      User Management
-                    </NavLink>
-                    <NavLink to="/clients">
-                      <Users className="h-4 w-4 mr-2" />
-                      Client Management
-                    </NavLink>
-                    <NavLink to="/blogs">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Blog Management
-                    </NavLink>
+                    <NavLink to="/dashboard" onClick={() => isMobile && setIsMenuVisible(false)}>Dashboard</NavLink>
+                    <NavLink to="/users" onClick={() => isMobile && setIsMenuVisible(false)}>User Management</NavLink>
+                    <NavLink to="/clients" onClick={() => isMobile && setIsMenuVisible(false)}>Client Management</NavLink>
+                    <NavLink to="/blogs" onClick={() => isMobile && setIsMenuVisible(false)}>Blog Management</NavLink>
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          <NavLink to="/client">Client Portal</NavLink>
+          <NavLink to="/client" onClick={() => isMobile && setIsMenuVisible(false)}>Client Portal</NavLink>
           <Button
             variant="ghost"
             size="icon"
@@ -101,29 +90,15 @@ const Layout = () => {
           </Button>
         </>
       ) : (
-        <>
+        <Link to="/auth">
           <Button
             variant="ghost"
             className="text-white hover:text-white hover:bg-primary/20 gap-2"
-            onClick={() => {
-              const demoSection = document.querySelector('#book-demo');
-              if (demoSection) {
-                demoSection.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
           >
-            Book Demo
+            <LogIn className="h-4 w-4" />
+            Login
           </Button>
-          <Link to="/auth">
-            <Button
-              variant="ghost"
-              className="text-white hover:text-white hover:bg-primary/20 gap-2"
-            >
-              <LogIn className="h-4 w-4" />
-              Login
-            </Button>
-          </Link>
-        </>
+        </Link>
       )}
     </>
   );

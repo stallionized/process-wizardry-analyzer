@@ -28,13 +28,11 @@ serve(async (req) => {
     - Break up text into readable paragraphs
     - Remove any unnecessary special characters
     
-    IMPORTANT: Start your response with a 2-3 sentence summary of the entire blog post. This summary should:
-    - Provide a clear overview of what the reader will learn
-    - Include the main value proposition or key takeaway
-    - Be engaging and make readers want to continue reading
-    - Be approximately 50-75 words long
-    
-    After the summary, add two line breaks before starting the main blog content.`
+    For the summary:
+    - Extract 2-3 sentences from the introduction that best capture the main points
+    - The summary should give readers a clear idea of what they'll learn
+    - Keep it concise but informative (around 50-75 words)
+    - Make it engaging to encourage readers to continue reading`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -48,7 +46,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
@@ -73,13 +71,16 @@ serve(async (req) => {
       .replace(/\*\*/g, '</strong>')
       .trim()
 
-    // Split content into summary and main content
-    const parts = generatedContent.split('\n\n')
-    const summary = parts[0].trim()
-    const content = parts.slice(1).join('\n\n').trim()
-
-    console.log('Generated Summary:', summary)
-    console.log('Content length:', content.length)
+    // Split the content to separate the summary and main content
+    const paragraphs = generatedContent.split('\n\n')
+    const firstParagraph = paragraphs[0]
+    
+    // Extract 2-3 sentences for the summary
+    const sentences = firstParagraph.split(/[.!?]+\s+/)
+    const summary = sentences.slice(0, 3).join('. ') + '.'
+    
+    // Join the rest of the paragraphs for the main content
+    const content = paragraphs.join('\n\n')
 
     return new Response(
       JSON.stringify({ content, summary }),
