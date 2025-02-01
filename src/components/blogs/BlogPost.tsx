@@ -37,7 +37,12 @@ export default function BlogPost() {
 
       const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select(`
+          *,
+          author:author_id (
+            email
+          )
+        `)
         .eq('slug', slug)
         .eq('status', 'published')
         .maybeSingle();
@@ -130,6 +135,11 @@ export default function BlogPost() {
           className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-neutral-300"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
+        {blog.author?.email && (
+          <div className="mt-8 pt-4 border-t border-white/10">
+            <p className="text-sm text-neutral-400">Written by {blog.author.email}</p>
+          </div>
+        )}
       </Card>
     </motion.div>
   );
