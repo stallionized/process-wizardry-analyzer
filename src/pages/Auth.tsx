@@ -13,16 +13,11 @@ const Auth = () => {
   const { session, isLoading: sessionLoading } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [errorHandled, setErrorHandled] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
-    if (session) {
+    if (!sessionLoading && session) {
       navigate('/dashboard');
-    }
-    // Set loading to false after initial session check
-    if (!sessionLoading) {
-      setAuthLoading(false);
     }
   }, [session, navigate, sessionLoading]);
 
@@ -112,7 +107,7 @@ const Auth = () => {
   }, [navigate, errorHandled]);
 
   // Show loading state only during initial session check
-  if (authLoading) {
+  if (sessionLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
