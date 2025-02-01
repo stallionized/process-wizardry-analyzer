@@ -1,4 +1,0 @@
-project_id = "trybqrktjibalolvsvej"
-
-[functions.generate-blog-content]
-verify_jwt = false

@@ -19,10 +19,10 @@ serve(async (req) => {
     You will also provide a detailed summary (at least 2-3 sentences long) that captures the essence of the blog post and entices readers to learn more.
     
     Guidelines:
-    - Create clear section headings without using markdown symbols
+    - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
     - Write engaging, detailed content under each section
     - Naturally incorporate SEO keywords when provided
-    - Use proper HTML formatting for emphasis (<strong> for important points)
+    - Use proper formatting for emphasis (bold for important points)
     - Ensure content is factual and well-researched
     - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
@@ -62,14 +62,7 @@ serve(async (req) => {
     })
 
     const data = await response.json()
-    let generatedContent = data.choices[0].message.content
-
-    // Clean up markdown headers and formatting
-    generatedContent = generatedContent
-      .replace(/#{1,6}\s/g, '') // Remove markdown headers
-      .replace(/\*\*/g, '<strong>') // Convert **text** to <strong>text</strong>
-      .replace(/\*\*/g, '</strong>')
-      .trim()
+    const generatedContent = data.choices[0].message.content
 
     // Split the content to separate the summary and main content
     const contentParts = generatedContent.split('\n\n')
