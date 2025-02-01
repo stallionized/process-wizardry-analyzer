@@ -14,95 +14,59 @@ const Auth = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [errorHandled, setErrorHandled] = useState(false);
 
-  // Redirect if session exists
+  // Primary redirect based on session
   useEffect(() => {
     if (session) {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [session, navigate]);
 
   useEffect(() => {
-    let subscription: { unsubscribe: () => void } | null = null;
-
-    const setupAuthListener = () => {
-      console.log('Setting up auth listener...');
-      const { data } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-        console.log('Auth state changed:', event);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (event === 'SIGNED_IN' && currentSession) {
+        setErrorMessage("");
+        navigate('/dashboard', { replace: true });
+      } else if (event === 'SIGNED_OUT') {
+        if (errorHandled) return;
         
-        if (event === 'SIGNED_IN' && currentSession) {
-          console.log('User signed in successfully');
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const errorDescription = params.get('error_description');
+        
+        if (!error && !errorDescription) {
           setErrorMessage("");
-          navigate('/dashboard');
-        } else if (event === 'SIGNED_OUT') {
-          console.log('Processing sign out or error state');
-          
-          if (errorHandled) {
-            console.log('Error already being handled, skipping');
-            return;
-          }
-          
-          const params = new URLSearchParams(window.location.search);
-          const error = params.get('error');
-          const errorDescription = params.get('error_description');
-          
-          if (!error && !errorDescription) {
-            console.log('No error parameters found');
-            setErrorMessage("");
-            return;
-          }
-
-          console.log('Error detected:', error, errorDescription);
-          
-          setErrorHandled(true);
-          
-          setErrorMessage("");
-          if (subscription) {
-            console.log('Unsubscribing from current listener');
-            subscription.unsubscribe();
-            subscription = null;
-          }
-          
-          console.log('Setting up error message with delay');
-          setTimeout(() => {
-            console.log('Processing error after delay');
-            switch (error) {
-              case 'invalid_grant':
-              case 'invalid_credentials':
-                setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-                break;
-              case 'refresh_token_not_found':
-                setErrorMessage('Your session has expired. Please sign in again.');
-                break;
-              default:
-                if (errorDescription) {
-                  setErrorMessage('An error occurred during sign in. Please try again.');
-                }
-                break;
-            }
-            
-            setTimeout(() => {
-              console.log('Resetting error state and resubscribing');
-              setErrorHandled(false);
-              
-              if (!subscription) {
-                console.log('Reestablishing auth listener');
-                subscription = setupAuthListener();
-              }
-            }, 2000);
-          }, 1000);
+          return;
         }
-      });
-
-      return data.subscription;
-    };
-
-    subscription = setupAuthListener();
+        
+        setErrorHandled(true);
+        
+        setTimeout(() => {
+          switch (error) {
+            case 'invalid_grant':
+            case 'invalid_credentials':
+              setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+              break;
+            case 'refresh_token_not_found':
+              setErrorMessage('Your session has expired. Please sign in again.');
+              break;
+            default:
+              if (errorDescription) {
+                setErrorMessage('An error occurred during sign in. Please try again.');
+              }
+              break;
+          }
+          
+          setTimeout(() => {
+            setErrorHandled(false);
+          }, 2000);
+        }, 1000);
+      }
+    });
 
     return () => {
-      if (subscription) {
-        console.log('Cleaning up auth listener');
-        subscription.unsubscribe();
-      }
+      subscription.unsubscribe();
     };
   }, [navigate, errorHandled]);
 
