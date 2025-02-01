@@ -25,7 +25,10 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
     extensions: [StarterKit],
     content,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const newContent = editor.getHTML();
+      if (newContent !== content) {
+        onChange(newContent);
+      }
     },
     editorProps: {
       attributes: {
@@ -35,9 +38,12 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
     editable: !disabled,
   });
 
-  // Update editor content when content prop changes
+  // Only update editor content when content prop changes significantly
   if (editor && content !== editor.getHTML()) {
-    editor.commands.setContent(content);
+    // Use a timeout to prevent immediate re-render
+    setTimeout(() => {
+      editor.commands.setContent(content);
+    }, 0);
   }
 
   if (!editor) {
