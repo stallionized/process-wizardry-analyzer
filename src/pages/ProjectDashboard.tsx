@@ -18,6 +18,10 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import CreateProjectDialog from '@/components/projects/CreateProjectDialog';
+import { Database } from '@/integrations/supabase/types';
+
+type ProjectStatus = Database['public']['Enums']['project_status'];
 
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
