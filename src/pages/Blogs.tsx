@@ -6,8 +6,8 @@ import BlogPost from '@/components/blogs/BlogPost';
 export default function Blogs() {
   return (
     <Routes>
-      <Route path="/" element={<BlogList />} />
-      <Route path=":slug/*" element={<BlogPost />} />
+      <Route index element={<BlogList />} />
+      <Route path=":slug" element={<BlogPost />} />
     </Routes>
   );
 }
