@@ -27,40 +27,6 @@ const Auth = () => {
         if (event === 'SIGNED_IN' && session) {
           setErrorMessage("");
           navigate('/projects');
-        } else if (event === 'SIGNED_OUT') {
-          if (errorHandled) return;
-          
-          const params = new URLSearchParams(window.location.search);
-          const error = params.get('error');
-          const errorDescription = params.get('error_description');
-          
-          if (!error && !errorDescription) {
-            setErrorMessage("");
-            return;
-          }
-          
-          setErrorHandled(true);
-          
-          setTimeout(() => {
-            switch (error) {
-              case 'invalid_grant':
-              case 'invalid_credentials':
-                setErrorMessage('Invalid email or password. Please check your credentials and try again.');
-                break;
-              case 'refresh_token_not_found':
-                setErrorMessage('Your session has expired. Please sign in again.');
-                break;
-              default:
-                if (errorDescription) {
-                  setErrorMessage('An error occurred during sign in. Please try again.');
-                }
-                break;
-            }
-            
-            setTimeout(() => {
-              setErrorHandled(false);
-            }, 2000);
-          }, 1000);
         }
       });
 
@@ -71,7 +37,7 @@ const Auth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, errorHandled]);
+  }, [navigate]);
 
   // If already authenticated, don't render anything as we're redirecting
   if (session) {

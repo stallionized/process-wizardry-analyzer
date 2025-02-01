@@ -66,6 +66,14 @@ export default function Landing() {
     }
   };
 
+  const handleLogin = () => {
+    if (session) {
+      navigate('/projects');
+    } else {
+      navigate('/auth');
+    }
+  };
+
   const benefits = [
     {
       icon: ChartBarIcon,
@@ -108,7 +116,7 @@ export default function Landing() {
           <div className="flex items-center space-x-4">
             {session ? (
               <>
-                <Link to="/dashboard">
+                <Link to="/projects">
                   <Button
                     variant="ghost"
                     className="text-white hover:text-white hover:bg-primary/20 gap-2"
@@ -140,15 +148,14 @@ export default function Landing() {
                 >
                   Book Demo
                 </Button>
-                <Link to="/auth">
-                  <Button
-                    variant="ghost"
-                    className="text-white hover:text-white hover:bg-primary/20 gap-2"
-                  >
-                    <LogIn className="h-4 w-4" />
-                    Login
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="text-white hover:text-white hover:bg-primary/20 gap-2"
+                  onClick={handleLogin}
+                >
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
               </>
             )}
           </div>
