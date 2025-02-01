@@ -128,15 +128,29 @@ export default function Landing() {
                 </Button>
               </>
             ) : (
-              <Link to="/auth">
+              <>
                 <Button
                   variant="ghost"
                   className="text-white hover:text-white hover:bg-primary/20 gap-2"
+                  onClick={() => {
+                    const demoSection = document.querySelector('#book-demo');
+                    if (demoSection) {
+                      demoSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
                 >
-                  <LogIn className="h-4 w-4" />
-                  Login
+                  Book Demo
                 </Button>
-              </Link>
+                <Link to="/auth">
+                  <Button
+                    variant="ghost"
+                    className="text-white hover:text-white hover:bg-primary/20 gap-2"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Login
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         </div>
