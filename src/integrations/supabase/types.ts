@@ -461,7 +461,12 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      generate_slug: {
+        Args: {
+          title: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       analysis_status:
