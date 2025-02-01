@@ -31,7 +31,6 @@ export default function BlogManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [content, setContent] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
@@ -57,7 +56,6 @@ export default function BlogManagement() {
       setValue('summary', blog.summary || '');
       setValue('featured', blog.featured || false);
       setContent(blog.content || '');
-      setValue('content', blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
@@ -72,11 +70,6 @@ export default function BlogManagement() {
     }
   };
 
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-    setValue('content', newContent);
-  };
-
   const generateContent = async (topic: string) => {
     if (!topic) {
       toast({
@@ -88,28 +81,60 @@ export default function BlogManagement() {
     }
 
     setIsLoading(true);
-    setIsGenerating(true);
     try {
-      console.log('Generating content for topic:', topic);
-      const { data, error } = await supabase.functions.invoke('generate-blog-content', {
+      const { data: generatedContent, error: generateError } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
           topic,
           seoKeywords: watch('seoKeywords')
         }
       });
 
-      if (error) throw error;
+      if (generateError) throw generateError;
       
-      console.log('Generated content:', data);
-      
-      setContent(data.content);
-      setValue('content', data.content);
-      setValue('summary', data.summary);
-      
-      toast({
-        title: "Content generated successfully",
-        description: "You can now edit the generated content.",
-      });
+      if (generatedContent.content && generatedContent.summary) {
+        // Save the AI-generated content to the database first
+        const aiContent = {
+          originalContent: generatedContent.content,
+          originalSummary: generatedContent.summary,
+          generatedAt: new Date().toISOString(),
+          topic,
+          seoKeywords: watch('seoKeywords')
+        };
+
+        const { error: saveError } = id
+          ? await supabase
+              .from('blogs')
+              .update({ 
+                content: generatedContent.content,
+                summary: generatedContent.summary,
+                ai_generated_content: aiContent,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', id)
+          : await supabase
+              .from('blogs')
+              .insert({
+                title: watch('title') || 'Untitled Blog',
+                content: generatedContent.content,
+                summary: generatedContent.summary,
+                ai_generated_content: aiContent,
+                status: 'draft',
+                author_id: session?.user.id
+              });
+
+        if (saveError) throw saveError;
+
+        // Update the form fields and editor content
+        setContent(generatedContent.content);
+        setValue('summary', generatedContent.summary);
+        
+        toast({
+          title: "Content generated and saved",
+          description: "You can now edit the generated content.",
+        });
+      } else {
+        throw new Error('Invalid response format from content generation');
+      }
     } catch (error) {
       console.error('Error generating content:', error);
       toast({
@@ -119,7 +144,6 @@ export default function BlogManagement() {
       });
     } finally {
       setIsLoading(false);
-      setIsGenerating(false);
     }
   };
 
@@ -158,7 +182,7 @@ export default function BlogManagement() {
 
       const blogData = {
         title: data.title,
-        content: data.content,
+        content,
         summary: data.summary,
         hero_image_url: heroImageUrl,
         status,
@@ -246,7 +270,7 @@ export default function BlogManagement() {
               id="summary"
               placeholder="Enter a brief summary of your blog post"
               {...register('summary', { required: true })}
-              className="resize-y min-h-[100px]"
+              className="resize-y"
             />
             {errors.summary && (
               <p className="text-sm text-red-500 mt-1">Summary is required</p>
@@ -314,24 +338,10 @@ export default function BlogManagement() {
 
           <div>
             <Label htmlFor="content">Blog Content</Label>
-            <input type="hidden" {...register('content', { required: true })} />
-            {isGenerating ? (
-              <div className="min-h-[400px] border rounded-md p-4 bg-muted/20">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                </div>
-              </div>
-            ) : (
-              <RichTextEditor
-                content={content}
-                onChange={handleContentChange}
-              />
-            )}
-            {errors.content && (
-              <p className="text-sm text-red-500 mt-1">Content is required</p>
-            )}
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
+            />
           </div>
 
           <div className="flex gap-4">

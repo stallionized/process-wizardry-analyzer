@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,12 +13,21 @@ serve(async (req) => {
 
   try {
     const { topic, seoKeywords } = await req.json()
+    console.log('Generating content for topic:', topic, 'with keywords:', seoKeywords);
 
     const systemPrompt = `You are an expert blog writer focused on creating SEO-friendly, engaging content. 
     Your task is to write comprehensive, well-structured blog posts that are both informative and optimized for search engines.
-    You will also provide a detailed summary (at least 2-3 sentences long) that captures the essence of the blog post and entices readers to learn more.
     
-    Guidelines:
+    First, provide a clear, concise 3-sentence summary of the blog post that captures its main points and value proposition.
+    Then, after two blank lines, write the full blog post.
+    
+    Guidelines for the summary:
+    - Exactly 3 sentences
+    - No special characters or formatting
+    - Focus on the key value proposition and main points
+    - Keep it engaging but straightforward
+    
+    Guidelines for the blog post:
     - Create clear, hierarchical headings using proper markdown (## for H2, ### for H3)
     - Write engaging, detailed content under each section
     - Naturally incorporate SEO keywords when provided
@@ -27,12 +36,8 @@ serve(async (req) => {
     - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
     - Break up text into readable paragraphs
-    - Remove any unnecessary special characters
-    - For the summary:
-      * Write at least 2-3 sentences
-      * Capture the main value proposition
-      * Include a hook to generate interest
-      * Keep it concise but informative`
+    - Aim for at least 800 words of high-quality content
+    - Make the content inspiring and influential`
 
     const userPrompt = seoKeywords 
       ? `Write a comprehensive blog post about: ${topic}
@@ -61,13 +66,22 @@ serve(async (req) => {
       }),
     })
 
-    const data = await response.json()
-    const generatedContent = data.choices[0].message.content
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error('Failed to generate content');
+    }
 
-    // Split the content to separate the summary and main content
-    const contentParts = generatedContent.split('\n\n')
-    const summary = contentParts[0]
-    const content = contentParts.slice(1).join('\n\n')
+    const data = await response.json()
+    console.log('OpenAI response received');
+    
+    const generatedContent = data.choices[0].message.content
+    console.log('Generated content length:', generatedContent.length);
+
+    // Split content into summary and main content
+    const parts = generatedContent.split('\n\n')
+    const summary = parts[0].replace(/[^\w\s.,!?]/g, '').trim() // Remove special characters
+    const content = parts.slice(2).join('\n\n') // Skip the two blank lines
 
     return new Response(
       JSON.stringify({ content, summary }),

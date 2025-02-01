@@ -21,26 +21,21 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [StarterKit],
-    content: content
-      .replace(/\n/g, '<br>') // Convert line breaks to HTML breaks
-      .replace(/[^\x20-\x7E\n]/g, '') // Remove special characters except newlines
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim(), // Remove leading/trailing whitespace
+    content,
     onUpdate: ({ editor }) => {
-      const newContent = editor.getHTML()
-        .replace(/<br\s*\/?>/g, '\n') // Convert HTML breaks back to line breaks
-        .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces with regular spaces
-        .replace(/\n{3,}/g, '\n\n') // Replace multiple consecutive line breaks with double line breaks
-        .replace(/[^\x20-\x7E\n]/g, '') // Remove special characters except newlines
-        .trim(); // Remove leading/trailing whitespace
-      onChange(newContent);
+      onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none p-4 min-h-[400px] focus:outline-none whitespace-pre-wrap leading-relaxed'
-      }
-    }
+        class: 'prose prose-sm max-w-none focus:outline-none',
+      },
+    },
   });
+
+  // Update editor content when content prop changes
+  if (editor && content !== editor.getHTML()) {
+    editor.commands.setContent(content);
+  }
 
   if (!editor) {
     return null;
@@ -122,7 +117,10 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           <Redo className="h-4 w-4" />
         </Button>
       </div>
-      <EditorContent editor={editor} />
+      <EditorContent 
+        editor={editor} 
+        className="p-4 min-h-[400px]"
+      />
     </div>
   );
 };
