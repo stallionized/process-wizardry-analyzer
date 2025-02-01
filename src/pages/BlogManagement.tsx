@@ -31,6 +31,7 @@ export default function BlogManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [content, setContent] = useState("");
+  const [isEditorDisabled, setIsEditorDisabled] = useState(false);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
@@ -81,6 +82,7 @@ export default function BlogManagement() {
     }
 
     setIsLoading(true);
+    setIsEditorDisabled(true);
     try {
       const { data: generatedContent, error: generateError } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
@@ -92,7 +94,6 @@ export default function BlogManagement() {
       if (generateError) throw generateError;
       
       if (generatedContent.content && generatedContent.summary) {
-        // Save the AI-generated content to the database first
         const aiContent = {
           originalContent: generatedContent.content,
           originalSummary: generatedContent.summary,
@@ -124,7 +125,6 @@ export default function BlogManagement() {
 
         if (saveError) throw saveError;
 
-        // Update the form fields and editor content
         setContent(generatedContent.content);
         setValue('summary', generatedContent.summary);
         
@@ -144,6 +144,7 @@ export default function BlogManagement() {
       });
     } finally {
       setIsLoading(false);
+      setIsEditorDisabled(false);
     }
   };
 
@@ -158,6 +159,7 @@ export default function BlogManagement() {
     }
     
     setIsLoading(true);
+    setIsEditorDisabled(true);
     try {
       let heroImageUrl = previewUrl;
       
@@ -219,6 +221,7 @@ export default function BlogManagement() {
       });
     } finally {
       setIsLoading(false);
+      setIsEditorDisabled(false);
     }
   };
 
@@ -341,6 +344,7 @@ export default function BlogManagement() {
             <RichTextEditor
               content={content}
               onChange={setContent}
+              disabled={isEditorDisabled || isBlogLoading || isLoading}
             />
           </div>
 
