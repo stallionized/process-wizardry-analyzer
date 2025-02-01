@@ -10,9 +10,8 @@ type BlogWithAuthor = {
   title: string;
   content: string;
   hero_image_url: string | null;
-  author: {
-    email: string | null;
-  } | null;
+  author_id: string;
+  author_email: string | null;
   status: string;
 }
 
@@ -47,6 +46,7 @@ export default function BlogPost() {
         return null;
       }
 
+      // Modified query to join with profiles table directly
       const { data, error } = await supabase
         .from('blogs')
         .select(`
@@ -55,7 +55,8 @@ export default function BlogPost() {
           content,
           hero_image_url,
           status,
-          author:profiles(id, email)
+          author_id,
+          profiles!blogs_author_id_fkey (email)
         `)
         .eq('slug', slug)
         .eq('status', 'published')
@@ -83,7 +84,8 @@ export default function BlogPost() {
         content: data.content,
         hero_image_url: data.hero_image_url,
         status: data.status || '',
-        author: data.author ? { email: data.author.email } : null
+        author_id: data.author_id,
+        author_email: data.profiles?.email || null
       };
 
       return blogWithAuthor;
@@ -160,9 +162,9 @@ export default function BlogPost() {
           className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-neutral-300"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
-        {blog.author?.email && (
+        {blog.author_email && (
           <div className="mt-8 pt-4 border-t border-white/10">
-            <p className="text-sm text-neutral-400">Written by {blog.author.email}</p>
+            <p className="text-sm text-neutral-400">Written by {blog.author_email}</p>
           </div>
         )}
       </Card>
