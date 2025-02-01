@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database, Menu } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import ProjectList from '@/components/projects/ProjectList';
+import CreateProjectDialog from '@/components/projects/CreateProjectDialog';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
@@ -28,13 +29,12 @@ const ProjectDashboard = () => {
   
   // If no ID is provided, show the projects list
   if (!id) {
-    if (isLoadingProjects) {
-      return <div>Loading projects...</div>;
-    }
-
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-6">Projects Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Projects Dashboard</h1>
+          <CreateProjectDialog clientId="" />
+        </div>
         <ProjectList 
           projects={projects} 
           isLoading={isLoadingProjects}
