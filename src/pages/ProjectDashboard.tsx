@@ -26,7 +26,7 @@ const ProjectDashboard = () => {
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
-  const { projects, isLoading: isLoadingProjects, updateProjectMutation, softDeleteMutation } = useProjects();
+  const { projects, isLoading: isLoadingProjects, updateProjectMutation: listUpdateMutation, softDeleteMutation } = useProjects();
   const { session } = useSessionContext();
   const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -58,12 +58,13 @@ const ProjectDashboard = () => {
             if (newStatus === 'Delete') {
               softDeleteMutation.mutate(projectId);
             } else {
-              updateProjectMutation.mutate({ id: projectId, status: newStatus });
+              listUpdateMutation.mutate({ id: projectId, status: newStatus });
             }
           }}
         />
         <CreateProjectDialog 
-          open={isCreateDialogOpen} 
+          clientId={session?.user?.id || ''}
+          isOpen={isCreateDialogOpen} 
           onOpenChange={setIsCreateDialogOpen}
         />
       </div>
@@ -81,23 +82,23 @@ const ProjectDashboard = () => {
   }
 
   const handleProjectNameUpdate = (newName: string) => {
-    updateProjectMutation.mutate({ project_name: newName });
+    updateProjectMutation.mutate({ id, project_name: newName });
   };
 
   const handleClientNameUpdate = (newName: string) => {
-    updateProjectMutation.mutate({ client_name: newName });
+    updateProjectMutation.mutate({ id, client_name: newName });
   };
 
   const handleDeadlineUpdate = (newDate: Date | undefined) => {
     if (newDate) {
-      updateProjectMutation.mutate({ deadline: newDate.toISOString() });
+      updateProjectMutation.mutate({ id, deadline: newDate.toISOString() });
     } else {
-      updateProjectMutation.mutate({ deadline: null });
+      updateProjectMutation.mutate({ id, deadline: null });
     }
   };
 
   const handleTopicsUpdate = (newTopics: string) => {
-    updateProjectMutation.mutate({ topics: newTopics });
+    updateProjectMutation.mutate({ id, topics: newTopics });
   };
 
   const menuItems = [
