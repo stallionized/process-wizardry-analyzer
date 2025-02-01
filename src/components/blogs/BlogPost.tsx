@@ -55,7 +55,7 @@ export default function BlogPost() {
           content,
           hero_image_url,
           status,
-          author:profiles!blogs_author_id_fkey(email)
+          author:profiles(id, email)
         `)
         .eq('slug', slug)
         .eq('status', 'published')
