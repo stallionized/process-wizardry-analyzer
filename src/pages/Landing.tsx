@@ -5,13 +5,6 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
-import { Link } from "react-router-dom";
-import { useSessionContext } from "@supabase/auth-helpers-react";
-import { LogIn, LogOut, User } from "lucide-react";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -42,31 +35,6 @@ const BenefitCard = ({ icon: Icon, title, description, index }: {
 );
 
 export default function Landing() {
-  const { session } = useSessionContext();
-  const supabase = useSupabaseClient();
-  const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 0);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success('Signed out successfully');
-      navigate('/');
-    } catch (error) {
-      toast.error('Error signing out');
-    }
-  };
-
   const benefits = [
     {
       icon: ChartBarIcon,
@@ -92,57 +60,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
-        isScrolled ? 'bg-primary/80 backdrop-blur' : 'bg-primary'
-      }`}>
-        <div className="flex h-16 md:h-24 items-center px-4 md:px-8 max-w-[2000px] mx-auto">
-          <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center">
-              <img 
-                src="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png" 
-                alt="AI Process Engineer Logo" 
-                className="h-[40px] md:h-[60px] w-auto scale-125"
-              />
-            </Link>
-          </div>
-          <div className="flex-grow" />
-          <div className="flex items-center space-x-4">
-            {session ? (
-              <>
-                <Link to="/dashboard">
-                  <Button
-                    variant="ghost"
-                    className="text-white hover:text-white hover:bg-primary/20 gap-2"
-                  >
-                    <User className="h-4 w-4" />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  onClick={handleSignOut}
-                  className="text-white hover:text-white hover:bg-primary/20 gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Link to="/auth">
-                <Button
-                  variant="ghost"
-                  className="text-white hover:text-white hover:bg-primary/20 gap-2"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      <div className="container mx-auto px-4 pt-24 bg-black">
+      <div className="container mx-auto px-4 pt-24">
         <div>
           <SplineSceneBasic />
         </div>
@@ -191,7 +109,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="bg-black py-8">
+      <footer className="bg-[#000000] py-8">
         <div className="container mx-auto px-4 text-center text-gray-300">
           <p>© 2024 AI Process Engineer. All rights reserved.</p>
         </div>

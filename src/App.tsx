@@ -1,40 +1,25 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { Toaster } from '@/components/ui/sonner';
-import Layout from '@/components/Layout';
-import Landing from '@/pages/Landing';
-import Auth from '@/pages/Auth';
-import Dashboard from '@/pages/ProjectDashboard';
-import UserManagement from '@/pages/UserManagement';
-import ClientManagement from '@/pages/ClientManagement';
-import BlogManagement from '@/pages/BlogManagement';
-import Client from '@/pages/Client';
-import Blogs from '@/pages/Blogs';
-import { supabase } from '@/integrations/supabase/client';
-import './App.css';
+import Layout from "@/components/Layout";
+import Landing from "@/pages/Landing";
+import Blogs from "@/pages/Blogs";
+import BlogManagement from "@/pages/BlogManagement";
+import BlogPost from "@/components/blogs/BlogPost";
+import { supabase } from "@/integrations/supabase/client";
 
 function App() {
   return (
     <SessionContextProvider supabaseClient={supabase}>
       <Router>
-        <Routes>
-          {/* Landing page without Layout wrapper */}
-          <Route path="/" element={<Landing />} />
-          
-          {/* Auth page without Layout wrapper */}
-          <Route path="/auth" element={<Auth />} />
-          
-          {/* Protected routes with Layout wrapper */}
-          <Route element={<Layout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/users" element={<UserManagement />} />
-            <Route path="/clients" element={<ClientManagement />} />
-            <Route path="/blogs" element={<BlogManagement />} />
-            <Route path="/client" element={<Client />} />
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/blogs" element={<Blogs />} />
-          </Route>
-        </Routes>
-        <Toaster />
+            <Route path="/blogs/new" element={<BlogManagement />} />
+            <Route path="/blogs/edit/:id" element={<BlogManagement />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+          </Routes>
+        </Layout>
       </Router>
     </SessionContextProvider>
   );
