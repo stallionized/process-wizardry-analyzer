@@ -14,9 +14,9 @@ const Auth = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [errorHandled, setErrorHandled] = useState(false);
 
+  // Redirect if session exists
   useEffect(() => {
     if (session) {
-      console.log('Session detected, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [session, navigate]);
@@ -26,10 +26,10 @@ const Auth = () => {
 
     const setupAuthListener = () => {
       console.log('Setting up auth listener...');
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
         console.log('Auth state changed:', event);
         
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && currentSession) {
           console.log('User signed in successfully');
           setErrorMessage("");
           navigate('/dashboard');
@@ -148,7 +148,7 @@ const Auth = () => {
               },
             }}
             providers={[]}
-            redirectTo={window.location.origin}
+            redirectTo={`${window.location.origin}/dashboard`}
           />
         </div>
       </div>
