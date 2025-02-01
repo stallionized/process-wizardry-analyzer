@@ -4,6 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 
+type BlogWithAuthor = {
+  id: string;
+  title: string;
+  content: string;
+  hero_image_url: string | null;
+  author: {
+    email: string;
+  } | null;
+  status: string;
+}
+
 export default function BlogPost() {
   const { slug } = useParams();
   console.log('Current slug:', slug);
@@ -39,7 +50,7 @@ export default function BlogPost() {
         .from('blogs')
         .select(`
           *,
-          author:author_id (
+          author:profiles!blogs_author_id_fkey (
             email
           )
         `)
@@ -61,7 +72,7 @@ export default function BlogPost() {
           console.log('No blog found with slug:', slug);
         }
       }
-      return data;
+      return data as BlogWithAuthor;
     },
     enabled: !!slug,
   });
