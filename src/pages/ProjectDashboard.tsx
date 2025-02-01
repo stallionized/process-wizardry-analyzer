@@ -26,7 +26,7 @@ const ProjectDashboard = () => {
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
-  const { projects, isLoading: isLoadingProjects, updateProjectMutation: listUpdateMutation, softDeleteMutation } = useProjects();
+  const { projects, updateProjectMutation: listUpdateMutation, softDeleteMutation } = useProjects();
   const { session } = useSessionContext();
   const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -39,10 +39,6 @@ const ProjectDashboard = () => {
   
   // If no ID is provided, show the projects list
   if (!id) {
-    if (isLoadingProjects) {
-      return <div>Loading projects...</div>;
-    }
-
     return (
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
@@ -52,8 +48,8 @@ const ProjectDashboard = () => {
           </Button>
         </div>
         <ProjectList 
-          projects={projects} 
-          isLoading={isLoadingProjects}
+          projects={projects || []} 
+          isLoading={false}
           onStatusChange={(projectId, newStatus) => {
             if (newStatus === 'Delete') {
               softDeleteMutation.mutate(projectId);
@@ -71,14 +67,10 @@ const ProjectDashboard = () => {
     );
   }
 
-  const { project, isLoadingProject, updateProjectMutation } = useProjectManagement(id);
-
-  if (isLoadingProject) {
-    return <div>Loading project details...</div>;
-  }
+  const { project, updateProjectMutation } = useProjectManagement(id);
 
   if (!project) {
-    return <div>Project not found</div>;
+    return null;
   }
 
   const handleProjectNameUpdate = (newName: string) => {
