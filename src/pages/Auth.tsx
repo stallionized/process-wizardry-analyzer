@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { session, isLoading } = useSessionContext();
+  const { session } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [errorHandled, setErrorHandled] = useState(false);
 
@@ -105,17 +105,6 @@ const Auth = () => {
       }
     };
   }, [navigate, errorHandled]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container max-w-md mx-auto py-12">
