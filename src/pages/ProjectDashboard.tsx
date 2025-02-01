@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database, Menu } from 'lucide-react';
-import { useProjects } from '@/hooks/useProjects';
-import ProjectList from '@/components/projects/ProjectList';
 import ProjectDetails from '@/components/project/ProjectDetails';
 import ProjectFiles from '@/components/project/ProjectFiles';
 import AIResults from '@/components/project/AIResults';
@@ -21,26 +19,15 @@ import {
 
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
-  const { projects, isLoading: isLoadingProjects } = useProjects();
-  
-  // If no ID is provided, show the projects list
-  if (!id) {
-    return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-6">Projects Dashboard</h1>
-        <ProjectList 
-          projects={projects} 
-          isLoading={isLoadingProjects}
-          onStatusChange={() => {}} // Implement status change handler if needed
-        />
-      </div>
-    );
-  }
-
-  // Below this point is the project details view
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Redirect to dashboard if no ID is provided
+  if (!id) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const { project, isLoadingProject, updateProjectMutation } = useProjectManagement(id);
 
   if (isLoadingProject) {

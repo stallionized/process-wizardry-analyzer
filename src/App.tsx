@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import Layout from '@/components/Layout';
 import Landing from '@/pages/Landing';
 import Auth from '@/pages/Auth';
-import Index from '@/pages/Index';
+import Dashboard from '@/pages/Dashboard';
 import Admin from '@/pages/Admin';
 import BlogManagement from '@/pages/BlogManagement';
 import Blogs from '@/pages/Blogs';
@@ -23,7 +23,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/blogs/manage" element={<BlogManagement />} />
             <Route path="/blogs/edit/:id" element={<BlogManagement />} />
