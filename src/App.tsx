@@ -18,7 +18,7 @@ export default function App() {
           <Route path="/blogs/new" element={<BlogManagement />} />
           <Route path="/blogs/edit/:id" element={<BlogManagement />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/projects/*" element={<ProjectDashboard />} />
+          <Route path="/project/*" element={<ProjectDashboard />} />
           {/* Redirect any unknown routes to the landing page */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
