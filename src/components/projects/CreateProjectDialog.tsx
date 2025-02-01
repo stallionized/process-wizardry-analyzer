@@ -1,5 +1,6 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useForm } from 'react-hook-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,36 +9,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePrograms } from '@/hooks/usePrograms';
 import { toast } from 'sonner';
 
-interface CreateProjectDialogProps {
-  clientId: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+interface CreateProjectFormData {
+  project_name: string;
+  program_id: string;
 }
 
-const CreateProjectDialog = ({ clientId, isOpen, onOpenChange }: CreateProjectDialogProps) => {
+interface CreateProjectDialogProps {
+  clientId: string;
+}
+
+const CreateProjectDialog = ({ clientId }: CreateProjectDialogProps) => {
   const { createProjectMutation } = useProjects();
   const { programs } = usePrograms(clientId);
-  const [projectName, setProjectName] = React.useState('');
-  const [programId, setProgramId] = React.useState<string>('');
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateProjectFormData>();
+  const [isOpen, setIsOpen] = React.useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = async (data: CreateProjectFormData) => {
     try {
-      if (!projectName?.trim()) {
+      if (!data.project_name?.trim()) {
         toast.error('Project name is required');
         return;
       }
 
       await createProjectMutation.mutateAsync({
-        project_name: projectName.trim(),
-        program_id: programId || null,
+        project_name: data.project_name.trim(),
+        program_id: data.program_id,
         client_id: clientId,
       });
       
-      onOpenChange(false);
-      setProjectName('');
-      setProgramId('');
+      setIsOpen(false);
+      reset();
     } catch (error) {
       console.error('Error creating project:', error);
       toast.error('Failed to create project');
@@ -45,24 +46,29 @@ const CreateProjectDialog = ({ clientId, isOpen, onOpenChange }: CreateProjectDi
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>Create Project</Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="project_name">Project Name</Label>
             <Input
               id="project_name"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="Enter project name"
+              {...register('project_name', { required: true })}
+              className={errors.project_name ? 'border-red-500' : ''}
             />
+            {errors.project_name && (
+              <p className="text-sm text-red-500">Project name is required</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="program_id">Program</Label>
-            <Select value={programId} onValueChange={setProgramId}>
+            <Select onValueChange={(value) => register('program_id').onChange({ target: { value } })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a program" />
               </SelectTrigger>

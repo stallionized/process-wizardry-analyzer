@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import BlogEditor from "@/components/blogs/BlogEditor";
+import RichTextEditor from "@/components/blogs/RichTextEditor";
 
 interface BlogForm {
   title: string;
@@ -33,7 +33,7 @@ export default function BlogManagement() {
   const [content, setContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<BlogForm>();
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<BlogForm>();
 
   const { data: blog, isLoading: isBlogLoading } = useQuery({
     queryKey: ['blog', id],
@@ -53,25 +53,16 @@ export default function BlogManagement() {
 
   useEffect(() => {
     if (blog) {
-      reset({
-        title: blog.title || '',
-        topic: '',
-        seoKeywords: '',
-        content: blog.content || '',
-        summary: blog.summary || '',
-        featured: blog.featured || false,
-      });
+      setValue('title', blog.title);
+      setValue('summary', blog.summary || '');
+      setValue('featured', blog.featured || false);
       setContent(blog.content || '');
+      setValue('content', blog.content || '');
       if (blog.hero_image_url) {
         setPreviewUrl(blog.hero_image_url);
       }
     }
-  }, [blog, reset]);
-
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-    setValue('content', newContent, { shouldValidate: true });
-  };
+  }, [blog, setValue]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,6 +70,11 @@ export default function BlogManagement() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    setValue('content', newContent);
   };
 
   const generateContent = async (topic: string) => {
@@ -94,6 +90,7 @@ export default function BlogManagement() {
     setIsLoading(true);
     setIsGenerating(true);
     try {
+      console.log('Generating content for topic:', topic);
       const { data, error } = await supabase.functions.invoke('generate-blog-content', {
         body: { 
           topic,
@@ -103,9 +100,11 @@ export default function BlogManagement() {
 
       if (error) throw error;
       
+      console.log('Generated content:', data);
+      
       setContent(data.content);
-      setValue('content', data.content, { shouldValidate: true });
-      setValue('summary', data.summary, { shouldValidate: true });
+      setValue('content', data.content);
+      setValue('summary', data.summary);
       
       toast({
         title: "Content generated successfully",
@@ -325,7 +324,7 @@ export default function BlogManagement() {
                 </div>
               </div>
             ) : (
-              <BlogEditor
+              <RichTextEditor
                 content={content}
                 onChange={handleContentChange}
               />

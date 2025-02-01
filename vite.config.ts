@@ -19,7 +19,4 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  define: {
-    global: 'window', // This fixes the Draft.js "global is not defined" error
-  },
 }));

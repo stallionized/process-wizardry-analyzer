@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database, Menu } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
@@ -13,84 +13,65 @@ import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { useSessionContext } from '@supabase/auth-helpers-react';
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import CreateProjectDialog from '@/components/projects/CreateProjectDialog';
 
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
-  const { projects, updateProjectMutation: listUpdateMutation, softDeleteMutation } = useProjects();
-  const { session } = useSessionContext();
-  const navigate = useNavigate();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-
-  useEffect(() => {
-    if (!session) {
-      navigate('/auth');
-    }
-  }, [session, navigate]);
+  const { projects, isLoading: isLoadingProjects } = useProjects();
   
   // If no ID is provided, show the projects list
   if (!id) {
+    if (isLoadingProjects) {
+      return <div>Loading projects...</div>;
+    }
+
     return (
       <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Projects Dashboard</h1>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            New Project
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold mb-6">Projects Dashboard</h1>
         <ProjectList 
-          projects={projects || []} 
-          isLoading={false}
-          onStatusChange={(projectId, newStatus) => {
-            if (newStatus === 'Delete') {
-              softDeleteMutation.mutate(projectId);
-            } else {
-              listUpdateMutation.mutate({ id: projectId, status: newStatus });
-            }
-          }}
-        />
-        <CreateProjectDialog 
-          clientId={session?.user?.id || ''}
-          isOpen={isCreateDialogOpen} 
-          onOpenChange={setIsCreateDialogOpen}
+          projects={projects} 
+          isLoading={isLoadingProjects}
+          onStatusChange={() => {}} // Implement status change handler if needed
         />
       </div>
     );
   }
 
-  const { project, updateProjectMutation } = useProjectManagement(id);
+  const { project, isLoadingProject, updateProjectMutation } = useProjectManagement(id);
+
+  if (isLoadingProject) {
+    return <div>Loading project details...</div>;
+  }
 
   if (!project) {
-    return null;
+    return <div>Project not found</div>;
   }
 
   const handleProjectNameUpdate = (newName: string) => {
-    updateProjectMutation.mutate({ id, project_name: newName });
+    updateProjectMutation.mutate({ project_name: newName });
   };
 
   const handleClientNameUpdate = (newName: string) => {
-    updateProjectMutation.mutate({ id, client_name: newName });
+    updateProjectMutation.mutate({ client_name: newName });
   };
 
   const handleDeadlineUpdate = (newDate: Date | undefined) => {
     if (newDate) {
-      updateProjectMutation.mutate({ id, deadline: newDate.toISOString() });
+      updateProjectMutation.mutate({ deadline: newDate.toISOString() });
     } else {
-      updateProjectMutation.mutate({ id, deadline: null });
+      updateProjectMutation.mutate({ deadline: null });
     }
   };
 
   const handleTopicsUpdate = (newTopics: string) => {
-    updateProjectMutation.mutate({ id, topics: newTopics });
+    updateProjectMutation.mutate({ topics: newTopics });
   };
 
   const menuItems = [
