@@ -16,6 +16,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (session) {
+      console.log('Session detected, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [session, navigate]);

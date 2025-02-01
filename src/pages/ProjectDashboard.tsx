@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Grid, ChartBar, TrendingUp, AlertTriangle, FileText, Database, Menu } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
@@ -13,22 +13,29 @@ import ExternalComplaints from '@/components/project/ExternalComplaints';
 import { useProjectManagement } from '@/hooks/useProjectManagement';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import CreateProjectDialog from '@/components/projects/CreateProjectDialog';
-import { Database } from '@/integrations/supabase/types';
-
-type ProjectStatus = Database['public']['Enums']['project_status'];
 
 const ProjectDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState('project');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const isMobile = useIsMobile();
-  const { projects, isLoading: isLoadingProjects } = useProjects();
+  const { projects, isLoading: isLoadingProjects, updateProjectMutation, softDeleteMutation } = useProjects();
+  const { session } = useSessionContext();
+  const navigate = useNavigate();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!session) {
+      navigate('/auth');
+    }
+  }, [session, navigate]);
   
   // If no ID is provided, show the projects list
   if (!id) {
@@ -38,11 +45,26 @@ const ProjectDashboard = () => {
 
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-6">Projects Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Projects Dashboard</h1>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            New Project
+          </Button>
+        </div>
         <ProjectList 
           projects={projects} 
           isLoading={isLoadingProjects}
-          onStatusChange={() => {}} // Implement status change handler if needed
+          onStatusChange={(projectId, newStatus) => {
+            if (newStatus === 'Delete') {
+              softDeleteMutation.mutate(projectId);
+            } else {
+              updateProjectMutation.mutate({ id: projectId, status: newStatus });
+            }
+          }}
+        />
+        <CreateProjectDialog 
+          open={isCreateDialogOpen} 
+          onOpenChange={setIsCreateDialogOpen}
         />
       </div>
     );
