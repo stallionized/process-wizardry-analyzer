@@ -46,7 +46,7 @@ export default function BlogPost() {
         return null;
       }
 
-      // Modified query to join with profiles table directly
+      // Using a subquery to join through auth.users
       const { data, error } = await supabase
         .from('blogs')
         .select(`
@@ -56,7 +56,7 @@ export default function BlogPost() {
           hero_image_url,
           status,
           author_id,
-          profiles!blogs_author_id_fkey (email)
+          author_email:profiles!inner(email)
         `)
         .eq('slug', slug)
         .eq('status', 'published')
@@ -85,7 +85,7 @@ export default function BlogPost() {
         hero_image_url: data.hero_image_url,
         status: data.status || '',
         author_id: data.author_id,
-        author_email: data.profiles?.email || null
+        author_email: data.author_email?.[0]?.email || null
       };
 
       return blogWithAuthor;
