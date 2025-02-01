@@ -12,7 +12,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const { session } = useSessionContext();
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [errorHandled, setErrorHandled] = useState(false);
 
   // Redirect to projects if already authenticated
   useEffect(() => {
@@ -93,7 +92,7 @@ const Auth = () => {
                 },
               }}
               providers={[]}
-              redirectTo={window.location.origin}
+              redirectTo={`${window.location.origin}/projects`}
             />
           </div>
         </div>
