@@ -15,7 +15,7 @@ export const FeaturedBlogs = () => {
         .eq('featured', true)
         .eq('status', 'published')
         .is('archived_at', null)
-        .not('display_order', 'is', null)  // Only select blogs with a display order set
+        .not('display_order', 'is', null)
         .order('display_order', { ascending: true });
       
       if (error) throw error;
