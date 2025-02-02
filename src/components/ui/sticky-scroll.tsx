@@ -53,7 +53,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           <motion.div
             style={{
               position: "sticky",
-              top: "-40px",
+              top: "-80px",
             }}
             className="rounded-lg overflow-hidden h-[600px]"
           >
