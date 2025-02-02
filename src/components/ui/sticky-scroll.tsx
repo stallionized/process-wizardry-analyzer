@@ -28,7 +28,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
       className="relative h-[100vh] py-10 overflow-y-auto bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
-        <div className="relative max-w-xl">
+        <div className="relative max-w-xl h-[600px] overflow-y-auto">
           <div className="space-y-8 py-8">
             {content.map((item, idx) => (
               <div key={idx} className="relative">
@@ -49,18 +49,18 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             ))}
           </div>
         </div>
-        <div className="hidden md:block relative h-full">
+        <div className="hidden md:block relative h-[600px]">
           <motion.div
             style={{
               position: "sticky",
-              top: "0%", // Changed from 8% to 0% to align perfectly with first bullet point
+              top: "0%",
             }}
-            className="rounded-lg overflow-hidden"
+            className="rounded-lg overflow-hidden h-[600px]"
           >
             <motion.img
               src={imageUrl}
               alt="Process Analysis"
-              className="w-full h-auto object-cover rounded-lg"
+              className="w-full h-full object-cover rounded-lg"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5 }}
