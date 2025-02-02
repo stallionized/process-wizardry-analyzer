@@ -73,7 +73,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   return (
     <motion.div
       ref={containerRef}
-      className="relative h-[60vh] bg-black pt-4"
+      className="relative h-[60vh] bg-black pt-4 mt-8"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         {/* Content Column */}
@@ -107,42 +107,40 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         </div>
 
         {/* Image Column */}
-        <div className="hidden md:block">
-          <div className="flex flex-col items-center">
-            <motion.img
-              src={imageUrl}
-              alt="Process Analysis"
-              className="w-full h-[500px] object-contain rounded-lg"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            />
-            
-            {/* Pagination moved under the image */}
-            <div className="mt-8 w-full bg-black/80 backdrop-blur-sm py-4 rounded-lg">
-              <Pagination>
-                <PaginationContent className="flex justify-center gap-2">
-                  {Array.from({ length: totalPages }).map((_, idx) => (
-                    <PaginationItem key={idx}>
-                      <PaginationLink
-                        onClick={() => handlePageChange(idx)}
-                        className={`
-                          w-8 h-8 flex items-center justify-center rounded-full
-                          transition-colors text-white
-                          ${currentPage === idx 
-                            ? 'bg-[#33C3F0] hover:bg-[#0EA5E9]' 
-                            : 'bg-black/50 hover:bg-[#33C3F0]'
-                          }
-                        `}
-                        isActive={currentPage === idx}
-                      >
-                        {idx + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                </PaginationContent>
-              </Pagination>
-            </div>
+        <div className="hidden md:flex flex-col items-center">
+          <motion.img
+            src={imageUrl}
+            alt="Process Analysis"
+            className="w-full h-[400px] object-contain rounded-lg"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          />
+          
+          {/* Pagination under the image */}
+          <div className="mt-4 w-full">
+            <Pagination>
+              <PaginationContent className="flex justify-center gap-2">
+                {Array.from({ length: totalPages }).map((_, idx) => (
+                  <PaginationItem key={idx}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(idx)}
+                      className={`
+                        w-8 h-8 flex items-center justify-center rounded-full
+                        transition-colors text-white cursor-pointer
+                        ${currentPage === idx 
+                          ? 'bg-[#33C3F0] hover:bg-[#0EA5E9]' 
+                          : 'bg-black/50 hover:bg-[#33C3F0]'
+                        }
+                      `}
+                      isActive={currentPage === idx}
+                    >
+                      {idx + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+              </PaginationContent>
+            </Pagination>
           </div>
         </div>
       </div>
