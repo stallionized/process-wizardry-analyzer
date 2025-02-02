@@ -29,7 +29,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         <div className="relative max-w-xl h-[600px] overflow-y-auto scrollbar-hide">
-          <div className="space-y-8 py-8">
+          <div className="space-y-8">
             {content.map((item, idx) => (
               <div key={idx} className="relative">
                 <motion.div
@@ -53,7 +53,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           <motion.div
             style={{
               position: "sticky",
-              top: "0%",
+              top: "0",
             }}
             className="rounded-lg overflow-hidden h-[600px]"
           >
