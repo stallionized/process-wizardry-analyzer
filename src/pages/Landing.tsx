@@ -109,7 +109,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="-mt-32">
+        <div className="-mt-48">
           <StickyScroll
             content={processContent}
             imageUrl="https://i.imgur.com/c0fBC9P.png"
