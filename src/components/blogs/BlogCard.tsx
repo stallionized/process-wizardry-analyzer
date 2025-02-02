@@ -55,7 +55,7 @@ export const BlogCard = ({
         )}
       </div>
       <div className="flex gap-2 items-center">
-        {!blog.archived_at && (
+        {!blog.archived_at && blog.status === 'published' && (
           <div className="flex items-center gap-2 mr-4">
             <ListOrdered className="h-4 w-4 text-muted-foreground" />
             <Select
