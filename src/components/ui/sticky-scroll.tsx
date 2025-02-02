@@ -73,8 +73,8 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           </div>
         </div>
 
-        {/* Image Column */}
-        <div className="hidden md:flex flex-col items-center justify-center h-full">
+        {/* Image Column - Adjusted position */}
+        <div className="hidden md:flex flex-col items-center justify-start h-full pt-8">
           <motion.img
             src={imageUrl}
             alt="Process Analysis"
