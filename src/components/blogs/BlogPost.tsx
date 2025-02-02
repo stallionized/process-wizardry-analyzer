@@ -26,7 +26,7 @@ export default function BlogPost() {
         .select('id, title, content, hero_image_url, created_at')
         .eq('slug', slug)
         .eq('status', 'published')
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching blog:', error);
