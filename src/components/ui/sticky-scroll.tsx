@@ -73,7 +73,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   return (
     <motion.div
       ref={containerRef}
-      className="relative h-[80vh] bg-black -mt-32"
+      className="relative h-[80vh] bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         {/* Content Column */}
