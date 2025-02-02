@@ -3,100 +3,40 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Database } from "@/integrations/supabase/types";
 
-type BlogWithAuthor = {
+type Blog = {
   id: string;
   title: string;
   content: string;
   hero_image_url: string | null;
-  author_id: string;
-  author_email: string | null;
-  status: string;
+  created_at: string;
 }
 
 export default function BlogPost() {
   const { slug } = useParams();
   console.log('Current slug:', slug);
 
-  // First query to check blog status
-  const { data: blogStatus } = useQuery({
-    queryKey: ['blog-status', slug],
-    queryFn: async () => {
-      if (!slug) return null;
-      const { data, error } = await supabase
-        .from('blogs')
-        .select('status, archived_at')
-        .eq('slug', slug)
-        .maybeSingle();
-      
-      console.log('Blog status check:', data);
-      if (error) console.error('Error checking blog status:', error);
-      return data;
-    },
-    enabled: !!slug,
-  });
-
   const { data: blog, isLoading, error } = useQuery({
     queryKey: ['blog', slug],
     queryFn: async () => {
-      console.log('Fetching blog with slug:', slug);
-      if (!slug) {
-        console.error('No slug provided');
-        return null;
-      }
+      if (!slug) return null;
 
-      // Modified query to join with auth.users through profiles
       const { data, error } = await supabase
         .from('blogs')
-        .select(`
-          id,
-          title,
-          content,
-          hero_image_url,
-          status,
-          author_id,
-          profiles (
-            id,
-            email
-          )
-        `)
+        .select('id, title, content, hero_image_url, created_at')
         .eq('slug', slug)
         .eq('status', 'published')
-        .maybeSingle();
+        .single();
       
       if (error) {
         console.error('Error fetching blog:', error);
         throw error;
       }
 
-      console.log('Blog data received:', data);
-      if (!data) {
-        if (blogStatus) {
-          console.log('Blog exists but may not be published. Status:', blogStatus.status);
-          console.log('Archived:', blogStatus.archived_at ? 'Yes' : 'No');
-        } else {
-          console.log('No blog found with slug:', slug);
-        }
-        return null;
-      }
-
-      const blogWithAuthor: BlogWithAuthor = {
-        id: data.id,
-        title: data.title,
-        content: data.content,
-        hero_image_url: data.hero_image_url,
-        status: data.status || '',
-        author_id: data.author_id,
-        author_email: data.profiles?.email || null
-      };
-
-      return blogWithAuthor;
+      return data;
     },
     enabled: !!slug,
   });
-
-  console.log('Component render - blog:', blog, 'isLoading:', isLoading, 'error:', error);
 
   if (isLoading) {
     return (
@@ -117,7 +57,6 @@ export default function BlogPost() {
   }
 
   if (error) {
-    console.error('Error in component:', error);
     return (
       <div className="container mx-auto py-8">
         <Card className="p-6 bg-black/[0.96] border-white/10">
@@ -134,9 +73,7 @@ export default function BlogPost() {
         <Card className="p-6 bg-black/[0.96] border-white/10">
           <h1 className="text-2xl font-bold text-white">Blog post not found</h1>
           <p className="text-neutral-300 mt-2">
-            {blogStatus ? 
-              "This blog post is not currently published." :
-              "The blog post you're looking for doesn't exist or has been removed."}
+            The blog post you're looking for doesn't exist or hasn't been published yet.
           </p>
         </Card>
       </div>
@@ -152,6 +89,9 @@ export default function BlogPost() {
     >
       <Card className="p-6 bg-black/[0.96] border-white/10">
         <h1 className="text-3xl font-bold mb-4 text-white">{blog.title}</h1>
+        <div className="text-sm text-neutral-400 mb-6">
+          Published on {new Date(blog.created_at).toLocaleDateString()}
+        </div>
         {blog.hero_image_url && (
           <div className="mb-6">
             <img
@@ -165,11 +105,6 @@ export default function BlogPost() {
           className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-neutral-300"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
-        {blog.author_email && (
-          <div className="mt-8 pt-4 border-t border-white/10">
-            <p className="text-sm text-neutral-400">Written by {blog.author_email}</p>
-          </div>
-        )}
       </Card>
     </motion.div>
   );
