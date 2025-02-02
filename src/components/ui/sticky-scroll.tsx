@@ -48,8 +48,9 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
       className="relative h-[100vh] bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
-        <div className="flex flex-col space-y-4">
-          <div className="relative h-[300px]">
+        {/* Content Column */}
+        <div className="flex flex-col">
+          <div className="pt-24"> {/* Added padding-top to align with image */}
             <div className="space-y-8">
               {getVisibleContent().map((item, idx) => (
                 <motion.div
@@ -88,18 +89,19 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           </div>
         </div>
 
-        <div className="hidden md:block relative">
+        {/* Image Column */}
+        <div className="hidden md:block">
           <motion.div
             style={{
               position: "sticky",
-              top: "24px",
+              top: "96px", // Increased top value to match content padding
             }}
-            className="rounded-lg overflow-hidden h-[600px]"
+            className="rounded-lg overflow-hidden"
           >
             <motion.img
               src={imageUrl}
               alt="Process Analysis"
-              className="w-full h-full object-contain rounded-lg"
+              className="w-full h-[600px] object-contain rounded-lg"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5 }}
