@@ -65,10 +65,16 @@ const Layout = ({ children }: LayoutProps) => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      // Clear any local storage or state if needed
       toast.success('Signed out successfully');
-      navigate('/');
+      // Force navigation to landing page
+      window.location.href = '/';
     } catch (error) {
+      console.error('Error signing out:', error);
       toast.error('Error signing out');
     }
   };
