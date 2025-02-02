@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
+import { StickyScroll } from "@/components/ui/sticky-scroll";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -33,6 +34,41 @@ const BenefitCard = ({ icon: Icon, title, description, index }: {
     </Card>
   </motion.div>
 );
+
+const processContent = [
+  {
+    title: "Holistic Process Comparison",
+    description: "Leverage AI-driven insights to compare existing workflows across departments or product lines, identifying best practices and standardizing them for seamless operations."
+  },
+  {
+    title: "Data-Backed Statistical Analysis",
+    description: "Detect patterns in large datasets through advanced statistical models, uncovering trends, inefficiencies, and performance bottlenecks that might otherwise remain hidden."
+  },
+  {
+    title: "Predictive Process Mining",
+    description: "Automatically map out and analyze the \"as-is\" processes in real time. This approach reveals inefficiencies, anticipates future deviations, and recommends corrective actions before issues escalate."
+  },
+  {
+    title: "Automated Control Chart Generation",
+    description: "Constantly monitor key performance metrics—such as production quality or customer satisfaction—via AI-enabled control charts that provide early warnings of process variances and drive proactive decision-making."
+  },
+  {
+    title: "Continuous Improvement Feedback Loop",
+    description: "Integrate machine learning algorithms that adapt to changing market conditions or internal process modifications, ensuring that operational improvements are consistently refined and updated over time."
+  },
+  {
+    title: "Reduced Operating Costs and Downtime",
+    description: "Implement data-informed process optimizations that minimize waste, reduce lead times, and enhance resource allocation—ultimately resulting in measurable cost savings."
+  },
+  {
+    title: "Enhanced Compliance and Risk Management",
+    description: "Harness predictive models to ensure compliance with industry regulations and corporate governance standards, while mitigating risks through early detection of potential policy or process breaches."
+  },
+  {
+    title: "Multi-Level, Enterprise-Wide Insight",
+    description: "Extend process reviews from micro-level workflows to macro-level operations, enabling scalability across global units and multiple lines of business. By analyzing both day-to-day tasks and overarching supply chain flows, the AI agent delivers unified strategic oversight that drives standardized process excellence across the entire organization."
+  }
+];
 
 export default function Landing() {
   const benefits = [
@@ -71,6 +107,13 @@ export default function Landing() {
               <BenefitCard key={index} {...benefit} index={index} />
             ))}
           </div>
+        </div>
+
+        <div className="mt-20">
+          <StickyScroll
+            content={processContent}
+            imageUrl="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png"
+          />
         </div>
 
         <div className="mt-12 mb-20">
