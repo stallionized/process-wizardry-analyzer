@@ -108,43 +108,41 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 
         {/* Image Column */}
         <div className="hidden md:block">
-          <div className="h-full flex items-center">
+          <div className="flex flex-col items-center">
             <motion.img
               src={imageUrl}
               alt="Process Analysis"
-              className="w-full h-[600px] object-contain rounded-lg"
+              className="w-full h-[500px] object-contain rounded-lg"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5 }}
             />
+            
+            {/* Pagination moved under the image */}
+            <div className="mt-8 w-full bg-black/80 backdrop-blur-sm py-4 rounded-lg">
+              <Pagination>
+                <PaginationContent>
+                  {Array.from({ length: totalPages }).map((_, idx) => (
+                    <PaginationItem key={idx}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(idx)}
+                        className={`
+                          transition-colors
+                          ${currentPage === idx 
+                            ? 'bg-neutral-200 text-black hover:bg-[#33C3F0] hover:text-white' 
+                            : 'hover:bg-[#33C3F0] hover:text-white'
+                          }
+                        `}
+                        isActive={currentPage === idx}
+                      >
+                        {idx + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                </PaginationContent>
+              </Pagination>
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Pagination */}
-      <div className="absolute bottom-8 left-0 w-full bg-black/80 backdrop-blur-sm py-4">
-        <div className="max-w-7xl mx-auto px-4">
-          <Pagination>
-            <PaginationContent>
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <PaginationItem key={idx}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(idx)}
-                    className={`
-                      transition-colors
-                      ${currentPage === idx 
-                        ? 'bg-neutral-200 text-black hover:bg-[#33C3F0] hover:text-white' 
-                        : 'hover:bg-[#33C3F0] hover:text-white'
-                      }
-                    `}
-                    isActive={currentPage === idx}
-                  >
-                    {idx + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-            </PaginationContent>
-          </Pagination>
         </div>
       </div>
     </motion.div>
