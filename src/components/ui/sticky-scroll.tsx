@@ -53,7 +53,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           <motion.div
             style={{
               position: "sticky",
-              top: "8%", // Changed from 15% to 8% to align with first bullet point
+              top: "0%", // Changed from 8% to 0% to align perfectly with first bullet point
             }}
             className="rounded-lg overflow-hidden"
           >
