@@ -34,72 +34,40 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   };
 
   const handlePageChange = (page: number) => {
-    if (!containerRef.current) return;
     setCurrentPage(page);
-    
-    // Calculate the scroll position for the selected page
-    const container = containerRef.current;
-    const { top } = container.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const scrollPosition = window.scrollY + top + (viewportHeight * page);
-    
-    // Smooth scroll to the position
-    window.scrollTo({
-      top: scrollPosition,
-      behavior: 'smooth'
-    });
   };
 
   useEffect(() => {
-    let lastScrollPosition = window.scrollY;
-    let scrollTimeout: NodeJS.Timeout;
+    if (!containerRef.current) return;
 
-    const handleScroll = () => {
-      if (!containerRef.current || isTransitioning) return;
-
-      // Clear the existing timeout
-      clearTimeout(scrollTimeout);
-
-      const container = containerRef.current;
-      const { top, height } = container.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const scrollPosition = -top;
-      const totalHeight = height - viewportHeight;
-      const pageHeight = totalHeight / (totalPages - 1);
-      
-      // Calculate which page we should be on based on scroll position
-      const targetPage = Math.round(scrollPosition / pageHeight);
-      
-      if (targetPage !== currentPage && targetPage >= 0 && targetPage < totalPages) {
-        setIsTransitioning(true);
-        
-        // Set a timeout to prevent rapid transitions
-        scrollTimeout = setTimeout(() => {
-          setCurrentPage(targetPage);
-          
-          // Calculate exact scroll position for the page
-          const exactScrollPosition = window.scrollY + top + (viewportHeight * targetPage);
-          
-          // Smooth scroll to the exact position
-          window.scrollTo({
-            top: exactScrollPosition,
-            behavior: 'smooth'
-          });
-          
-          // Reset transition state after animation
-          setTimeout(() => {
-            setIsTransitioning(false);
-          }, 800);
-        }, 50);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // When the section is in view, enable snap scrolling
+            document.body.style.scrollSnapType = 'y mandatory';
+            containerRef.current?.style.setProperty('scroll-snap-align', 'start');
+          } else {
+            // When section is not in view, disable snap scrolling
+            document.body.style.scrollSnapType = 'none';
+            containerRef.current?.style.setProperty('scroll-snap-align', 'none');
+          }
+        });
+      },
+      {
+        threshold: 0.1 // Trigger when 10% of the element is visible
       }
-    };
+    );
 
-    window.addEventListener('scroll', handleScroll);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
+      observer.disconnect();
+      document.body.style.scrollSnapType = 'none';
     };
-  }, [currentPage, totalPages, isTransitioning]);
+  }, []);
 
   return (
     <motion.div
