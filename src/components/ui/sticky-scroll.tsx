@@ -5,9 +5,7 @@ import {
   Pagination, 
   PaginationContent, 
   PaginationItem, 
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious
+  PaginationLink
 } from "@/components/ui/pagination";
 
 interface StickyScrollProps {
@@ -36,17 +34,11 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentPage > 0) {
-      setCurrentPage(prev => prev - 1);
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -80,9 +72,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           
           <Pagination className="mt-4">
             <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious onClick={handlePrevious} />
-              </PaginationItem>
               {Array.from({ length: totalPages }).map((_, idx) => (
                 <PaginationItem key={idx}>
                   <PaginationLink
@@ -93,9 +82,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                   </PaginationLink>
                 </PaginationItem>
               ))}
-              <PaginationItem>
-                <PaginationNext onClick={handleNext} />
-              </PaginationItem>
             </PaginationContent>
           </Pagination>
         </div>
