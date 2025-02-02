@@ -83,7 +83,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
           {/* Content Column */}
           <div className="flex flex-col">
-            <div className="pt-24 sticky top-24">
+            <div className="h-full flex items-center">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentPage}
@@ -113,13 +113,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 
           {/* Image Column */}
           <div className="hidden md:block">
-            <motion.div
-              style={{
-                position: "sticky",
-                top: "96px",
-              }}
-              className="rounded-lg overflow-hidden"
-            >
+            <div className="h-full flex items-center">
               <motion.img
                 src={imageUrl}
                 alt="Process Analysis"
@@ -128,7 +122,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5 }}
               />
-            </motion.div>
+            </div>
           </div>
         </div>
       </motion.div>
