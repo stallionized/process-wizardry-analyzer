@@ -112,7 +112,7 @@ export default function Landing() {
         <div className="mt-20">
           <StickyScroll
             content={processContent}
-            imageUrl="/lovable-uploads/2874dd12-8a6e-4615-a3a8-0007e6b68381.png"
+            imageUrl="https://i.imgur.com/c0fBC9P.png"
           />
         </div>
 

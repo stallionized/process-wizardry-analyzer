@@ -25,7 +25,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   return (
     <motion.div
       ref={containerRef}
-      className="relative h-[80vh] py-10 overflow-hidden bg-black"
+      className="relative h-[100vh] py-10 overflow-y-auto bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full max-w-7xl mx-auto px-4">
         <div className="relative">
@@ -38,10 +38,10 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                   transition={{ duration: 0.5, delay: idx * 0.1 }}
                   className={contentClassName}
                 >
-                  <h3 className="text-2xl font-bold text-white mb-4">
+                  <h3 className="text-xl font-bold text-white mb-3">
                     {item.title}
                   </h3>
-                  <p className="text-neutral-300 leading-relaxed">
+                  <p className="text-neutral-300 leading-relaxed text-sm">
                     {item.description}
                   </p>
                 </motion.div>
