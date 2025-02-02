@@ -45,12 +45,12 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   return (
     <motion.div
       ref={containerRef}
-      className="relative h-[100vh] py-0 overflow-y-auto bg-black"
+      className="relative h-[100vh] bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         <div className="flex flex-col space-y-4">
           <div className="relative h-[300px]">
-            <div className="space-y-8 pt-0">
+            <div className="space-y-8">
               {getVisibleContent().map((item, idx) => (
                 <motion.div
                   key={idx + currentPage * itemsPerPage}
@@ -88,13 +88,13 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           </div>
         </div>
 
-        <div className="hidden md:block relative h-[600px] pt-0">
+        <div className="hidden md:block relative">
           <motion.div
             style={{
               position: "sticky",
-              top: "0px", // Changed from -180px to 0px to align with the first bullet point
+              top: "24px",
             }}
-            className="rounded-lg overflow-hidden h-[600px] pt-0 mt-0"
+            className="rounded-lg overflow-hidden h-[600px]"
           >
             <motion.img
               src={imageUrl}
