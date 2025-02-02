@@ -70,7 +70,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             </div>
           </div>
           
-          <Pagination className="mt-4">
+          <Pagination className="mt-12"> {/* Increased margin-top from mt-4 to mt-12 */}
             <PaginationContent>
               {Array.from({ length: totalPages }).map((_, idx) => (
                 <PaginationItem key={idx}>
