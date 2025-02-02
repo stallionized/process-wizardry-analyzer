@@ -46,7 +46,7 @@ export const BlogCard = ({
         {blog.status === 'published' && blog.slug && !blog.archived_at && (
           <div className="mt-2">
             <Link 
-              to={`/blog/${blog.slug}`}
+              to={`/blogs/${blog.slug}`}
               className="text-primary hover:underline"
             >
               View Published Blog
