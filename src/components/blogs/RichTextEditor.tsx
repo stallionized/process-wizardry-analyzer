@@ -46,8 +46,7 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
     // Use a timeout to prevent immediate re-render
     setTimeout(() => {
       editor.commands.setContent(content, false, { 
-        preserveWhitespace: true,
-        preserveLineBreaks: true 
+        preserveWhitespace: 'full'
       });
     }, 0);
   }
