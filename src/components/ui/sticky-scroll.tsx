@@ -77,7 +77,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         {/* Content Column */}
-        <div className="flex flex-col">
+        <div className="flex flex-col justify-center h-full"> {/* Added justify-center */}
           <div className="h-full flex items-center">
             <AnimatePresence mode="wait">
               <motion.div
@@ -86,7 +86,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5 }}
-                className="space-y-8"
+                className="space-y-8 w-full"
               >
                 {getVisibleContent().map((item, idx) => (
                   <div
@@ -107,7 +107,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         </div>
 
         {/* Image Column */}
-        <div className="hidden md:flex flex-col items-center justify-between">
+        <div className="hidden md:flex flex-col items-center justify-between h-full"> {/* Added h-full */}
           <motion.img
             src={imageUrl}
             alt="Process Analysis"
@@ -119,7 +119,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           
           {/* Pagination under the image */}
           <div className="w-full flex justify-center mt-4">
-            <Pagination>
+            <Pagination className="mx-auto"> {/* Added mx-auto */}
               <PaginationContent className="flex justify-center gap-2">
                 {Array.from({ length: totalPages }).map((_, idx) => (
                   <PaginationItem key={idx}>
