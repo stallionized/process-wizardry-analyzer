@@ -28,7 +28,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
       className="relative h-[100vh] py-10 overflow-y-auto bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
-        <div className="relative max-w-xl h-[600px] overflow-y-auto">
+        <div className="relative max-w-xl h-[600px] overflow-y-auto scrollbar-hide">
           <div className="space-y-8 py-8">
             {content.map((item, idx) => (
               <div key={idx} className="relative">
@@ -60,7 +60,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             <motion.img
               src={imageUrl}
               alt="Process Analysis"
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-contain rounded-lg"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5 }}
