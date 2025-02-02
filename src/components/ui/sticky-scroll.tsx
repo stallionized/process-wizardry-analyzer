@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Pagination, 
   PaginationContent, 
@@ -34,12 +34,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }
   };
 
   return (
@@ -51,25 +45,31 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
           {/* Content Column */}
           <div className="flex flex-col">
-            <div className="pt-24"> {/* Added padding-top to align with image */}
-              <div className="space-y-8">
-                {getVisibleContent().map((item, idx) => (
-                  <motion.div
-                    key={idx + currentPage * itemsPerPage}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: idx * 0.1 }}
-                    className={`mb-8 ${contentClassName}`}
-                  >
-                    <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-[#33C3F0] to-[#0EA5E9] bg-clip-text text-transparent">
-                      {item.title}
-                    </h3>
-                    <p className="text-neutral-300 leading-relaxed text-sm">
-                      {item.description}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
+            <div className="pt-24 sticky top-24"> {/* Made content sticky */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentPage}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="space-y-8"
+                >
+                  {getVisibleContent().map((item, idx) => (
+                    <div
+                      key={idx + currentPage * itemsPerPage}
+                      className={`mb-8 ${contentClassName}`}
+                    >
+                      <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-[#33C3F0] to-[#0EA5E9] bg-clip-text text-transparent">
+                        {item.title}
+                      </h3>
+                      <p className="text-neutral-300 leading-relaxed text-sm">
+                        {item.description}
+                      </p>
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
@@ -78,7 +78,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             <motion.div
               style={{
                 position: "sticky",
-                top: "96px", // Increased top value to match content padding
+                top: "96px",
               }}
               className="rounded-lg overflow-hidden"
             >
@@ -95,7 +95,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         </div>
       </motion.div>
 
-      {/* Pagination moved outside the scroll container */}
+      {/* Pagination */}
       <div className="sticky bottom-8 bg-black py-4">
         <Pagination>
           <PaginationContent>
