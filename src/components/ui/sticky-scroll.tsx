@@ -27,8 +27,8 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
       ref={containerRef}
       className="relative h-[100vh] py-10 overflow-y-auto bg-black"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full max-w-7xl mx-auto px-4">
-        <div className="relative">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
+        <div className="relative max-w-xl">
           <div className="space-y-16 py-8">
             {content.map((item, idx) => (
               <div key={idx} className="relative">
