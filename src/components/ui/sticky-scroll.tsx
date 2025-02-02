@@ -24,6 +24,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const itemsPerPage = 3;
   const totalPages = Math.ceil(content.length / itemsPerPage);
 
@@ -38,7 +39,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 
   useEffect(() => {
     const handleScroll = () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || isTransitioning) return;
 
       const container = containerRef.current;
       const { top, height } = container.getBoundingClientRect();
@@ -46,6 +47,9 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
       const scrollPosition = -top;
       const sectionProgress = scrollPosition / (height - viewportHeight);
       
+      // Only allow scrolling past if we're on the last page
+      if (currentPage === totalPages - 1) return;
+
       // Calculate which page we should be on based on scroll position
       const targetPage = Math.min(
         Math.max(
@@ -55,14 +59,20 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         totalPages - 1
       );
 
-      if (targetPage !== currentPage) {
+      if (targetPage !== currentPage && targetPage === currentPage + 1) {
+        setIsTransitioning(true);
         setCurrentPage(targetPage);
+        
+        // Add a delay before allowing the next transition
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 800); // Matches the animation duration
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, isTransitioning]);
 
   return (
     <div className="relative">
