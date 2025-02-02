@@ -107,7 +107,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         </div>
 
         {/* Image Column */}
-        <div className="hidden md:flex flex-col items-center">
+        <div className="hidden md:flex flex-col items-center justify-between">
           <motion.img
             src={imageUrl}
             alt="Process Analysis"
@@ -118,7 +118,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           />
           
           {/* Pagination under the image */}
-          <div className="mt-4 w-full">
+          <div className="w-full flex justify-center mt-4">
             <Pagination>
               <PaginationContent className="flex justify-center gap-2">
                 {Array.from({ length: totalPages }).map((_, idx) => (
