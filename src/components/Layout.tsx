@@ -159,7 +159,7 @@ const Layout = ({ children }: LayoutProps) => {
             "fixed top-0 left-0 right-0 z-50 border-0 transition-colors duration-300",
             isLandingPage
               ? isScrolled 
-                ? "bg-transparent backdrop-blur-sm" 
+                ? "bg-[#0A192F] backdrop-blur-sm" 
                 : "bg-[#0A192F]"
               : "bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary/60"
           )}
