@@ -57,7 +57,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className={contentClassName}
+                  className={`mb-8 ${contentClassName}`} // Added mb-8 for better spacing between items
                 >
                   <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-[#33C3F0] to-[#0EA5E9] bg-clip-text text-transparent">
                     {item.title}
@@ -70,20 +70,22 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             </div>
           </div>
           
-          <Pagination className="mt-12"> {/* Increased margin-top from mt-4 to mt-12 */}
-            <PaginationContent>
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <PaginationItem key={idx}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(idx)}
-                    isActive={currentPage === idx}
-                  >
-                    {idx + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-            </PaginationContent>
-          </Pagination>
+          <div className="mt-24"> {/* Increased margin-top significantly */}
+            <Pagination>
+              <PaginationContent>
+                {Array.from({ length: totalPages }).map((_, idx) => (
+                  <PaginationItem key={idx}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(idx)}
+                      isActive={currentPage === idx}
+                    >
+                      {idx + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+              </PaginationContent>
+            </Pagination>
+          </div>
         </div>
 
         <div className="hidden md:block relative h-[600px] pt-0">
