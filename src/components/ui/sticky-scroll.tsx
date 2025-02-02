@@ -108,6 +108,27 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                   ))}
                 </motion.div>
               </AnimatePresence>
+
+              {/* Pagination moved inside the content column and positioned at bottom */}
+              <div className="absolute bottom-0 left-0 bg-black/80 py-4 backdrop-blur-sm">
+                <Pagination>
+                  <PaginationContent>
+                    {Array.from({ length: totalPages }).map((_, idx) => (
+                      <PaginationItem key={idx}>
+                        <PaginationLink
+                          onClick={() => handlePageChange(idx)}
+                          className={`hover:bg-gradient-to-r hover:from-blue-400 hover:to-blue-600 hover:text-white transition-colors ${
+                            currentPage === idx ? 'bg-gradient-to-r from-blue-400 to-blue-600 text-white' : ''
+                          }`}
+                          isActive={currentPage === idx}
+                        >
+                          {idx + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </div>
           </div>
 
@@ -132,24 +153,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           </div>
         </div>
       </motion.div>
-
-      {/* Pagination */}
-      <div className="sticky bottom-8 bg-black py-4">
-        <Pagination>
-          <PaginationContent>
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <PaginationItem key={idx}>
-                <PaginationLink
-                  onClick={() => handlePageChange(idx)}
-                  isActive={currentPage === idx}
-                >
-                  {idx + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-          </PaginationContent>
-        </Pagination>
-      </div>
     </div>
   );
 };
