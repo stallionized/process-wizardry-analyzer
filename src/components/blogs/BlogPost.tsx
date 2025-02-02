@@ -14,7 +14,6 @@ type Blog = {
 
 export default function BlogPost() {
   const { slug } = useParams();
-  console.log('Current slug:', slug);
 
   const { data: blog, isLoading, error } = useQuery({
     queryKey: ['blog', slug],
@@ -41,14 +40,14 @@ export default function BlogPost() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
-        <Card className="p-6 bg-black/[0.96] border-white/10">
+        <Card className="p-6 bg-white border-black">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-white/10 rounded w-3/4"></div>
-            <div className="h-64 bg-white/10 rounded"></div>
+            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
             <div className="space-y-2">
-              <div className="h-4 bg-white/10 rounded w-full"></div>
-              <div className="h-4 bg-white/10 rounded w-5/6"></div>
-              <div className="h-4 bg-white/10 rounded w-4/6"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/6"></div>
             </div>
           </div>
         </Card>
@@ -59,9 +58,9 @@ export default function BlogPost() {
   if (error) {
     return (
       <div className="container mx-auto py-8">
-        <Card className="p-6 bg-black/[0.96] border-white/10">
-          <h1 className="text-2xl font-bold text-white">Error loading blog post</h1>
-          <p className="text-neutral-300 mt-2">There was an error loading the blog post. Please try again later.</p>
+        <Card className="p-6 bg-white border-black">
+          <h1 className="text-2xl font-bold text-gray-900">Error loading blog post</h1>
+          <p className="text-gray-600 mt-2">There was an error loading the blog post. Please try again later.</p>
         </Card>
       </div>
     );
@@ -70,9 +69,9 @@ export default function BlogPost() {
   if (!blog) {
     return (
       <div className="container mx-auto py-8">
-        <Card className="p-6 bg-black/[0.96] border-white/10">
-          <h1 className="text-2xl font-bold text-white">Blog post not found</h1>
-          <p className="text-neutral-300 mt-2">
+        <Card className="p-6 bg-white border-black">
+          <h1 className="text-2xl font-bold text-gray-900">Blog post not found</h1>
+          <p className="text-gray-600 mt-2">
             The blog post you're looking for doesn't exist or hasn't been published yet.
           </p>
         </Card>
@@ -87,9 +86,9 @@ export default function BlogPost() {
       transition={{ duration: 0.5 }}
       className="container mx-auto py-8 max-w-4xl"
     >
-      <Card className="p-6 bg-black/[0.96] border-white/10">
-        <h1 className="text-3xl font-bold mb-4 text-white">{blog.title}</h1>
-        <div className="text-sm text-neutral-400 mb-6">
+      <Card className="p-6 bg-white border-black">
+        <h1 className="text-3xl font-bold mb-4 text-gray-900">{blog.title}</h1>
+        <div className="text-sm text-gray-600 mb-6">
           Published on {new Date(blog.created_at).toLocaleDateString()}
         </div>
         {blog.hero_image_url && (
@@ -102,7 +101,7 @@ export default function BlogPost() {
           </div>
         )}
         <div 
-          className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-neutral-300"
+          className="prose prose-slate max-w-none"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
       </Card>
