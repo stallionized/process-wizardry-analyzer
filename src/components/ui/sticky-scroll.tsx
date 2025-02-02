@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Pagination, 
@@ -36,6 +36,34 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
     setCurrentPage(page);
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+
+      const container = containerRef.current;
+      const { top, height } = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const scrollPosition = -top;
+      const sectionProgress = scrollPosition / (height - viewportHeight);
+      
+      // Calculate which page we should be on based on scroll position
+      const targetPage = Math.min(
+        Math.max(
+          Math.floor(sectionProgress * totalPages),
+          0
+        ),
+        totalPages - 1
+      );
+
+      if (targetPage !== currentPage) {
+        setCurrentPage(targetPage);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentPage, totalPages]);
+
   return (
     <div className="relative">
       <motion.div
@@ -45,7 +73,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
           {/* Content Column */}
           <div className="flex flex-col">
-            <div className="pt-24 sticky top-24"> {/* Made content sticky */}
+            <div className="pt-24 sticky top-24">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentPage}
