@@ -109,8 +109,7 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Removed margin and adjusted padding to minimize space */}
-        <div className="-mt-12 pb-0">
+        <div className="-mt-32">
           <StickyScroll
             content={processContent}
             imageUrl="https://i.imgur.com/c0fBC9P.png"
