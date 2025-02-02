@@ -75,9 +75,10 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
       ref={containerRef}
       className="relative h-[60vh] bg-black pt-4 mt-8"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-[85%] max-w-7xl mx-auto px-4">
         {/* Content Column */}
-        <div className="flex flex-col justify-start h-full"> {/* Removed pt-12 to move content higher */}
+        <div className="flex flex-col justify-start h-full">
           <div className="h-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -107,7 +108,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         </div>
 
         {/* Image Column */}
-        <div className="hidden md:flex flex-col items-center justify-between h-full">
+        <div className="hidden md:flex flex-col items-center justify-center h-full">
           <motion.img
             src={imageUrl}
             alt="Process Analysis"
@@ -116,33 +117,33 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
           />
-          
-          {/* Pagination under the image */}
-          <div className="w-full flex justify-start mt-4">
-            <Pagination>
-              <PaginationContent className="flex justify-center gap-2">
-                {Array.from({ length: totalPages }).map((_, idx) => (
-                  <PaginationItem key={idx}>
-                    <PaginationLink
-                      onClick={() => handlePageChange(idx)}
-                      className={`
-                        w-8 h-8 flex items-center justify-center rounded-full
-                        transition-colors text-white cursor-pointer
-                        ${currentPage === idx 
-                          ? 'bg-[#33C3F0] hover:bg-[#0EA5E9]' 
-                          : 'bg-black/50 hover:bg-[#33C3F0]'
-                        }
-                      `}
-                      isActive={currentPage === idx}
-                    >
-                      {idx + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-              </PaginationContent>
-            </Pagination>
-          </div>
         </div>
+      </div>
+
+      {/* Pagination row - separate from the grid */}
+      <div className="w-full flex justify-center mt-8">
+        <Pagination>
+          <PaginationContent className="flex justify-center gap-2">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <PaginationItem key={idx}>
+                <PaginationLink
+                  onClick={() => handlePageChange(idx)}
+                  className={`
+                    w-8 h-8 flex items-center justify-center rounded-full
+                    transition-colors text-white cursor-pointer
+                    ${currentPage === idx 
+                      ? 'bg-[#33C3F0] hover:bg-[#0EA5E9]' 
+                      : 'bg-black/50 hover:bg-[#33C3F0]'
+                    }
+                  `}
+                  isActive={currentPage === idx}
+                >
+                  {idx + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+          </PaginationContent>
+        </Pagination>
       </div>
     </motion.div>
   );
