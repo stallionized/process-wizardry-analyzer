@@ -57,7 +57,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className={`mb-8 ${contentClassName}`} // Added mb-8 for better spacing between items
+                  className={`mb-8 ${contentClassName}`}
                 >
                   <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-[#33C3F0] to-[#0EA5E9] bg-clip-text text-transparent">
                     {item.title}
@@ -70,7 +70,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             </div>
           </div>
           
-          <div className="mt-24"> {/* Increased margin-top significantly */}
+          <div className="mt-24">
             <Pagination>
               <PaginationContent>
                 {Array.from({ length: totalPages }).map((_, idx) => (
@@ -92,7 +92,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           <motion.div
             style={{
               position: "sticky",
-              top: "-180px",
+              top: "0px", // Changed from -180px to 0px to align with the first bullet point
             }}
             className="rounded-lg overflow-hidden h-[600px] pt-0 mt-0"
           >
