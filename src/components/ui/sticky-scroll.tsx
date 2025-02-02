@@ -28,7 +28,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   const itemsPerPage = 3;
   const totalPages = Math.ceil(content.length / itemsPerPage);
   const [isInView, setIsInView] = useState(false);
-  const [isScrollLocked, setIsScrollLocked] = useState(false);
 
   const getVisibleContent = () => {
     const startIdx = currentPage * itemsPerPage;
@@ -42,7 +41,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    let lastScrollY = window.scrollY;
+    let lastScrollTime = Date.now();
     let scrollTimeout: NodeJS.Timeout;
 
     const observer = new IntersectionObserver(
@@ -50,58 +49,47 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         entries.forEach((entry) => {
           setIsInView(entry.isIntersecting);
           if (entry.isIntersecting) {
-            setIsScrollLocked(true);
-            document.body.style.overflow = 'hidden';
             containerRef.current?.style.setProperty('scroll-snap-align', 'start');
           } else {
-            setIsScrollLocked(false);
-            document.body.style.overflow = '';
             containerRef.current?.style.setProperty('scroll-snap-align', 'none');
           }
         });
       },
       {
-        threshold: 0.7
+        threshold: 0.3
       }
     );
 
-    const handleScroll = (e: WheelEvent) => {
+    const handleScroll = () => {
       if (!isInView || isTransitioning) return;
 
-      e.preventDefault();
-      const delta = Math.sign(e.deltaY);
+      const now = Date.now();
+      if (now - lastScrollTime < 500) return; // Debounce scroll events
+
+      const delta = Math.sign(window.scrollY - (lastScrollY || 0));
+      lastScrollTime = now;
 
       if (currentPage < totalPages - 1 && delta > 0) {
         setIsTransitioning(true);
         setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
-        setTimeout(() => {
-          setIsTransitioning(false);
-          if (currentPage === totalPages - 2) {
-            setIsScrollLocked(false);
-            document.body.style.overflow = '';
-          }
-        }, 800);
+        setTimeout(() => setIsTransitioning(false), 800);
       } else if (currentPage > 0 && delta < 0) {
         setIsTransitioning(true);
         setCurrentPage(prev => Math.max(prev - 1, 0));
         setTimeout(() => setIsTransitioning(false), 800);
-      } else if (currentPage === totalPages - 1 && delta > 0) {
-        setIsScrollLocked(false);
-        document.body.style.overflow = '';
       }
     };
 
+    let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', handleScroll);
+
     if (containerRef.current) {
       observer.observe(containerRef.current);
-      containerRef.current.addEventListener('wheel', handleScroll, { passive: false });
     }
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('wheel', handleScroll);
-      }
+      window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
-      document.body.style.overflow = '';
       clearTimeout(scrollTimeout);
     };
   }, [currentPage, totalPages, isTransitioning, isInView]);
@@ -110,10 +98,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
     <motion.div
       ref={containerRef}
       className="relative h-[60vh] bg-black pt-4 mt-8"
-      style={{ 
-        position: isScrollLocked ? 'sticky' : 'relative',
-        top: isScrollLocked ? '0' : 'auto'
-      }}
     >
       {/* Main content grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-[85%] max-w-7xl mx-auto px-4">
