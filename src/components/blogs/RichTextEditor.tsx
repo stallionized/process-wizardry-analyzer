@@ -32,7 +32,7 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] whitespace-pre-wrap',
+        class: 'prose prose-sm sm:prose-base lg:prose-lg max-w-none focus:outline-none min-h-[400px] whitespace-pre-wrap',
       },
     },
     editable: !disabled,
@@ -45,7 +45,10 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
   if (editor && content !== editor.getHTML()) {
     // Use a timeout to prevent immediate re-render
     setTimeout(() => {
-      editor.commands.setContent(content, false, { preserveWhitespace: true });
+      editor.commands.setContent(content, false, { 
+        preserveWhitespace: true,
+        preserveLineBreaks: true 
+      });
     }, 0);
   }
 
@@ -141,7 +144,7 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
       </div>
       <EditorContent 
         editor={editor} 
-        className="p-4 prose-pre:whitespace-pre-wrap prose-p:whitespace-pre-wrap"
+        className="p-4 prose-pre:whitespace-pre-wrap prose-p:whitespace-pre-wrap [&_.ProseMirror]:min-h-[400px] [&_.ProseMirror]:whitespace-pre-wrap"
       />
     </div>
   );
