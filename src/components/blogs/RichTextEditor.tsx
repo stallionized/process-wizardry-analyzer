@@ -32,17 +32,20 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] whitespace-pre-wrap',
       },
     },
     editable: !disabled,
+    parseOptions: {
+      preserveWhitespace: 'full',
+    },
   });
 
   // Only update editor content when content prop changes significantly
   if (editor && content !== editor.getHTML()) {
     // Use a timeout to prevent immediate re-render
     setTimeout(() => {
-      editor.commands.setContent(content);
+      editor.commands.setContent(content, false, { preserveWhitespace: true });
     }, 0);
   }
 
@@ -138,7 +141,7 @@ const RichTextEditor = ({ content, onChange, disabled = false }: RichTextEditorP
       </div>
       <EditorContent 
         editor={editor} 
-        className="p-4 min-h-[400px]"
+        className="p-4 prose-pre:whitespace-pre-wrap prose-p:whitespace-pre-wrap"
       />
     </div>
   );

@@ -35,7 +35,8 @@ serve(async (req) => {
     - Ensure content is factual and well-researched
     - Use a professional yet conversational tone
     - Include a compelling introduction and conclusion
-    - Break up text into readable paragraphs
+    - Break up text into readable paragraphs with proper line spacing
+    - Use double line breaks between paragraphs and sections
     - Aim for at least 800 words of high-quality content
     - Make the content inspiring and influential`
 
@@ -78,10 +79,10 @@ serve(async (req) => {
     const generatedContent = data.choices[0].message.content
     console.log('Generated content length:', generatedContent.length);
 
-    // Split content into summary and main content
+    // Split content into summary and main content while preserving formatting
     const parts = generatedContent.split('\n\n')
-    const summary = parts[0].replace(/[^\w\s.,!?]/g, '').trim() // Remove special characters
-    const content = parts.slice(2).join('\n\n') // Skip the two blank lines
+    const summary = parts[0].replace(/[^\w\s.,!?]/g, '').trim() // Remove special characters from summary
+    const content = parts.slice(2).join('\n\n') // Skip the two blank lines but preserve all other formatting
 
     return new Response(
       JSON.stringify({ content, summary }),

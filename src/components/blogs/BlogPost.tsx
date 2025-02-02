@@ -101,7 +101,7 @@ export default function BlogPost() {
           </div>
         )}
         <div 
-          className="prose prose-slate max-w-none"
+          className="prose prose-slate max-w-none whitespace-pre-wrap"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
       </Card>
