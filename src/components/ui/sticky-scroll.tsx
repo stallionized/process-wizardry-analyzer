@@ -121,16 +121,17 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
             {/* Pagination moved under the image */}
             <div className="mt-8 w-full bg-black/80 backdrop-blur-sm py-4 rounded-lg">
               <Pagination>
-                <PaginationContent>
+                <PaginationContent className="flex justify-center gap-2">
                   {Array.from({ length: totalPages }).map((_, idx) => (
                     <PaginationItem key={idx}>
                       <PaginationLink
                         onClick={() => handlePageChange(idx)}
                         className={`
-                          transition-colors
+                          w-8 h-8 flex items-center justify-center rounded-full
+                          transition-colors text-white
                           ${currentPage === idx 
-                            ? 'bg-neutral-200 text-black hover:bg-[#33C3F0] hover:text-white' 
-                            : 'hover:bg-[#33C3F0] hover:text-white'
+                            ? 'bg-[#33C3F0] hover:bg-[#0EA5E9]' 
+                            : 'bg-black/50 hover:bg-[#33C3F0]'
                           }
                         `}
                         isActive={currentPage === idx}
