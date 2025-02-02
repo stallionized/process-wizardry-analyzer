@@ -27,6 +27,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const itemsPerPage = 3;
   const totalPages = Math.ceil(content.length / itemsPerPage);
+  const [isInView, setIsInView] = useState(false);
 
   const getVisibleContent = () => {
     const startIdx = currentPage * itemsPerPage;
@@ -40,34 +41,58 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    let lastScrollTime = Date.now();
+    let scrollTimeout: NodeJS.Timeout;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          setIsInView(entry.isIntersecting);
           if (entry.isIntersecting) {
-            // When the section is in view, enable snap scrolling
-            document.body.style.scrollSnapType = 'y mandatory';
             containerRef.current?.style.setProperty('scroll-snap-align', 'start');
           } else {
-            // When section is not in view, disable snap scrolling
-            document.body.style.scrollSnapType = 'none';
             containerRef.current?.style.setProperty('scroll-snap-align', 'none');
           }
         });
       },
       {
-        threshold: 0.1 // Trigger when 10% of the element is visible
+        threshold: 0.3
       }
     );
+
+    const handleScroll = () => {
+      if (!isInView || isTransitioning) return;
+
+      const now = Date.now();
+      if (now - lastScrollTime < 500) return; // Debounce scroll events
+
+      const delta = Math.sign(window.scrollY - (lastScrollY || 0));
+      lastScrollTime = now;
+
+      if (currentPage < totalPages - 1 && delta > 0) {
+        setIsTransitioning(true);
+        setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
+        setTimeout(() => setIsTransitioning(false), 800);
+      } else if (currentPage > 0 && delta < 0) {
+        setIsTransitioning(true);
+        setCurrentPage(prev => Math.max(prev - 1, 0));
+        setTimeout(() => setIsTransitioning(false), 800);
+      }
+    };
+
+    let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', handleScroll);
 
     if (containerRef.current) {
       observer.observe(containerRef.current);
     }
 
     return () => {
+      window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
-      document.body.style.scrollSnapType = 'none';
+      clearTimeout(scrollTimeout);
     };
-  }, []);
+  }, [currentPage, totalPages, isTransitioning, isInView]);
 
   return (
     <motion.div
@@ -119,7 +144,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
         </div>
       </div>
 
-      {/* Pagination row - separate from the grid */}
+      {/* Pagination row */}
       <div className="w-full flex justify-center mt-8">
         <Pagination>
           <PaginationContent className="flex justify-center gap-2">
