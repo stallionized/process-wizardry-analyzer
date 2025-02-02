@@ -34,40 +34,71 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   };
 
   const handlePageChange = (page: number) => {
+    if (!containerRef.current) return;
     setCurrentPage(page);
+    
+    // Calculate the scroll position for the selected page
+    const container = containerRef.current;
+    const { top } = container.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const scrollPosition = window.scrollY + top + (viewportHeight * page);
+    
+    // Smooth scroll to the position
+    window.scrollTo({
+      top: scrollPosition,
+      behavior: 'smooth'
+    });
   };
 
   useEffect(() => {
+    let lastScrollPosition = window.scrollY;
+    let scrollTimeout: NodeJS.Timeout;
+
     const handleScroll = () => {
       if (!containerRef.current || isTransitioning) return;
+
+      // Clear the existing timeout
+      clearTimeout(scrollTimeout);
 
       const container = containerRef.current;
       const { top, height } = container.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const scrollPosition = -top;
-      const sectionProgress = scrollPosition / (height - viewportHeight);
+      const totalHeight = height - viewportHeight;
+      const pageHeight = totalHeight / (totalPages - 1);
       
-      if (currentPage === totalPages - 1) return;
-
-      const targetPage = Math.min(
-        Math.max(
-          Math.floor(sectionProgress * totalPages),
-          0
-        ),
-        totalPages - 1
-      );
-
-      if (targetPage !== currentPage && targetPage === currentPage + 1) {
+      // Calculate which page we should be on based on scroll position
+      const targetPage = Math.round(scrollPosition / pageHeight);
+      
+      if (targetPage !== currentPage && targetPage >= 0 && targetPage < totalPages) {
         setIsTransitioning(true);
-        setCurrentPage(targetPage);
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 800);
+        
+        // Set a timeout to prevent rapid transitions
+        scrollTimeout = setTimeout(() => {
+          setCurrentPage(targetPage);
+          
+          // Calculate exact scroll position for the page
+          const exactScrollPosition = window.scrollY + top + (viewportHeight * targetPage);
+          
+          // Smooth scroll to the exact position
+          window.scrollTo({
+            top: exactScrollPosition,
+            behavior: 'smooth'
+          });
+          
+          // Reset transition state after animation
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 800);
+        }, 50);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
   }, [currentPage, totalPages, isTransitioning]);
 
   return (
