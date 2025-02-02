@@ -25,7 +25,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   return (
     <motion.div
       ref={containerRef}
-      className="relative h-[100vh] py-10 overflow-y-auto bg-black"
+      className="relative h-[100vh] py-0 overflow-y-auto bg-black"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         <div className="relative max-w-xl h-[600px] overflow-y-auto scrollbar-hide">
@@ -53,9 +53,9 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           <motion.div
             style={{
               position: "sticky",
-              top: "0",
+              top: "-40px",
             }}
-            className="rounded-lg overflow-hidden h-[600px] pt-0"
+            className="rounded-lg overflow-hidden h-[600px]"
           >
             <motion.img
               src={imageUrl}
