@@ -77,7 +77,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 h-full max-w-7xl mx-auto px-4">
         {/* Content Column */}
-        <div className="flex flex-col justify-start h-full pt-12"> {/* Changed justify-center to justify-start and added pt-12 */}
+        <div className="flex flex-col justify-start h-full"> {/* Removed pt-12 to move content higher */}
           <div className="h-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -118,7 +118,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           />
           
           {/* Pagination under the image */}
-          <div className="w-full flex justify-start mt-4"> {/* Changed justify-center to justify-start */}
+          <div className="w-full flex justify-start mt-4">
             <Pagination>
               <PaginationContent className="flex justify-center gap-2">
                 {Array.from({ length: totalPages }).map((_, idx) => (
