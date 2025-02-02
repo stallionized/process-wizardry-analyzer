@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Pagination, 
@@ -24,10 +24,8 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const itemsPerPage = 3;
   const totalPages = Math.ceil(content.length / itemsPerPage);
-  const [isInView, setIsInView] = useState(false);
 
   const getVisibleContent = () => {
     const startIdx = currentPage * itemsPerPage;
@@ -37,62 +35,6 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    let lastScrollTime = Date.now();
-    let scrollTimeout: NodeJS.Timeout;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          setIsInView(entry.isIntersecting);
-          if (entry.isIntersecting) {
-            containerRef.current?.style.setProperty('scroll-snap-align', 'start');
-          } else {
-            containerRef.current?.style.setProperty('scroll-snap-align', 'none');
-          }
-        });
-      },
-      {
-        threshold: 0.3
-      }
-    );
-
-    const handleScroll = () => {
-      if (!isInView || isTransitioning) return;
-
-      const now = Date.now();
-      if (now - lastScrollTime < 500) return; // Debounce scroll events
-
-      const delta = Math.sign(window.scrollY - (lastScrollY || 0));
-      lastScrollTime = now;
-
-      if (currentPage < totalPages - 1 && delta > 0) {
-        setIsTransitioning(true);
-        setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
-        setTimeout(() => setIsTransitioning(false), 800);
-      } else if (currentPage > 0 && delta < 0) {
-        setIsTransitioning(true);
-        setCurrentPage(prev => Math.max(prev - 1, 0));
-        setTimeout(() => setIsTransitioning(false), 800);
-      }
-    };
-
-    let lastScrollY = window.scrollY;
-    window.addEventListener('scroll', handleScroll);
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
-      clearTimeout(scrollTimeout);
-    };
-  }, [currentPage, totalPages, isTransitioning, isInView]);
 
   return (
     <motion.div
