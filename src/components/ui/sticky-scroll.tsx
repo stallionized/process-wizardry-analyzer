@@ -38,7 +38,7 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
                   transition={{ duration: 0.5, delay: idx * 0.1 }}
                   className={contentClassName}
                 >
-                  <h3 className="text-xl font-bold text-white mb-3">
+                  <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-[#33C3F0] to-[#0EA5E9] bg-clip-text text-transparent">
                     {item.title}
                   </h3>
                   <p className="text-neutral-300 leading-relaxed text-sm">
