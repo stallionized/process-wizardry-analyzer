@@ -53,9 +53,9 @@ export const StickyScroll: React.FC<StickyScrollProps> = ({
           <motion.div
             style={{
               position: "sticky",
-              top: "-120px",
+              top: "-180px",
             }}
-            className="rounded-lg overflow-hidden h-[600px] pt-0"
+            className="rounded-lg overflow-hidden h-[600px] pt-0 mt-0"
           >
             <motion.img
               src={imageUrl}
