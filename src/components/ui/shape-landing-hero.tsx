@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GradientButton } from "./gradient-button";
 
 function ElegantShape({
     className,
@@ -70,7 +71,7 @@ function ElegantShape({
     );
 }
 
-function HeroGeometric({
+export function HeroGeometric({
     badge = "AI Process Engineer",
     title1 = "Experience",
     title2 = "Process Excellence",
@@ -93,7 +94,7 @@ function HeroGeometric({
     };
 
     return (
-        <div className="relative h-[40vh] w-full flex items-center justify-center overflow-hidden bg-[#030303]">
+        <div className="relative h-[45vh] w-full flex items-center justify-center overflow-hidden bg-[#030303]">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.05] via-transparent to-rose-500/[0.05] blur-3xl" />
 
             <div className="absolute inset-0 overflow-hidden">
@@ -183,11 +184,20 @@ function HeroGeometric({
                         variants={fadeUpVariants}
                         initial="hidden"
                         animate="visible"
+                        className="space-y-6"
                     >
                         <p className="text-sm sm:text-base md:text-lg text-white/40 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
                             Crafting exceptional process experiences through
                             innovative design and cutting-edge technology.
                         </p>
+                        <motion.div
+                            custom={3}
+                            variants={fadeUpVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            <GradientButton>Book Demo</GradientButton>
+                        </motion.div>
                     </motion.div>
                 </div>
             </div>
@@ -196,5 +206,3 @@ function HeroGeometric({
         </div>
     );
 }
-
-export { HeroGeometric }
