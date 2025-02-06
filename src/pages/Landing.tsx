@@ -1,7 +1,5 @@
-import { SplineSceneBasic } from "@/components/demo/code.demo";
 import { ChartBarIcon, Cog, RocketIcon, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
@@ -99,7 +97,7 @@ export default function Landing() {
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 pt-24">
         <div>
-          <SplineSceneBasic />
+          <SparklesPreviewColorful />
         </div>
 
         <div className="mt-8">

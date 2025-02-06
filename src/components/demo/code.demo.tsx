@@ -80,5 +80,3 @@ export function SparklesPreviewColorful() {
     </div>
   );
 }
-
-export { SparklesPreview, SparklesPreviewDark, SparklesPreviewColorful };
