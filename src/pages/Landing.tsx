@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
 import { StickyScroll } from "@/components/ui/sticky-scroll";
+import { HeroGeometric } from "@/components/ui/shape-landing-hero";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -149,6 +150,10 @@ export default function Landing() {
               <FeaturedBlogs />
             </div>
           </div>
+        </div>
+
+        <div className="mt-20">
+          <HeroGeometric />
         </div>
       </div>
 
