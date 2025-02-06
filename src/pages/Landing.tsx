@@ -156,11 +156,11 @@ export default function Landing() {
           <HeroGeometric />
         </div>
 
-        {/* New Contact Section */}
+        {/* Contact Section */}
         <div className="mt-32 mb-20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div>
-              <h2 className="text-4xl font-bold mb-6">Message from<br />Charles J. Cacici</h2>
+              <h2 className="text-4xl font-bold mb-6 text-[#60A5FA]">Message from<br />Our Team</h2>
               <p className="text-gray-400 mb-8">
                 Thank you for taking the time to review my site and to learn about me. 
                 I look forward to learning about you, your organization, and your customers.
