@@ -6,7 +6,6 @@ import ProjectDetails from '@/components/project/ProjectDetails';
 import FileUploadTab from '@/components/project/FileUploadTab';
 import AIResults from '@/components/project/AIResults';
 import ExternalComplaints from '@/components/project/ExternalComplaints';
-import { SparklesPreviewColorful } from '@/components/demo/code.demo';
 
 interface UploadedFile {
   id: string;
@@ -100,11 +99,6 @@ const Index = () => {
           <ExternalComplaints projectId={demoProjectId} />
         </TabsContent>
       </Tabs>
-
-      {/* Sparkles section at the bottom */}
-      <div className="mt-20">
-        <SparklesPreviewColorful />
-      </div>
     </div>
   );
 };

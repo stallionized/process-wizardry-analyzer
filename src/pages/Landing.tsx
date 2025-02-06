@@ -1,11 +1,11 @@
-import { SparklesPreviewColorful } from "@/components/demo/code.demo";
+import { SplineSceneBasic } from "@/components/demo/code.demo";
 import { ChartBarIcon, Cog, RocketIcon, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
-import { StickyScroll } from "@/components/ui/sticky-scroll";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
+import { StickyScroll } from "@/components/ui/sticky-scroll";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -98,17 +98,7 @@ export default function Landing() {
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 pt-24">
         <div>
-          <div className="h-[40rem] w-full bg-black flex flex-col items-center justify-center overflow-hidden rounded-md">
-            <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center text-white relative z-20">
-              AI Process Engineer
-            </h1>
-            <div className="w-[40rem] h-40 relative">
-              <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent h-[2px] w-3/4 blur-sm" />
-              <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent h-px w-3/4" />
-              <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[5px] w-1/4 blur-sm" />
-              <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px w-1/4" />
-            </div>
-          </div>
+          <SplineSceneBasic />
         </div>
 
         <div className="mt-8">
@@ -159,10 +149,6 @@ export default function Landing() {
               <FeaturedBlogs />
             </div>
           </div>
-        </div>
-
-        <div className="mt-20 mb-20">
-          <SparklesPreviewColorful />
         </div>
       </div>
 
