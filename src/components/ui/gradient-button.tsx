@@ -16,7 +16,7 @@ const gradientButtonVariants = cva(
     "disabled:pointer-events-none disabled:opacity-50",
     "border-2 border-white",
     "transition-all duration-300",
-    "hover:bg-[#60A5FA] hover:border-[#60A5FA]",
+    "hover:bg-[#60A5FA] hover:border-[#60A5FA] hover:text-white",
     "--pos-x: 100%",
     "--pos-y: 0%",
     "--spread-x: 140%",
