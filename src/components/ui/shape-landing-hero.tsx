@@ -9,7 +9,7 @@ const description =
 
 export const HeroGeometric = () => {
     return (
-        <div className="h-[40vh] w-full bg-black/90 dark:bg-grid-white/[0.05] relative flex flex-col items-center justify-center overflow-hidden rounded-md antialiased">
+        <div className="h-[40vh] w-full dark:bg-black bg-black/90 dark:bg-grid-white/[0.05] relative flex flex-col items-center justify-center overflow-hidden rounded-md antialiased">
             <div className="absolute pointer-events-none inset-0 flex items-center justify-center dark:bg-black [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
             <div className="relative flex flex-col items-center justify-center text-center">
                 <div className="absolute inset-0 overflow-hidden">
