@@ -155,6 +155,49 @@ export default function Landing() {
         <div className="mt-20">
           <HeroGeometric />
         </div>
+
+        {/* New Contact Section */}
+        <div className="mt-32 mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div>
+              <h2 className="text-4xl font-bold mb-6">Message from<br />Charles J. Cacici</h2>
+              <p className="text-gray-400 mb-8">
+                Thank you for taking the time to review my site and to learn about me. 
+                I look forward to learning about you, your organization, and your customers.
+              </p>
+              <Button 
+                variant="outline"
+                className="text-white border-white/20 hover:bg-white/10"
+              >
+                LET'S TALK
+              </Button>
+            </div>
+
+            <div className="bg-[#0A0A0A] p-8 rounded-lg border border-white/10">
+              <h3 className="text-2xl font-semibold mb-2">Email</h3>
+              <p className="text-gray-400 mb-6">Charles J. Cacici, Your Next Executive</p>
+              <Button 
+                variant="outline"
+                className="text-white border-white/20 hover:bg-white/10 mb-6"
+              >
+                EMAIL US
+              </Button>
+              <p className="text-gray-400">CHARLIE.CACICI.JR@GMAIL.COM</p>
+            </div>
+
+            <div className="bg-[#0A0A0A] p-8 rounded-lg border border-white/10">
+              <h3 className="text-2xl font-semibold mb-2">Phone</h3>
+              <p className="text-gray-400 mb-6">Charles J. Cacici, Your Next Executive</p>
+              <Button 
+                variant="outline"
+                className="text-white border-white/20 hover:bg-white/10 mb-6"
+              >
+                CALL US
+              </Button>
+              <p className="text-gray-400">(347) 423-9114</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <footer className="bg-[#000000] py-8">
