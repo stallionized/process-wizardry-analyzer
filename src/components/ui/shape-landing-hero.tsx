@@ -58,15 +58,15 @@ export const HeroGeometric = () => {
                     </motion.div>
                 </motion.div>
             </div>
-            <style jsx>{`
-                .jumbo {
-                    background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
-                    filter: blur(30px);
-                    z-index: -1;
-                }
-            `}</style>
+            <style>
+                {`
+                    .jumbo {
+                        background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+                        filter: blur(30px);
+                        z-index: -1;
+                    }
+                `}
+            </style>
         </div>
     );
 }
-
-export { HeroGeometric }
