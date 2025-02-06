@@ -1,40 +1,82 @@
-'use client'
+"use client";
+import React from "react";
+import { SparklesCore } from "@/components/ui/sparkles";
 
-import { SplineScene } from "@/components/ui/splite";
-import { Card } from "@/components/ui/card"
-import { GradientButton } from "@/components/ui/gradient-button"
- 
-export function SplineSceneBasic() {
+export function SparklesPreview() {
   return (
-    <Card className="w-full h-[500px] bg-black/[0.96] relative overflow-hidden">      
-      <div className="flex h-full">
-        {/* Left content */}
-        <div className="flex-1 p-8 pb-12 relative z-10 flex flex-col justify-center">
-          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-blue-400 to-blue-600 mb-2">
-            AI Process Engineer
-          </h1>
-          <p className="mt-4 text-neutral-300 max-w-lg">
-            Unlock efficiency with an AI Process Engineer that analyzes every detail of your process. Automate, optimize, 
-            and enhance with precision-driven recommendations.
-          </p>
-          <div className="mt-8 flex gap-4">
-            <GradientButton className="bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700">
-              Watch Intro
-            </GradientButton>
-            <GradientButton className="bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700">
-              Book Demo
-            </GradientButton>
-          </div>
-        </div>
+    <div className="h-[40rem] w-full bg-black flex flex-col items-center justify-center overflow-hidden rounded-md">
+      <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center text-white relative z-20">
+        AI Process Engineer
+      </h1>
+      <div className="w-[40rem] h-40 relative">
+        {/* Gradients */}
+        <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent h-[2px] w-3/4 blur-sm" />
+        <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent h-px w-3/4" />
+        <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[5px] w-1/4 blur-sm" />
+        <div className="absolute inset-x-60 top-0 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px w-1/4" />
 
-        {/* Right content */}
-        <div className="flex-1 relative">
-          <SplineScene 
-            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-            className="w-full h-full"
-          />
-        </div>
+        {/* Core component */}
+        <SparklesCore
+          background="transparent"
+          minSize={0.4}
+          maxSize={1}
+          particleDensity={1200}
+          className="w-full h-full"
+          particleColor="#FFFFFF"
+        />
+
+        {/* Radial Gradient to prevent sharp edges */}
+        <div className="absolute inset-0 w-full h-full bg-black [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
       </div>
-    </Card>
-  )
+    </div>
+  );
+}
+
+export function SparklesPreviewDark() {
+  return (
+    <div className="h-[40rem] relative w-full bg-slate-950 flex flex-col items-center justify-center overflow-hidden rounded-md">
+      <div className="w-full absolute inset-0 h-screen">
+        <SparklesCore
+          id="tsparticlesfullpage"
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleDensity={100}
+          className="w-full h-full"
+          particleColor="#FFFFFF"
+          speed={1}
+        />
+      </div>
+      <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center text-white relative z-20">
+        Build faster
+      </h1>
+    </div>
+  );
+}
+
+export function SparklesPreviewColorful() {
+  return (
+    <div className="h-[40rem] relative w-full bg-black flex flex-col items-center justify-center overflow-hidden rounded-md">
+      <div className="w-full absolute inset-0 h-screen">
+        <SparklesCore
+          id="tsparticlescolorful"
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleDensity={100}
+          className="w-full h-full"
+          particleColor="#00ff00"
+          speed={0.5}
+        />
+      </div>
+      <div className="flex flex-col items-center justify-center gap-4 relative z-20">
+        <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400">
+          The Future
+        </h1>
+        <p className="text-neutral-300 cursor-default text-center">
+          is brighter than you think
+        </p>
+      </div>
+    </div>
+  );
 }
