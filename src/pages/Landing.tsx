@@ -1,4 +1,3 @@
-import { SplineSceneBasic } from "@/components/demo/code.demo";
 import { ChartBarIcon, Cog, RocketIcon, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
 import { StickyScroll } from "@/components/ui/sticky-scroll";
+import { HeroGeometric } from "@/components/ui/shape-landing-hero";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -97,16 +97,10 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 pt-24">
-        <div>
-          <SplineSceneBasic />
-        </div>
-
-        <div className="mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, index) => (
-              <BenefitCard key={index} {...benefit} index={index} />
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {benefits.map((benefit, index) => (
+            <BenefitCard key={index} {...benefit} index={index} />
+          ))}
         </div>
 
         <div className="mt-12">
@@ -149,6 +143,14 @@ export default function Landing() {
               <FeaturedBlogs />
             </div>
           </div>
+        </div>
+
+        <div className="mt-20">
+          <HeroGeometric 
+            badge="AI Process Engineer"
+            title1="Elevate Your"
+            title2="Process Engineering"
+          />
         </div>
       </div>
 
