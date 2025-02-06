@@ -72,8 +72,8 @@ function ElegantShape({
 
 function HeroGeometric({
     badge = "AI Process Engineer",
-    title1 = "Experience",
-    title2 = "Process Excellence",
+    title1 = "Experience Process",
+    title2 = "Excellence",
     className,
 }: {
     badge?: string;

@@ -136,10 +136,14 @@ export default function Landing() {
         </div>
 
         <div className="mt-20">
+          <FeaturedBlogs />
+        </div>
+
+        <div className="mt-20">
           <HeroGeometric 
             badge="AI Process Engineer"
-            title1="Experience"
-            title2="Process Excellence"
+            title1="Experience Process"
+            title2="Excellence"
             className="h-[60vh]"
           />
         </div>
