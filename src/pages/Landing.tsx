@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { LampContainer } from "@/components/ui/lamp";
 import { FeaturedBlogs } from "@/components/blogs/FeaturedBlogs";
 import { StickyScroll } from "@/components/ui/sticky-scroll";
+import { SparklesPreviewColorful } from "@/components/demo/code.demo";
 
 const BenefitCard = ({ icon: Icon, title, description, index }: { 
   icon: React.ElementType, 
@@ -137,6 +138,7 @@ export default function Landing() {
         <div className="mt-20 mb-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="sticky top-24 h-fit">
+              <SparklesPreviewColorful />
               <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
                 Latest Insights
               </h2>
