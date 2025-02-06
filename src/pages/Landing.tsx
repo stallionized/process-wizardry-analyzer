@@ -135,25 +135,13 @@ export default function Landing() {
           </LampContainer>
         </div>
 
-        <div className="mt-20 mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="sticky top-24 h-fit">
-              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
-                Latest Insights
-              </h2>
-              <p className="text-neutral-300">
-                Discover our latest thoughts and innovations in process engineering,
-                data analysis, and continuous improvement methodologies.
-              </p>
-            </div>
-            <div className="min-h-[600px]">
-              <FeaturedBlogs />
-            </div>
-          </div>
-        </div>
-
         <div className="mt-20">
-          <HeroGeometric />
+          <HeroGeometric 
+            badge="AI Process Engineer"
+            title1="Experience"
+            title2="Process Excellence"
+            className="h-[60vh]"
+          />
         </div>
       </div>
 
