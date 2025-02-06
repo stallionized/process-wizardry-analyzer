@@ -148,8 +148,8 @@ export default function Landing() {
         <div className="mt-20">
           <HeroGeometric 
             badge="AI Process Engineer"
-            title1="Elevate Your"
-            title2="Process Engineering"
+            title1="Experience"
+            title2="Process Excellence"
           />
         </div>
       </div>
