@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GradientButton } from "./gradient-button";
 
@@ -72,11 +71,9 @@ function ElegantShape({
 }
 
 export function HeroGeometric({
-    badge = "AI Process Engineer",
     title1 = "Experience",
     title2 = "Process Excellence",
 }: {
-    badge?: string;
     title1?: string;
     title2?: string;
 }) {
@@ -146,19 +143,6 @@ export function HeroGeometric({
 
             <div className="relative z-10 container mx-auto px-4 md:px-6">
                 <div className="max-w-3xl mx-auto text-center">
-                    <motion.div
-                        custom={0}
-                        variants={fadeUpVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-4"
-                    >
-                        <Circle className="h-2 w-2 fill-rose-500/80" />
-                        <span className="text-sm text-white/60 tracking-wide">
-                            {badge}
-                        </span>
-                    </motion.div>
-
                     <motion.div
                         custom={1}
                         variants={fadeUpVariants}
